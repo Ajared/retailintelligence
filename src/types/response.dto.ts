@@ -1,0 +1,13 @@
+import { PaginationMeta } from '~/helpers/pagination.helper';
+
+export class AbstractResponseDto<T> {
+  message: string;
+  data?: T;
+  meta?: Record<string, unknown> | PaginationMeta;
+  timestamp?: Date;
+  error?:
+    | string
+    | string[]
+    | Record<string, unknown>
+    | Record<string, unknown>[];
+}

@@ -14,8 +14,16 @@
     "skipLibCheck": true,
     "strictNullChecks": true,
     "forceConsistentCasingInFileNames": true,
-    "noImplicitAny": false,
+    "noImplicitAny": true,
     "strictBindCallApply": false,
-    "noFallthroughCasesInSwitch": false
+    "noFallthroughCasesInSwitch": false,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "strictPropertyInitialization": false,
+    "typeRoots": [ "node_modules/@types", "src/types/*" ],
+    "paths": {
+      "~/*": ["src/*"]
+    },
+    "strict": true,
   }
 }
