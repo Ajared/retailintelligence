@@ -1,6 +1,7 @@
 import { DataSource } from 'typeorm';
 import { JwtModule } from '@nestjs/jwt';
 import { AppService } from './app.service';
+import { BullModule } from '@nestjs/bullmq';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Logger, Module } from '@nestjs/common';
 import { AppController } from './app.controller';
@@ -36,6 +37,18 @@ import { LimiterGuard } from './guards/limiter.guard';
         signOptions: { expiresIn: configService.get<string>('JWT_EXPIRES_IN') },
       }),
     }),
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        connection: {
+          host: configService.get<string>('QUEUE_HOST'),
+          port: configService.get<number>('QUEUE_PORT'),
+          username: configService.get<string>('QUEUE_USERNAME'),
+          password: configService.get<string>('QUEUE_PASSWORD'),
+        },
+      }),
+    }),
     MailerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -49,7 +62,7 @@ import { LimiterGuard } from './guards/limiter.guard';
           },
         },
         defaults: {
-          from: `"BeakCrypt" <${configService.get<string>('SMTP_FROM')}>`,
+          from: `"Retail Intelligence" <${configService.get<string>('SMTP_FROM')}>`,
         },
         template: {
           dir: __dirname + '/modules/mail/templates',
