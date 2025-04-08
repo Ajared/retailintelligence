@@ -1,8 +1,11 @@
+import { DataSource } from 'typeorm';
 import { JwtModule } from '@nestjs/jwt';
 import { AppService } from './app.service';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { Logger, Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { MailerModule } from '@nestjs-modules/mailer';
+import createDataSource from './database/data-source';
 import { validateEnv } from './helpers/env.validator';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ValidationPipe } from './helpers/validation.pipe';
@@ -57,6 +60,27 @@ import { ValidationExceptionFilter } from './helpers/validation-filter.exception
           },
         },
       }),
+    }),
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        return createDataSource(configService).options;
+      },
+      dataSourceFactory: async (options) => {
+        const logger = new Logger('Database');
+        const dataSource = new DataSource(options!);
+        try {
+          if (!dataSource.isInitialized) {
+            await dataSource.initialize();
+            logger.log('Data Source has been initialized!');
+          }
+          return dataSource;
+        } catch (error) {
+          logger.error('Error during Data Source initialization', error);
+          throw error;
+        }
+      },
     }),
   ],
   controllers: [AppController],
