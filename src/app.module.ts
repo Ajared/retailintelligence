@@ -19,6 +19,7 @@ import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handleba
 import { LimiterGuard } from './guards/limiter.guard';
 import { MailModule } from './modules/mail/mail.module';
 import { TokenModule } from './modules/token/token.module';
+import { UserModule } from './modules/user/user.module';
 
 @Module({
   imports: [
@@ -106,6 +107,7 @@ import { TokenModule } from './modules/token/token.module';
     }),
     MailModule,
     TokenModule,
+    UserModule,
   ],
   controllers: [AppController],
   providers: [
