@@ -4,19 +4,20 @@ import { AppService } from './app.service';
 import { BullModule } from '@nestjs/bullmq';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Logger, Module } from '@nestjs/common';
+import { AuthGuard } from './guards/auth.guard';
 import { AppController } from './app.controller';
-import { MailerModule } from '@nestjs-modules/mailer';
 import createDataSource from './database/data-source';
+import { MailerModule } from '@nestjs-modules/mailer';
 import { validateEnv } from './helpers/env.validator';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { ValidationPipe } from './helpers/validation.pipe';
-import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
-import { ResponseInterceptor } from './helpers/response.interceptor';
-import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
-import { ValidationExceptionFilter } from './helpers/validation-filter.exception';
-import { MailModule } from './modules/mail/mail.module';
-import { TokenModule } from './modules/token/token.module';
 import { UserModule } from './modules/user/user.module';
+import { MailModule } from './modules/mail/mail.module';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TokenModule } from './modules/token/token.module';
+import { ValidationPipe } from './helpers/validation.pipe';
+import { ResponseInterceptor } from './helpers/response.interceptor';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
+import { ValidationExceptionFilter } from './helpers/validation-filter.exception';
+import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 
 @Module({
   imports: [
@@ -106,6 +107,11 @@ import { UserModule } from './modules/user/user.module';
   providers: [
     Logger,
     AppService,
+    ConfigService,
+    {
+      provide: APP_GUARD,
+      useClass: AuthGuard,
+    },
     {
       provide: APP_INTERCEPTOR,
       useClass: ResponseInterceptor,
