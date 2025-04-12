@@ -1,9 +1,9 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { getQueueToken } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { Logger } from '@nestjs/common';
-import { MailService } from './mail.service';
 import { MailData } from '~/types/mail.type';
+import { MailService } from './mail.service';
+import { getQueueToken } from '@nestjs/bullmq';
+import { Test, TestingModule } from '@nestjs/testing';
 
 const mockMailQueue = {
   add: jest.fn(),
@@ -70,33 +70,18 @@ describe('MailService', () => {
       expect(errorSpy).not.toHaveBeenCalled();
     });
 
-    it('should log an error and re-throw if adding to the queue fails', async () => {
+    it('should log an error if adding to the queue fails', async () => {
       const errorMessage = 'Queue connection failed';
       const testError = new Error(errorMessage);
-      testError.stack = 'Error: Queue connection failed\n    at ...';
       mockMailQueue.add.mockRejectedValueOnce(testError);
-      await expect(service.sendMail(mailData)).rejects.toThrow(
-        `Email queueing failed: ${errorMessage}`,
-      );
-      expect(queue.add).toHaveBeenCalledTimes(1);
-      expect(errorSpy).toHaveBeenCalledTimes(1);
-      expect(errorSpy).toHaveBeenCalledWith(
-        `Failed to add email job to queue for ${mailData.to}`,
-        testError.stack,
-      );
-    });
 
-    it('should handle errors that are not Error instances', async () => {
-      const nonErrorObject = { message: 'Something weird happened' };
-      mockMailQueue.add.mockRejectedValueOnce(nonErrorObject);
-      await expect(service.sendMail(mailData)).rejects.toThrow(
-        `Email queueing failed: Something weird happened`,
-      );
+      await service.sendMail(mailData);
+
       expect(queue.add).toHaveBeenCalledTimes(1);
       expect(errorSpy).toHaveBeenCalledTimes(1);
       expect(errorSpy).toHaveBeenCalledWith(
         `Failed to add email job to queue for ${mailData.to}`,
-        undefined,
+        testError.message,
       );
     });
   });

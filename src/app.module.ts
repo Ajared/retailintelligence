@@ -14,6 +14,7 @@ import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { ResponseInterceptor } from './helpers/response.interceptor';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { ValidationExceptionFilter } from './helpers/validation-filter.exception';
+import { MailModule } from './modules/mail/mail.module';
 
 @Module({
   imports: [
@@ -95,6 +96,7 @@ import { ValidationExceptionFilter } from './helpers/validation-filter.exception
         }
       },
     }),
+    MailModule,
   ],
   controllers: [AppController],
   providers: [
