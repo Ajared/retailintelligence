@@ -1,8 +1,9 @@
 import { Job } from 'bullmq';
 import { Logger } from '@nestjs/common';
-import { Processor, WorkerHost } from '@nestjs/bullmq';
-import { MailerService } from '@nestjs-modules/mailer';
+import { trySafe } from '~/helpers/try-safe';
 import { MailData } from '~/types/mail.type';
+import { MailerService } from '@nestjs-modules/mailer';
+import { Processor, WorkerHost } from '@nestjs/bullmq';
 
 @Processor('mail')
 export class MailProcessor extends WorkerHost {
@@ -11,22 +12,25 @@ export class MailProcessor extends WorkerHost {
   constructor(private readonly mailerService: MailerService) {
     super();
   }
-
   async process(job: Job<MailData>) {
-    const { to } = job.data;
-    try {
-      if (!to) {
-        throw new Error('Recipient email address is required');
+    const [error] = await trySafe(async () => {
+      if (!job.data?.to || !job.data?.subject) {
+        throw new Error('Job Data is required');
       }
-      await this.mailerService.sendMail({ ...job.data });
-      this.logger.log(
-        `Email sent successfully to ${to} with job ID: ${job.id}.`,
+      await this.mailerService.sendMail(job.data);
+      return true;
+    });
+
+    if (error) {
+      this.logger.error(
+        `Failed to send email to ${job.data?.to}: ${error.message}`,
       );
-    } catch (error: unknown) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      this.logger.error(`Failed to send email to ${to}: ${errorMessage}`);
-      throw new Error(`Email sending failed: ${errorMessage}`);
+      return false;
     }
+
+    this.logger.log(
+      `Email sent successfully to ${job.data?.to} with job ID: ${job.id}.`,
+    );
+    return true;
   }
 }
