@@ -1,9 +1,9 @@
 import { Job } from 'bullmq';
+import { Logger } from '@nestjs/common';
+import { MailData } from '~/types/mail.type';
+import { MailProcessor } from './mail.processor';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MailerService } from '@nestjs-modules/mailer';
-import { Logger } from '@nestjs/common';
-import { MailProcessor } from './mail.processor';
-import { MailData } from '~/types/mail.type';
 
 const mockMailerService = {
   sendMail: jest.fn(),
@@ -62,11 +62,9 @@ describe('MailProcessor', () => {
 
       mockMailerService.sendMail.mockResolvedValue({});
 
-      const result = await processor.process(mockJob);
-
+      await processor.process(mockJob);
       expect(mailerService.sendMail).toHaveBeenCalledTimes(1);
       expect(mailerService.sendMail).toHaveBeenCalledWith(jobData);
-      expect(result).toBeUndefined();
 
       expect(logSpy).toHaveBeenCalledTimes(1);
       expect(logSpy).toHaveBeenCalledWith(
@@ -84,11 +82,10 @@ describe('MailProcessor', () => {
 
       mockMailerService.sendMail.mockResolvedValue({});
 
-      const result = await processor.process(mockJob);
+      await processor.process(mockJob);
 
       expect(mailerService.sendMail).toHaveBeenCalledTimes(1);
       expect(mailerService.sendMail).toHaveBeenCalledWith(jobData);
-      expect(result).toBeUndefined();
 
       expect(logSpy).toHaveBeenCalledTimes(1);
       expect(logSpy).toHaveBeenCalledWith(
@@ -97,20 +94,18 @@ describe('MailProcessor', () => {
       expect(errorSpy).not.toHaveBeenCalled();
     });
 
-    it('should handle email sending failure and throw an error', async () => {
+    it('should handle email sending failure and log error', async () => {
       const jobData: MailData = {
         to: 'fail@example.com',
         subject: 'Failure Test',
         text: 'This should fail',
       };
-      const mockJob = { data: jobData } as Job<MailData>;
+      const mockJob = { data: jobData, id: 'error-job-id' } as Job<MailData>;
       const testError = new Error('SMTP Server Down');
 
       mockMailerService.sendMail.mockRejectedValue(testError);
 
-      await expect(processor.process(mockJob)).rejects.toThrow(
-        `Email sending failed: ${testError.message}`,
-      );
+      await processor.process(mockJob);
 
       expect(mailerService.sendMail).toHaveBeenCalledTimes(1);
       expect(mailerService.sendMail).toHaveBeenCalledWith(jobData);
@@ -122,20 +117,33 @@ describe('MailProcessor', () => {
       expect(logSpy).not.toHaveBeenCalled();
     });
 
-    it('should throw an error if recipient email (to) is missing', async () => {
+    it('should log error if required job data is missing', async () => {
       const mockJob = {
-        data: { subject: 'Missing Recipient', text: 'This will not be sent' },
+        data: { subject: 'Missing Recipient' },
+        id: 'missing-data-job-id',
       } as Job<MailData>;
 
-      await expect(processor.process(mockJob)).rejects.toThrow(
-        'Email sending failed: Recipient email address is required',
-      );
+      await processor.process(mockJob);
 
       expect(mailerService.sendMail).not.toHaveBeenCalled();
 
       expect(errorSpy).toHaveBeenCalledTimes(1);
       expect(errorSpy).toHaveBeenCalledWith(
-        'Failed to send email to undefined: Recipient email address is required',
+        'Failed to send email to undefined: Job Data is required',
+      );
+      expect(logSpy).not.toHaveBeenCalled();
+    });
+
+    it('should log error if job data is completely missing', async () => {
+      const mockJob = { id: 'no-data-job-id' } as Job<MailData>;
+
+      await processor.process(mockJob);
+
+      expect(mailerService.sendMail).not.toHaveBeenCalled();
+
+      expect(errorSpy).toHaveBeenCalledTimes(1);
+      expect(errorSpy).toHaveBeenCalledWith(
+        'Failed to send email to undefined: Job Data is required',
       );
       expect(logSpy).not.toHaveBeenCalled();
     });

@@ -17,6 +17,7 @@ import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { ValidationExceptionFilter } from './helpers/validation-filter.exception';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { LimiterGuard } from './guards/limiter.guard';
+import { MailModule } from './modules/mail/mail.module';
 
 @Module({
   imports: [
@@ -102,6 +103,7 @@ import { LimiterGuard } from './guards/limiter.guard';
         }
       },
     }),
+    MailModule,
   ],
   controllers: [AppController],
   providers: [
