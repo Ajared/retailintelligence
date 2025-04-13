@@ -111,7 +111,7 @@ const mockGoogleUser: UserInterface = {
 const mockFetchResponse = (
   ok: boolean,
   status: number,
-  jsonData: any | null = null,
+  jsonData: unknown | null = null,
   jsonError: boolean = false,
 ) => {
   return Promise.resolve({
@@ -237,7 +237,7 @@ describe('AuthService', () => {
       expect(mailService.sendMail).toHaveBeenCalledWith(
         expect.objectContaining({
           to: mockUser.email,
-          subject: 'Welcome to Vibe Garage',
+          subject: 'Welcome to Retail Intelligence',
           template: 'welcome',
         }),
       );
@@ -252,7 +252,7 @@ describe('AuthService', () => {
       expect(mailService.sendMail).toHaveBeenCalledWith(
         expect.objectContaining({
           to: mockUser.email,
-          subject: 'Verify Your Email Address - Vibe Garage',
+          subject: 'Verify Your Email Address - Retail Intelligence',
           template: 'verify-email',
           context: expect.objectContaining({ link: testVerificationToken }),
         }),
@@ -330,7 +330,7 @@ describe('AuthService', () => {
       });
       expect(mailService.sendMail).toHaveBeenCalledWith({
         to: mockGoogleUser.email.toLowerCase(),
-        subject: 'Welcome to Vibe Garage',
+        subject: 'Welcome to Retail Intelligence',
         template: 'welcome',
         context: { name: mockGoogleUser.email.toLowerCase().split('@')[0] },
       });
@@ -600,7 +600,7 @@ describe('AuthService', () => {
       );
       expect(mailService.sendMail).toHaveBeenCalledWith({
         to: mockUser.email,
-        subject: 'Verify Your Email Address - Vibe Garage',
+        subject: 'Verify Your Email Address - Retail Intelligence',
         template: 'verify-email',
         context: {
           name: mockUser.email.split('@')[0],
@@ -803,7 +803,18 @@ describe('AuthService', () => {
           identifierOptions: { id: mockUserOldUpdate.id },
         }),
       );
-      const updateCallArgs = userService.updateUser.mock.calls[0][0];
+      type UpdateUserCallArg = {
+        updatePayload: {
+          resetPasswordToken: string;
+          resetPasswordExpires: Date;
+        };
+        identifierOptions: { id: string };
+        transactionOptions?: { useTransaction: boolean };
+      };
+      const firstCallArgs = userService.updateUser.mock.calls[0] as [
+        UpdateUserCallArg,
+      ];
+      const updateCallArgs = firstCallArgs[0];
       const expectedExpiry = Date.now() + 300000;
       expect(
         updateCallArgs.updatePayload.resetPasswordExpires.getTime(),
@@ -811,7 +822,7 @@ describe('AuthService', () => {
 
       expect(mailService.sendMail).toHaveBeenCalledWith({
         to: mockUserOldUpdate.email,
-        subject: 'Reset Your Password - Vibe Garage',
+        subject: 'Reset Your Password - Retail Intelligence',
         template: 'otp-email',
         context: {
           code: testResetOtp,
@@ -918,7 +929,7 @@ describe('AuthService', () => {
       });
       expect(mailService.sendMail).toHaveBeenCalledWith({
         to: mockUserWithResetToken.email,
-        subject: 'Password Reset Successful - Vibe Garage',
+        subject: 'Password Reset Successful - Retail Intelligence',
         template: 'reset-success',
         context: {
           name: mockUserWithResetToken.email.split('@')[0],
