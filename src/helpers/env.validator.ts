@@ -108,6 +108,12 @@ class EnvVariables {
 
   @IsString()
   AUTH_CLIENT_ID!: string;
+
+  @IsString()
+  SUPER_ADMIN_EMAIL!: string;
+
+  @IsString()
+  SUPER_ADMIN_PASSWORD!: string;
 }
 
 export function validateEnv(config: Record<string, unknown>): EnvVariables {
