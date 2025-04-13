@@ -51,6 +51,7 @@ export function trySafe<T, E = Error>(
     }
 
     return handleSuccess(result);
+
   } catch (error) {
     return handleError(error);
   }
