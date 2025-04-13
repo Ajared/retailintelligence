@@ -11,16 +11,16 @@ import * as SYS_MSG from '~/helpers/system-messages';
 import createDataSource from './database/data-source';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { validateEnv } from './helpers/env.validator';
+import { LimiterGuard } from './guards/limiter.guard';
 import { UserModule } from './modules/user/user.module';
 import { MailModule } from './modules/mail/mail.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TokenModule } from './modules/token/token.module';
 import { ValidationPipe } from './helpers/validation.pipe';
-import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { ResponseInterceptor } from './helpers/response.interceptor';
-import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { ValidationExceptionFilter } from './helpers/validation-filter.exception';
-import { LimiterGuard } from './guards/limiter.guard';
+import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 
 @Module({
   imports: [
@@ -114,14 +114,14 @@ import { LimiterGuard } from './guards/limiter.guard';
   providers: [
     Logger,
     AppService,
-    {
-      provide: APP_GUARD,
-      useClass: LimiterGuard,
-    },
     ConfigService,
     {
       provide: APP_GUARD,
       useClass: AuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: LimiterGuard,
     },
     {
       provide: APP_INTERCEPTOR,

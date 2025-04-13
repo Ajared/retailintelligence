@@ -2,9 +2,9 @@ name: Code Quality
 
 on:
   push:
-    branches: [$default-branch]
+    branches: dev
   pull_request:
-    branches: [$default-branch]
+    branches: dev
   workflow_dispatch:
 
 jobs:
