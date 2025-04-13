@@ -69,7 +69,7 @@ export class AuthService {
     await Promise.all([
       this.mailService.sendMail({
         to: createdUser.email,
-        subject: 'Welcome to Vibe Garage',
+        subject: 'Welcome to Retail Intelligence',
         template: 'welcome',
         context: { name: createdUser.email.split('@')[0] },
       }),
@@ -103,7 +103,7 @@ export class AuthService {
 
       await this.mailService.sendMail({
         to: user.email.toLowerCase(),
-        subject: 'Welcome to Vibe Garage',
+        subject: 'Welcome to Retail Intelligence',
         template: 'welcome',
         context: { name: user.email.toLowerCase().split('@')[0] },
       });
@@ -181,7 +181,7 @@ export class AuthService {
 
     await this.mailService.sendMail({
       to: user.email,
-      subject: 'Verify Your Email Address - Vibe Garage',
+      subject: 'Verify Your Email Address - Retail Intelligence',
       template: 'verify-email',
       context: {
         name: user.email.split('@')[0],
@@ -272,7 +272,7 @@ export class AuthService {
 
     await this.mailService.sendMail({
       to: user.email,
-      subject: 'Reset Your Password - Vibe Garage',
+      subject: 'Reset Your Password - Retail Intelligence',
       template: 'otp-email',
       context: {
         code: resetToken,
@@ -352,7 +352,7 @@ export class AuthService {
 
     await this.mailService.sendMail({
       to: user.email,
-      subject: 'Password Reset Successful - Vibe Garage',
+      subject: 'Password Reset Successful - Retail Intelligence',
       template: 'reset-success',
       context: {
         name: user.email.split('@')[0],
