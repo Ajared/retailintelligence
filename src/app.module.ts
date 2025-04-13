@@ -18,6 +18,7 @@ import { ValidationExceptionFilter } from './helpers/validation-filter.exception
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { LimiterGuard } from './guards/limiter.guard';
 import { MailModule } from './modules/mail/mail.module';
+import { TokenModule } from './modules/token/token.module';
 
 @Module({
   imports: [
@@ -104,6 +105,7 @@ import { MailModule } from './modules/mail/mail.module';
       },
     }),
     MailModule,
+    TokenModule,
   ],
   controllers: [AppController],
   providers: [
