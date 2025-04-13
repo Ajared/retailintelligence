@@ -5,15 +5,18 @@ import { BullModule } from '@nestjs/bullmq';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Logger, Module } from '@nestjs/common';
 import { AppController } from './app.controller';
+import { ThrottlerModule } from '@nestjs/throttler';
+import * as SYS_MSG from '~/helpers/system-messages';
 import { MailerModule } from '@nestjs-modules/mailer';
 import createDataSource from './database/data-source';
 import { validateEnv } from './helpers/env.validator';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ValidationPipe } from './helpers/validation.pipe';
-import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { ResponseInterceptor } from './helpers/response.interceptor';
-import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { ValidationExceptionFilter } from './helpers/validation-filter.exception';
+import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
+import { LimiterGuard } from './guards/limiter.guard';
 import { MailModule } from './modules/mail/mail.module';
 import { TokenModule } from './modules/token/token.module';
 
@@ -22,6 +25,10 @@ import { TokenModule } from './modules/token/token.module';
     ConfigModule.forRoot({
       isGlobal: true,
       validate: validateEnv,
+    }),
+    ThrottlerModule.forRoot({
+      throttlers: [{ ttl: 60000, limit: 10 }],
+      errorMessage: SYS_MSG.RATE_LIMIT_EXCEEDED,
     }),
     JwtModule.registerAsync({
       global: true,
@@ -104,6 +111,10 @@ import { TokenModule } from './modules/token/token.module';
   providers: [
     Logger,
     AppService,
+    {
+      provide: APP_GUARD,
+      useClass: LimiterGuard,
+    },
     {
       provide: APP_INTERCEPTOR,
       useClass: ResponseInterceptor,

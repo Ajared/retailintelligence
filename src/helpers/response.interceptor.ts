@@ -103,14 +103,14 @@ export class ResponseInterceptor implements NestInterceptor {
         data: processedData ? processedData : undefined,
         meta: meta || undefined,
         timestamp: new Date().toISOString(),
-      }) as unknown as AbstractResponseDto<T>;
+      }) as AbstractResponseDto<T>;
     }
 
     return camelToSnake({
       message: 'Success',
-      data: res as Record<string, unknown>,
+      data: res as T,
       timestamp: new Date().toISOString(),
-    }) as unknown as AbstractResponseDto<T>;
+    }) as AbstractResponseDto<T>;
   }
 
   private removePrivateFields(
