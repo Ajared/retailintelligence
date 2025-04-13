@@ -4,7 +4,7 @@ export class AbstractResponseDto<T> {
   message: string;
   data?: T;
   meta?: Record<string, unknown> | PaginationMeta;
-  timestamp?: Date;
+  timestamp?: Date | string;
   error?:
     | string
     | string[]
