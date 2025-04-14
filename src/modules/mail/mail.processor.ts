@@ -25,12 +25,11 @@ export class MailProcessor extends WorkerHost {
       this.logger.error(
         `Failed to send email to ${job.data?.to}: ${error.message}`,
       );
-      return false;
+      throw error;
     }
 
     this.logger.log(
       `Email sent successfully to ${job.data?.to} with job ID: ${job.id}.`,
     );
-    return true;
   }
 }

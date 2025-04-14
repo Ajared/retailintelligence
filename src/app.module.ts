@@ -8,12 +8,13 @@ import { AuthGuard } from './guards/auth.guard';
 import { AppController } from './app.controller';
 import { ThrottlerModule } from '@nestjs/throttler';
 import * as SYS_MSG from '~/helpers/system-messages';
-import createDataSource from './database/data-source';
+import { LimiterGuard } from './guards/limiter.guard';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { validateEnv } from './helpers/env.validator';
-import { LimiterGuard } from './guards/limiter.guard';
+import createDataSource from './database/data-source';
 import { UserModule } from './modules/user/user.module';
 import { MailModule } from './modules/mail/mail.module';
+import { AuthModule } from './modules/auth/auth.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TokenModule } from './modules/token/token.module';
 import { ValidationPipe } from './helpers/validation.pipe';
@@ -21,7 +22,6 @@ import { ResponseInterceptor } from './helpers/response.interceptor';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { ValidationExceptionFilter } from './helpers/validation-filter.exception';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
-
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -109,6 +109,7 @@ import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handleba
     MailModule,
     TokenModule,
     UserModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [

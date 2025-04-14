@@ -105,7 +105,7 @@ describe('MailProcessor', () => {
 
       mockMailerService.sendMail.mockRejectedValue(testError);
 
-      await processor.process(mockJob);
+      await expect(processor.process(mockJob)).rejects.toThrow(testError);
 
       expect(mailerService.sendMail).toHaveBeenCalledTimes(1);
       expect(mailerService.sendMail).toHaveBeenCalledWith(jobData);
@@ -123,7 +123,9 @@ describe('MailProcessor', () => {
         id: 'missing-data-job-id',
       } as Job<MailData>;
 
-      await processor.process(mockJob);
+      await expect(processor.process(mockJob)).rejects.toThrow(
+        'Job Data is required',
+      );
 
       expect(mailerService.sendMail).not.toHaveBeenCalled();
 
@@ -137,7 +139,9 @@ describe('MailProcessor', () => {
     it('should log error if job data is completely missing', async () => {
       const mockJob = { id: 'no-data-job-id' } as Job<MailData>;
 
-      await processor.process(mockJob);
+      await expect(processor.process(mockJob)).rejects.toThrow(
+        'Job Data is required',
+      );
 
       expect(mailerService.sendMail).not.toHaveBeenCalled();
 
