@@ -34,12 +34,15 @@
     "@nestjs/platform-express": "^11.0.13",
     "@nestjs/throttler": "^6.4.0",
     "@nestjs/typeorm": "^11.0.0",
+    "bcryptjs": "^3.0.2",
     "bullmq": "^5.48.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
+    "pg": "^8.14.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
     "typeorm": "^0.3.22",
+    "typeorm-extension": "^3.7.0",
     "typeorm-naming-strategies": "^4.1.0"
   },
   "devDependencies": {
