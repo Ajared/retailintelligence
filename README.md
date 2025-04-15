@@ -54,4 +54,4 @@ For support, please open an issue in our [GitHub repository](https://github.com/
 
 ## License
 
-[MIT](https://choosealicense.com/licenses/mit/)
+[MIT](./LICENSE)
