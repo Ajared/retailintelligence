@@ -50,7 +50,7 @@ The application provides Swagger documentation at `/api/docs`
 
 ## Support
 
-For support, please open an issue in our [GitHub repository](https://github.com/your-org/retail-intelligence).
+For support, please open an issue in our [GitHub repository](https://github.com/Ajared/retailintelligence).
 
 ## License
 
