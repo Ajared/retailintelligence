@@ -7,6 +7,7 @@ import { Logger, Module } from '@nestjs/common';
 import { AuthGuard } from './guards/auth.guard';
 import { AppController } from './app.controller';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { GuardModule } from './guards/guard.module';
 import * as SYS_MSG from '~/helpers/system-messages';
 import { LimiterGuard } from './guards/limiter.guard';
 import { MailerModule } from '@nestjs-modules/mailer';
@@ -27,7 +28,6 @@ import { ValidationExceptionFilter } from './helpers/validation-filter.exception
 import { LocalGovernmentModule } from './modules/local-government/local-government.module';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
-
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -164,6 +164,7 @@ import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConne
     LocalGovernmentModule,
     DistrictModule,
     AdminModule,
+    GuardModule,
   ],
   controllers: [AppController],
   providers: [
