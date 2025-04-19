@@ -2,7 +2,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Global, Module } from '@nestjs/common';
 import { SuperAdminGuard } from './super-admin.guard';
 import { User } from '../modules/user/entities/user.entity';
-import { UserModelAction } from '../modules/user/user.model-action';
+import { UserModelAction } from '~/modules/user/user.model-action';
 
 @Global()
 @Module({

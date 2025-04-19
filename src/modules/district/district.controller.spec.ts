@@ -16,7 +16,7 @@ describe('DistrictController', () => {
   const mockSuperAdminGuard: CanActivate = {
     canActivate: jest.fn(() => true),
   };
-  
+
   let controller: DistrictController;
 
   beforeEach(async () => {
