@@ -6,12 +6,12 @@ import {
 } from '@nestjs/common';
 import { Request } from 'express';
 import * as SYS_MSG from '~/helpers/system-messages';
-import { UserService } from '~/modules/user/user.service';
+import { UserModelAction } from '~/modules/user/user.model-action';
 import { CustomHttpException } from '~/helpers/custom.exception';
 
 @Injectable()
 export class SuperAdminGuard implements CanActivate {
-  constructor(private userService: UserService) {}
+  constructor(private userModelAction: UserModelAction) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const handler = context.getHandler();
@@ -20,7 +20,9 @@ export class SuperAdminGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<Request>();
 
     try {
-      const user = await this.userService.getUserById(request?.user?.sub ?? '');
+      const user = await this.userModelAction.get({
+        id: request?.user?.sub ?? '',
+      });
 
       if (!user?.isSuperAdmin) {
         throw new CustomHttpException(
