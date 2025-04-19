@@ -1,15 +1,38 @@
+import { CanActivate } from '@nestjs/common';
+import { DistrictService } from './district.service';
 import { Test, TestingModule } from '@nestjs/testing';
 import { DistrictController } from './district.controller';
-import { DistrictService } from './district.service';
+import { DistrictModelAction } from './district.model-action';
+import { SuperAdminGuard } from '~/guards/super-admin.guard';
 
 describe('DistrictController', () => {
+  const mockDistrictModelAction = {
+    get: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+  };
+
+  const mockSuperAdminGuard: CanActivate = {
+    canActivate: jest.fn(() => true),
+  };
+  
   let controller: DistrictController;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [DistrictController],
-      providers: [DistrictService],
-    }).compile();
+      providers: [
+        DistrictService,
+        {
+          provide: DistrictModelAction,
+          useValue: mockDistrictModelAction,
+        },
+      ],
+    })
+      .overrideGuard(SuperAdminGuard)
+      .useValue(mockSuperAdminGuard)
+      .compile();
 
     controller = module.get<DistrictController>(DistrictController);
   });
