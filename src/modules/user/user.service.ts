@@ -94,9 +94,9 @@ export class UserService {
     }
 
     return {
-      message: SYS_MSG.RESOURCE_FETCHED_SUCCESSFULLY('Users'),
       data: data.payload,
       meta: data.paginationMeta,
+      message: SYS_MSG.RESOURCE_FETCHED_SUCCESSFULLY('Users'),
     };
   }
   async updateUser(updatePayload: UpdateUserRecordOptions) {

@@ -8,7 +8,7 @@ export interface StoreInterface extends AbstractBaseInterface {
   address: string;
   storeType: StoreType;
   landmarks?: string;
-  photoUrl?: string;
+  photos?: string[];
   latitude: number;
   longitude: number;
   enumeratorId: string;
