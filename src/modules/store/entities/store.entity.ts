@@ -1,4 +1,4 @@
-import { Column, Entity, ManyToOne } from 'typeorm';
+import { Column, Entity, ManyToOne, JoinColumn } from 'typeorm';
 import { StoreType } from '../constants/store.constant';
 import { User } from '~/modules/user/entities/user.entity';
 import { AbstractBaseEntity } from '~/database/base/base.entity';
@@ -10,11 +10,19 @@ export class Store extends AbstractBaseEntity {
   @Column({ name: 'store_name' })
   storeName: string;
 
+  @JoinColumn({ name: 'local_government_id' })
   @ManyToOne(() => LocalGovernment, (localGov) => localGov.stores)
   localGovernment: LocalGovernment;
 
+  @Column()
+  localGovernmentId: string;
+
+  @JoinColumn({ name: 'district_id' })
   @ManyToOne(() => District, (district) => district.stores)
   district: District;
+
+  @Column()
+  districtId: string;
 
   @Column()
   address: string;
@@ -23,10 +31,10 @@ export class Store extends AbstractBaseEntity {
   storeType: StoreType;
 
   @Column({ type: 'text', nullable: true })
-  landmarks: string;
+  landmarks?: string;
 
-  @Column({ name: 'photo_url', nullable: true })
-  photoUrl: string;
+  @Column({ name: 'photos', type: 'jsonb', nullable: true })
+  photos?: string[];
 
   @Column({ type: 'decimal', precision: 10, scale: 7 })
   latitude: number;
@@ -34,6 +42,10 @@ export class Store extends AbstractBaseEntity {
   @Column({ type: 'decimal', precision: 10, scale: 7 })
   longitude: number;
 
+  @JoinColumn({ name: 'enumerator_id' })
   @ManyToOne(() => User, (user) => user.stores)
   enumerator: User;
+
+  @Column()
+  enumeratorId: string;
 }

@@ -85,8 +85,8 @@ export class AuthService {
     });
 
     return {
-      message: SYS_MSG.RESOURCE_CREATED_SUCCESSFULLY('User'),
       data: createdUser,
+      message: SYS_MSG.RESOURCE_CREATED_SUCCESSFULLY('User'),
     };
   }
 
