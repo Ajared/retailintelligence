@@ -1006,7 +1006,7 @@ describe('AuthService', () => {
       expect(mailService.sendMail).not.toHaveBeenCalled();
     });
 
-    it('should throw ForbiddenException if user not found', async () => {
+    it('should throw ForbiddenExcepINTERNAL_SERVER_ERRORtion if user not found', async () => {
       userService.getUserByEmail.mockResolvedValue(null);
 
       await expect(service.resetPassword(resetDto)).rejects.toThrow(
@@ -1030,7 +1030,7 @@ describe('AuthService', () => {
       });
     });
 
-    it('should throw InternalServerErrorException if comparing token fails', async () => {
+    it('should throw BadRequestException if comparing token fails', async () => {
       userService.getUserByEmail.mockResolvedValue(mockUserWithResetToken);
       compareSpy.mockRejectedValue(new Error('Compare error'));
 
@@ -1038,8 +1038,8 @@ describe('AuthService', () => {
         CustomHttpException,
       );
       await expect(service.resetPassword(resetDto)).rejects.toMatchObject({
-        message: SYS_MSG.INTERNAL_SERVER_ERROR,
-        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: SYS_MSG.TOKEN_INVALID('Password Reset'),
+        status: HttpStatus.BAD_REQUEST,
       });
       expect(hashSpy).not.toHaveBeenCalled();
       expect(userService.updateUser).not.toHaveBeenCalled();

@@ -319,12 +319,12 @@ export class AuthService {
       );
     }
 
-    const [compareError] = await trySafe(() =>
+    const [compareError, isMatch] = await trySafe(() =>
       compare(token, user.resetPasswordToken!),
     );
 
-    if (compareError) {
-      if (compareError instanceof NullishValueError) {
+    if (compareError || !isMatch) {
+      if (compareError instanceof NullishValueError || !isMatch) {
         throw new CustomHttpException(
           SYS_MSG.TOKEN_INVALID('Password Reset'),
           HttpStatus.BAD_REQUEST,
