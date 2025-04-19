@@ -217,7 +217,7 @@ describe('AuthService', () => {
       transactionOptions: { useTransaction: false },
     };
 
-    it('should successfully register a new user, send emails, and request verification', async () => {
+    it('should successfully register a new user and send welcome email', async () => {
       userService.getUserByEmail
         .mockResolvedValueOnce(null)
         .mockResolvedValueOnce(mockUser);
@@ -226,25 +226,33 @@ describe('AuthService', () => {
 
       const result = await service.register(registerDto);
 
+      await new Promise(process.nextTick);
+
       expect(userService.getUserByEmail).toHaveBeenCalledTimes(2);
       expect(userService.getUserByEmail).toHaveBeenNthCalledWith(
         1,
         testEmail.toLowerCase(),
       );
+      expect(userService.getUserByEmail).toHaveBeenNthCalledWith(
+        2,
+        testEmail.toLowerCase(),
+      );
       expect(hashSpy).toHaveBeenCalledWith(testPassword, 10);
       expect(userService.createUser).toHaveBeenCalledWith(createUserPayload);
+
       expect(mailService.sendMail).toHaveBeenCalledTimes(2);
       expect(mailService.sendMail).toHaveBeenCalledWith(
         expect.objectContaining({
           to: mockUser.email,
           subject: 'Welcome to Retail Intelligence',
           template: 'welcome',
+          context: {
+            name: mockUser.email.toLowerCase().split('@')[0],
+            unsubscribeLink: 'placeholder',
+          },
         }),
       );
-      expect(userService.getUserByEmail).toHaveBeenNthCalledWith(
-        2,
-        testEmail.toLowerCase(),
-      );
+      expect(configService.get).toHaveBeenCalledWith('EMAIL_JWT_EXPIRES_IN');
       expect(tokenService.generateToken).toHaveBeenCalledWith(
         { email: mockUser.email },
         { expiresIn: '15m' },
@@ -254,9 +262,13 @@ describe('AuthService', () => {
           to: mockUser.email,
           subject: 'Verify Your Email Address - Retail Intelligence',
           template: 'verify-email',
-          context: expect.objectContaining({ link: testVerificationToken }),
+          context: {
+            name: mockUser.email.split('@')[0],
+            link: testVerificationToken,
+          },
         }),
       );
+
       expect(result).toEqual({
         message: SYS_MSG.RESOURCE_CREATED_SUCCESSFULLY('User'),
         data: mockUser,
@@ -305,10 +317,10 @@ describe('AuthService', () => {
   });
   describe('googleAuth', () => {
     const googleAuthDto = { token: testGoogleToken };
-
     it('should successfully create a new user via Google Auth', async () => {
       userService.getUserByEmail.mockResolvedValue(null);
       userService.createUser.mockResolvedValue(mockGoogleUser);
+      mailService.sendMail.mockResolvedValue(Promise.resolve());
 
       const result = await service.googleAuth(googleAuthDto);
 
@@ -316,7 +328,6 @@ describe('AuthService', () => {
         `https://www.googleapis.com/oauth2/v3/tokeninfo?id_token=${testGoogleToken}`,
       );
       expect(configService.get).toHaveBeenCalledWith('AUTH_CLIENT_ID');
-
       expect(userService.getUserByEmail).toHaveBeenCalledWith(
         testEmail.toLowerCase(),
       );
@@ -332,7 +343,10 @@ describe('AuthService', () => {
         to: mockGoogleUser.email.toLowerCase(),
         subject: 'Welcome to Retail Intelligence',
         template: 'welcome',
-        context: { name: mockGoogleUser.email.toLowerCase().split('@')[0] },
+        context: {
+          name: mockGoogleUser.email.toLowerCase().split('@')[0],
+          unsubscribeLink: 'placeholder',
+        },
       });
       expect(tokenService.generateToken).not.toHaveBeenCalled();
       expect(result).toEqual({

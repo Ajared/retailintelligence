@@ -1,4 +1,5 @@
-import { Entity, Column } from 'typeorm';
+import { Entity, Column, OneToMany } from 'typeorm';
+import { Store } from '~/modules/store/entities/store.entity';
 import { AbstractBaseEntity } from '~/database/base/base.entity';
 import { AuthProvider } from '~/modules/auth/constants/auth.constant';
 
@@ -28,4 +29,7 @@ export class User extends AbstractBaseEntity {
 
   @Column({ nullable: true })
   resetPasswordExpires?: Date;
+
+  @OneToMany(() => Store, (store) => store.enumerator)
+  stores: Store[];
 }

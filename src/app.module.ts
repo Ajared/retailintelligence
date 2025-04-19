@@ -16,12 +16,18 @@ import { UserModule } from './modules/user/user.module';
 import { MailModule } from './modules/mail/mail.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { AdminModule } from './modules/admin/admin.module';
+import { StoreModule } from './modules/store/store.module';
 import { TokenModule } from './modules/token/token.module';
 import { ValidationPipe } from './helpers/validation.pipe';
+import { DistrictModule } from './modules/district/district.module';
 import { ResponseInterceptor } from './helpers/response.interceptor';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { ValidationExceptionFilter } from './helpers/validation-filter.exception';
+import { LocalGovernmentModule } from './modules/local-government/local-government.module';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
+import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -48,8 +54,13 @@ import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handleba
         connection: {
           host: configService.get<string>('QUEUE_HOST'),
           port: configService.get<number>('QUEUE_PORT'),
-          username: configService.get<string>('QUEUE_USERNAME'),
-          password: configService.get<string>('QUEUE_PASSWORD'),
+          ...(configService.get<string>('NODE_ENV') !== 'local' && {
+            username: configService.get<string>('QUEUE_USERNAME'),
+            password: configService.get<string>('QUEUE_PASSWORD'),
+          }),
+          stalledInterval: 300000,
+          guardInterval: 300000,
+          drainDelay: 300000,
         },
       }),
     }),
@@ -88,28 +99,71 @@ import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handleba
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => {
-        return createDataSource(configService).options;
-      },
+      useFactory: (configService: ConfigService) =>
+        createDataSource(configService).options,
       dataSourceFactory: async (options) => {
         const logger = new Logger('Database');
-        const dataSource = new DataSource(options!);
-        try {
-          if (!dataSource.isInitialized) {
-            await dataSource.initialize();
-            logger.log('Data Source has been initialized!');
-          }
-          return dataSource;
-        } catch (error) {
-          logger.error('Error during Data Source initialization', error);
-          throw error;
+        if (!options) throw new Error('Database options are undefined.');
+
+        const pgOptions = options as PostgresConnectionOptions;
+        const mainDataSource = new DataSource(pgOptions);
+
+        const initResult = await mainDataSource
+          .initialize()
+          .then(() => ({ initialized: true, error: null }))
+          .catch((error) => ({ initialized: false, error }));
+
+        if (initResult.initialized) {
+          logger.log('Data Source initialized');
+          return mainDataSource;
         }
+
+        if ((initResult.error as { code?: string })?.code === '3D000') {
+          logger.warn(`Creating missing database: ${pgOptions.database}`);
+          const tempDataSource = new DataSource({
+            ...pgOptions,
+            database: 'postgres',
+            username: 'postgres',
+            migrationsRun: false,
+            synchronize: false,
+          });
+
+          await tempDataSource
+            .initialize()
+            .then(() => logger.log('Connected to postgres database'))
+            .catch((error) => {
+              logger.error('Connection to postgres failed', error);
+              throw error;
+            });
+
+          await tempDataSource
+            .query(
+              `CREATE DATABASE "${pgOptions.database}" OWNER "${pgOptions.username}"`,
+            )
+            .then(() => logger.log(`Database ${pgOptions.database} created`))
+            .catch((error) => {
+              logger.error('Database creation failed', error);
+              throw error;
+            })
+            .finally(() => tempDataSource.destroy().catch(() => {}));
+
+          return mainDataSource.initialize().then((ds) => {
+            logger.log('Main Data Source initialized after creation');
+            return ds;
+          });
+        }
+        logger.error('Database initialization failed', initResult.error);
+        throw initResult.error;
       },
     }),
     MailModule,
     TokenModule,
     UserModule,
     AuthModule,
+    StoreModule,
+    LocalGovernmentModule,
+    DistrictModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [
