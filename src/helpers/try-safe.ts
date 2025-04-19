@@ -1,4 +1,18 @@
 /**
+ * Custom error class for null or undefined values.
+ * This allows consumers to specifically check for this type of error.
+ */
+export class NullishValueError extends Error {
+  constructor(message = 'Operation returned null or undefined') {
+    super(message);
+    this.name = 'NullishValueError';
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, NullishValueError);
+    }
+  }
+}
+
+/**
  * Represents the result of an operation that can either succeed or fail.
  * @template T - The type of the data returned by a successful operation.
  * @template E - The type of the error returned by a failed operation, defaults to Error.
@@ -38,7 +52,7 @@ export function trySafe<T, E = Error>(
 
   const handleSuccess = (data: T): Result<NonNullable<T>, E> => {
     if (data === null || data === undefined) {
-      return [new Error('Operation returned null or undefined') as E, null];
+      return [new NullishValueError() as E, null];
     }
     return [null, data as NonNullable<T>];
   };
