@@ -31,8 +31,7 @@ export class StoreDto {
   @IsString()
   @IsOptional()
   landmarks?: string;
-
-  @IsString()
+  @IsString({ each: true })
   @IsOptional()
   photos?: string[];
 
