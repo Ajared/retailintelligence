@@ -16,6 +16,7 @@ export class StoreService {
   constructor(private readonly storeModelAction: StoreModelAction) {}
 
   async createStore(
+    enumeratorId: string,
     storeDto: StoreDto,
   ): Promise<AbstractResponseDto<StoreInterface>> {
     const { storeName } = storeDto;
@@ -42,7 +43,7 @@ export class StoreService {
     }
 
     const createStorePayload: CreateStoreRecordOptions = {
-      createPayload: storeDto,
+      createPayload: { ...storeDto, enumeratorId },
       transactionOptions: { useTransaction: false },
     };
 

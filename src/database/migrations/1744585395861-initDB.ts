@@ -265,10 +265,8 @@ export class InitDB1744585395861 implements MigrationInterface {
     await queryRunner.dropTable('local_governments', true);
     await queryRunner.dropTable('districts', true);
     await queryRunner.dropTable('users', true);
-    
-    await queryRunner.query(
-      `DROP TYPE IF EXISTS "public"."store_type_enum"`,
-    );
+
+    await queryRunner.query(`DROP TYPE IF EXISTS "public"."store_type_enum"`);
     await queryRunner.query(
       `DROP TYPE IF EXISTS "public"."auth_provider_enum"`,
     );
