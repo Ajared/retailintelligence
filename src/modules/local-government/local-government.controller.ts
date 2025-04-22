@@ -10,10 +10,10 @@ import {
   Patch,
   UseGuards,
 } from '@nestjs/common';
-import { LocalGovernmentService } from './local-government.service';
-import { LocalGovernmentDto } from './dto/local-government.dto';
 import { SuperAdminGuard } from '~/guards/super-admin.guard';
+import { LocalGovernmentDto } from './dto/local-government.dto';
 import { PaginationOptions } from '~/helpers/pagination.helper';
+import { LocalGovernmentService } from './local-government.service';
 
 @Controller('local-governments')
 export class LocalGovernmentController {

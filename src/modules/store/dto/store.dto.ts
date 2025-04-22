@@ -44,6 +44,6 @@ export class StoreDto {
   longitude: number;
 
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   enumeratorId: string;
 }
