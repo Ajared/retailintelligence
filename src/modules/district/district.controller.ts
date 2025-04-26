@@ -28,7 +28,6 @@ export class DistrictController {
 
   @Get(':id')
   @HttpCode(HttpStatus.OK)
-  @UseGuards(SuperAdminGuard)
   async getDistrictById(@Param('id') id: string) {
     return this.districtService.getDistrictById(id);
   }

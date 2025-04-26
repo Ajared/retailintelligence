@@ -1,4 +1,10 @@
-import { IsOptional, IsNumberString } from 'class-validator';
+import {
+  IsOptional,
+  IsNumberString,
+  IsString,
+  IsNotEmpty,
+  IsEnum,
+} from 'class-validator';
 export interface PaginationMeta {
   total: number;
   limit: number;
@@ -42,4 +48,17 @@ export class PaginationValidator {
   @IsOptional()
   @IsNumberString({}, { message: 'Limit must be a number string' })
   limit?: string;
+}
+
+export enum ExportType {
+  CSV = 'csv',
+  JSON = 'json',
+  EXCEL = 'excel',
+}
+
+export class ExportTypeValidator {
+  @IsString()
+  @IsNotEmpty()
+  @IsEnum(ExportType)
+  type: ExportType;
 }

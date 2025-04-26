@@ -32,7 +32,6 @@ export class LocalGovernmentController {
 
   @Get(':id')
   @HttpCode(HttpStatus.OK)
-  @UseGuards(SuperAdminGuard)
   async getLocalGovernmentById(@Param('id') id: string) {
     return this.localGovernmentService.getLocalGovernmentById(id);
   }

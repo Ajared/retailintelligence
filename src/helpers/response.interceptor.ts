@@ -86,9 +86,27 @@ export class ResponseInterceptor implements NestInterceptor {
   responseHandler<T>(
     res: unknown,
     context: ExecutionContext,
-  ): AbstractResponseDto<T> {
+  ): AbstractResponseDto<T> | unknown {
     const ctx = context.switchToHttp();
+    if (res === undefined) {
+      this.logger.warn(
+        `Response is undefined for ${
+          ctx.getRequest<Request>().url
+        }, skipping interceptor response handling.`,
+      );
+      return res;
+    }
+
     const response = ctx.getResponse<Response>();
+    if (response.headersSent) {
+      this.logger.warn(
+        `Response headers already sent for ${
+          ctx.getRequest<Request>().url
+        }, skipping interceptor response handling.`,
+      );
+      return res;
+    }
+
     response.setHeader('Content-Type', 'application/json');
 
     if (typeof res === 'object' && res !== null) {
