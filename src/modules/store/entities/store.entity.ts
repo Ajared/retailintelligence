@@ -1,6 +1,6 @@
-import { Column, Entity, ManyToOne, JoinColumn } from 'typeorm';
 import { StoreType } from '../constants/store.constant';
 import { User } from '~/modules/user/entities/user.entity';
+import { Column, Entity, ManyToOne, JoinColumn } from 'typeorm';
 import { AbstractBaseEntity } from '~/database/base/base.entity';
 import { District } from '~/modules/district/entities/district.entity';
 import { LocalGovernment } from '~/modules/local-government/entities/local-government.entity';
