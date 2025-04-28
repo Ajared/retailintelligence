@@ -7,17 +7,17 @@ import {
   GoogleAuthDto,
 } from './dto/auth-request.dto';
 import { compare, hash } from 'bcryptjs';
-import { trySafe } from '~/helpers/try-safe';
+import { NullishValueError, trySafe } from '~/helpers/try-safe';
 import { ConfigService } from '@nestjs/config';
 import { MailService } from '../mail/mail.service';
 import { UserService } from '../user/user.service';
 import * as SYS_MSG from '~/helpers/system-messages';
 import { TokenService } from '../token/token.service';
-import { HttpStatus, Injectable } from '@nestjs/common';
 import { AuthProvider } from './constants/auth.constant';
 import { GoogleTokenInfo } from './types/auth.interface';
 import { AbstractResponseDto } from '~/types/response.dto';
 import { UserInterface } from '../user/types/user.interface';
+import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { CustomHttpException } from '~/helpers/custom.exception';
 import CreateUserRecordOptions from '../user/types/create-user.type';
 
@@ -29,6 +29,7 @@ export class AuthService {
     private readonly configService: ConfigService,
     private readonly tokenService: TokenService,
   ) {}
+  private readonly logger = new Logger('AuthService');
 
   async register(
     authDto: AuthDto,
@@ -66,19 +67,26 @@ export class AuthService {
 
     const createdUser = await this.userService.createUser(createUserPayload);
 
-    await Promise.all([
+    void Promise.all([
       this.mailService.sendMail({
         to: createdUser.email,
         subject: 'Welcome to Retail Intelligence',
         template: 'welcome',
-        context: { name: createdUser.email.split('@')[0] },
+        context: {
+          name: createdUser.email.split('@')[0],
+          unsubscribeLink: 'placeholder',
+        },
       }),
       this.requestEmailVerification({ email: createdUser.email }),
-    ]);
+    ]).catch(() => {
+      this.logger.error(
+        `Failed to send welcome email or request email verification for user ${createdUser.email}`,
+      );
+    });
 
     return {
-      message: SYS_MSG.RESOURCE_CREATED_SUCCESSFULLY('User'),
       data: createdUser,
+      message: SYS_MSG.RESOURCE_CREATED_SUCCESSFULLY('User'),
     };
   }
 
@@ -92,7 +100,7 @@ export class AuthService {
     let user = await this.userService.getUserByEmail(email.toLowerCase());
 
     if (!user) {
-      user = await this.userService.createUser({
+      const createdUser = await this.userService.createUser({
         createPayload: {
           email: email.toLowerCase(),
           isEmailVerified: true,
@@ -101,16 +109,25 @@ export class AuthService {
         transactionOptions: { useTransaction: false },
       });
 
-      await this.mailService.sendMail({
-        to: user.email.toLowerCase(),
-        subject: 'Welcome to Retail Intelligence',
-        template: 'welcome',
-        context: { name: user.email.toLowerCase().split('@')[0] },
-      });
+      void this.mailService
+        .sendMail({
+          to: createdUser.email.toLowerCase(),
+          subject: 'Welcome to Retail Intelligence',
+          template: 'welcome',
+          context: {
+            name: createdUser.email.toLowerCase().split('@')[0],
+            unsubscribeLink: 'placeholder',
+          },
+        })
+        .catch(() => {
+          this.logger.error(
+            `Failed to send welcome email to ${createdUser.email}`,
+          );
+        });
 
       return {
         message: SYS_MSG.RESOURCE_CREATED_SUCCESSFULLY('User'),
-        data: user,
+        data: createdUser,
       };
     }
 
@@ -302,11 +319,17 @@ export class AuthService {
       );
     }
 
-    const [compareError, isTokenValid] = await trySafe(() =>
+    const [compareError, isMatch] = await trySafe(() =>
       compare(token, user.resetPasswordToken!),
     );
 
-    if (compareError) {
+    if (compareError || !isMatch) {
+      if (compareError instanceof NullishValueError || !isMatch) {
+        throw new CustomHttpException(
+          SYS_MSG.TOKEN_INVALID('Password Reset'),
+          HttpStatus.BAD_REQUEST,
+        );
+      }
       throw new CustomHttpException(
         SYS_MSG.INTERNAL_SERVER_ERROR,
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -314,13 +337,6 @@ export class AuthService {
     }
 
     const isTokenExpired = user.resetPasswordExpires < new Date();
-
-    if (!isTokenValid) {
-      throw new CustomHttpException(
-        SYS_MSG.TOKEN_INVALID('Password Reset'),
-        HttpStatus.BAD_REQUEST,
-      );
-    }
 
     if (isTokenExpired) {
       throw new CustomHttpException(

@@ -1,10 +1,10 @@
-import { trySafe } from '~/helpers/try-safe';
 import * as SYS_MSG from '~/helpers/system-messages';
 import { UserModelAction } from './user.model-action';
 import { HttpStatus, Injectable } from '@nestjs/common';
 import ListUserRecordOptions from './types/list-user.type';
 import UpdateUserRecordOptions from './types/update-user.type';
 import CreateUserRecordOptions from './types/create-user.type';
+import { NullishValueError, trySafe } from '~/helpers/try-safe';
 import { PaginationOptions } from '~/helpers/pagination.helper';
 import { CustomHttpException } from '~/helpers/custom.exception';
 
@@ -37,6 +37,9 @@ export class UserService {
     );
 
     if (error) {
+      if (error instanceof NullishValueError) {
+        return null;
+      }
       throw new CustomHttpException(
         SYS_MSG.RESOURCE_NOT_FOUND('User'),
         HttpStatus.NOT_FOUND,
@@ -56,6 +59,9 @@ export class UserService {
     );
 
     if (error) {
+      if (error instanceof NullishValueError) {
+        return null;
+      }
       throw new CustomHttpException(
         SYS_MSG.RESOURCE_NOT_FOUND('User'),
         HttpStatus.NOT_FOUND,
@@ -88,9 +94,9 @@ export class UserService {
     }
 
     return {
-      message: SYS_MSG.RESOURCE_FETCHED_SUCCESSFULLY('Users'),
       data: data.payload,
       meta: data.paginationMeta,
+      message: SYS_MSG.RESOURCE_FETCHED_SUCCESSFULLY('Users'),
     };
   }
   async updateUser(updatePayload: UpdateUserRecordOptions) {
