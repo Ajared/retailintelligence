@@ -20,9 +20,15 @@ export class SuperAdminGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<Request>();
 
     try {
-      const user = await this.userModelAction.get({
-        id: request?.user?.sub ?? '',
-      });
+      const userId = request?.user?.sub;
+      if (!userId) {
+        throw new CustomHttpException(
+          SYS_MSG.FORBIDDEN_ACTION,
+          HttpStatus.FORBIDDEN,
+        );
+      }
+
+      const user = await this.userModelAction.get({ id: userId });
 
       if (!user?.isSuperAdmin) {
         throw new CustomHttpException(
