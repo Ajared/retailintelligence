@@ -29,10 +29,9 @@ export class AdminController {
       exportTypeOptions.type,
     );
   }
-  
+
   @Get('stores/:id')
   async getStoreById(@Param('id') id: string) {
     return this.storeService.getStoreById(id);
   }
-
 }

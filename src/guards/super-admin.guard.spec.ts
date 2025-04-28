@@ -2,18 +2,18 @@ import { Request } from 'express';
 import * as SYS_MSG from '~/helpers/system-messages';
 import { Test, TestingModule } from '@nestjs/testing';
 import { SuperAdminGuard } from './super-admin.guard';
-import { UserService } from '~/modules/user/user.service';
 import { User } from '~/modules/user/entities/user.entity';
 import { ExecutionContext, HttpStatus } from '@nestjs/common';
 import { CustomHttpException } from '~/helpers/custom.exception';
+import { UserModelAction } from '~/modules/user/user.model-action';
 import { AuthProvider } from '~/modules/auth/constants/auth.constant';
 
-interface MockUserService {
-  getUserById: jest.Mock<Promise<User | null>, [string]>;
+interface MockUserModelAction {
+  get: jest.Mock<Promise<User | null>, [{ id: string }]>;
 }
 
-const createMockUserService = (): MockUserService => ({
-  getUserById: jest.fn(),
+const createMockUserModelAction = (): MockUserModelAction => ({
+  get: jest.fn(),
 });
 
 const createMockExecutionContext = (
@@ -69,21 +69,21 @@ const mockRegularUser: User = {
 
 describe('SuperAdminGuard', () => {
   let guard: SuperAdminGuard;
-  let mockUserService: MockUserService;
-  let mockExecutionContext: ExecutionContext;
   let mockRequest: Partial<Request>;
+  let mockExecutionContext: ExecutionContext;
+  let mockUserModelAction: MockUserModelAction;
 
   beforeEach(async () => {
-    mockUserService = createMockUserService();
     mockRequest = {};
+    mockUserModelAction = createMockUserModelAction();
     mockExecutionContext = createMockExecutionContext(mockRequest);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SuperAdminGuard,
         {
-          provide: UserService,
-          useValue: mockUserService,
+          provide: UserModelAction,
+          useValue: mockUserModelAction,
         },
       ],
     }).compile();
@@ -102,68 +102,63 @@ describe('SuperAdminGuard', () => {
   describe('canActivate', () => {
     it('should return true if user exists and is a super admin', async () => {
       mockRequest.user = { sub: mockSuperAdminUser.id };
-      mockUserService.getUserById.mockResolvedValue(mockSuperAdminUser);
+      mockUserModelAction.get.mockResolvedValue(mockSuperAdminUser);
 
       const result = await guard.canActivate(mockExecutionContext);
 
       expect(result).toBe(true);
-      expect(mockUserService.getUserById).toHaveBeenCalledWith(
-        mockSuperAdminUser.id,
-      );
+      expect(mockUserModelAction.get).toHaveBeenCalledWith({
+        id: mockSuperAdminUser.id,
+      });
       expect(mockExecutionContext.switchToHttp().getRequest).toHaveBeenCalled();
     });
 
     it('should throw Forbidden CustomHttpException if user exists but is NOT a super admin', async () => {
       mockRequest.user = { sub: mockRegularUser.id };
-      mockUserService.getUserById.mockResolvedValue(mockRegularUser);
+      mockUserModelAction.get.mockResolvedValue(mockRegularUser);
 
       await expect(guard.canActivate(mockExecutionContext)).rejects.toThrow(
-        CustomHttpException,
+        new CustomHttpException(SYS_MSG.FORBIDDEN_ACTION, HttpStatus.FORBIDDEN),
       );
-      await expect(
-        guard.canActivate(mockExecutionContext),
-      ).rejects.toMatchObject({
-        message: SYS_MSG.FORBIDDEN_ACTION,
-        status: HttpStatus.FORBIDDEN,
+      expect(mockUserModelAction.get).toHaveBeenCalledWith({
+        id: mockRegularUser.id,
       });
     });
 
     it('should throw Forbidden CustomHttpException if user is not found', async () => {
       const userId = 'non-existent-user-id';
       mockRequest.user = { sub: userId };
-      mockUserService.getUserById.mockResolvedValue(null);
+      mockUserModelAction.get.mockResolvedValue(null);
 
       await expect(guard.canActivate(mockExecutionContext)).rejects.toThrow(
-        CustomHttpException,
+        new CustomHttpException(SYS_MSG.FORBIDDEN_ACTION, HttpStatus.FORBIDDEN),
       );
-      expect(mockUserService.getUserById).toHaveBeenCalledWith(userId);
+      expect(mockUserModelAction.get).toHaveBeenCalledWith({ id: userId });
     });
 
     it('should throw Forbidden CustomHttpException if request.user is missing', async () => {
       mockRequest.user = undefined;
-      mockUserService.getUserById.mockResolvedValue(null);
 
       await expect(guard.canActivate(mockExecutionContext)).rejects.toThrow(
         CustomHttpException,
       );
-      expect(mockUserService.getUserById).toHaveBeenCalledWith('');
+      expect(mockUserModelAction.get).not.toHaveBeenCalled();
     });
 
     it('should throw Forbidden CustomHttpException if request.user.sub is missing', async () => {
       mockRequest.user = {};
-      mockUserService.getUserById.mockResolvedValue(null);
 
       await expect(guard.canActivate(mockExecutionContext)).rejects.toThrow(
         CustomHttpException,
       );
-      expect(mockUserService.getUserById).toHaveBeenCalledWith('');
+      expect(mockUserModelAction.get).not.toHaveBeenCalled();
     });
 
     it('should catch, wrap, and throw Forbidden CustomHttpException if getUserById throws an unexpected error', async () => {
       const userId = 'some-user-id';
       mockRequest.user = { sub: userId };
       const originalError = new Error('Database connection failed');
-      mockUserService.getUserById.mockRejectedValue(originalError);
+      mockUserModelAction.get.mockRejectedValue(originalError);
 
       const expectedResourceName = `MockControllerName[mockHandlerName]`;
 
@@ -184,7 +179,7 @@ describe('SuperAdminGuard', () => {
 
     it('should re-throw the original CustomHttpException if caught', async () => {
       mockRequest.user = { sub: mockRegularUser.id };
-      mockUserService.getUserById.mockResolvedValue(mockRegularUser);
+      mockUserModelAction.get.mockResolvedValue(mockRegularUser);
 
       await expect(guard.canActivate(mockExecutionContext)).rejects.toThrow(
         CustomHttpException,
