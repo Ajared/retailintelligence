@@ -3,11 +3,11 @@ import { Workbook } from 'exceljs';
 import { stringify } from 'csv-stringify';
 import { StoreDto } from './dto/store.dto';
 import * as SYS_MSG from '~/helpers/system-messages';
-import { HttpStatus, Injectable } from '@nestjs/common';
 import { StoreModelAction } from './store.model-action';
 import { StoreInterface } from './types/store.interface';
 import { AbstractResponseDto } from '~/types/response.dto';
 import ListStoreRecordOptions from './types/list-store.type';
+import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { NullishValueError, trySafe } from '~/helpers/try-safe';
 import { CustomHttpException } from '~/helpers/custom.exception';
 import CreateStoreRecordOptions from './types/create-store.type';
@@ -17,6 +17,7 @@ import { ExportType, PaginationOptions } from '~/helpers/pagination.helper';
 @Injectable()
 export class StoreService {
   constructor(private readonly storeModelAction: StoreModelAction) {}
+  private readonly logger = new Logger('StoreService');
 
   async createStore(
     enumeratorId: string,
@@ -221,7 +222,7 @@ export class StoreService {
                 message: SYS_MSG.INVALID_PARAMETER('Export Type'),
               });
             } else {
-              console.error(
+              this.logger.error(
                 'Invalid export type, but response already finished.',
               );
             }
@@ -234,7 +235,7 @@ export class StoreService {
           }
         }
       } catch (streamError) {
-        console.error('Streaming/Writing error:', streamError);
+        this.logger.error('Streaming/Writing error:', streamError);
         if (!response.finished) {
           response.end();
         }
@@ -253,7 +254,7 @@ export class StoreService {
           });
         }
       } else {
-        console.error('Error after headers sent:', error);
+        this.logger.error('Error after headers sent:', error);
         if (!response.writableEnded) {
           response.end();
         }
@@ -358,7 +359,7 @@ export class StoreService {
     try {
       await workbook.xlsx.write(response);
     } catch (error) {
-      console.error('Failed to write Excel workbook:', error);
+      this.logger.error('Failed to write Excel workbook:', error);
       throw error;
     }
   }
