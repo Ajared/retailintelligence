@@ -97,7 +97,7 @@ export class AuthService {
     | (AbstractResponseDto<UserInterface> & { data: { accessToken: string } })
   > {
     const { email } = await this.verifyGoogleToken(googleAuthDto);
-    let user = await this.userService.getUserByEmail(email.toLowerCase());
+    const user = await this.userService.getUserByEmail(email.toLowerCase());
 
     if (!user) {
       const createdUser = await this.userService.createUser({
