@@ -44,9 +44,8 @@ $ npm run test:e2e
 ```
 
 
-## API Documentation
+## Product Documentation
 
-The application provides Swagger documentation at `/api/docs` 
 
 ## Support
 
