@@ -45,7 +45,7 @@ $ npm run test:e2e
 
 
 ## Product Documentation
-![image](https://github.com/user-attachments/assets/869adec1-7626-4019-a70b-80d92e3893c7)
+![image](https://github.com/user-attachments/assets/a477cd6e-37f6-40b1-8dc2-e389b1f72ad3)
 
 
 ## Support
