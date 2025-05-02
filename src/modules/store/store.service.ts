@@ -176,6 +176,11 @@ export class StoreService {
       const listStoreRecordOptions: ListStoreRecordOptions = {
         paginationPayload,
         filterRecordOptions: {},
+        relations: {
+          localGovernment: true,
+          district: true,
+          enumerator: true,
+        },
       };
 
       const [error, data] = await trySafe(() =>
