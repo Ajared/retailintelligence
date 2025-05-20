@@ -7,6 +7,7 @@ import CreateUserRecordOptions from './types/create-user.type';
 import { NullishValueError, trySafe } from '~/helpers/try-safe';
 import { PaginationOptions } from '~/helpers/pagination.helper';
 import { CustomHttpException } from '~/helpers/custom.exception';
+import { UserStatus } from './constants/user.constant';
 
 @Injectable()
 export class UserService {
@@ -112,5 +113,31 @@ export class UserService {
     }
 
     return data;
+  }
+
+  async deactivateUser(id: string) {
+    const payload: UpdateUserRecordOptions = {
+      identifierOptions: { id },
+      updatePayload: { status: UserStatus.INACTIVE },
+      transactionOptions: {
+        useTransaction: false,
+      },
+    };
+
+    const [error, data] = await trySafe(() =>
+      this.userModelAction.update(payload),
+    );
+
+    if (error) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_OPERATION_FAILED('User Deactivation'),
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    return {
+      message: SYS_MSG.RESOURCE_OPERATION_SUCCESSFUL('User Deactivation'),
+      data,
+    };
   }
 }
