@@ -1,6 +1,5 @@
 import { Logger } from '@nestjs/common';
 import { MigrationInterface, QueryRunner, Table } from 'typeorm';
-import { StoreType } from '~/modules/store/constants/store.constant';
 
 export class InitDB1744585395861 implements MigrationInterface {
   private readonly logger = new Logger('Migrations');
@@ -26,6 +25,30 @@ export class InitDB1744585395861 implements MigrationInterface {
       this.logger.log('Enum type public.auth_provider_enum already exists.');
     }
 
+    if (!(await this.typeExists(queryRunner, 'user_role_enum'))) {
+      await queryRunner.query(
+        `CREATE TYPE "public"."user_role_enum" AS ENUM('super_admin', 'admin', 'user')`,
+      );
+    } else {
+      this.logger.log('Enum type public.user_role_enum already exists.');
+    }
+
+    if (!(await this.typeExists(queryRunner, 'user_status_enum'))) {
+      await queryRunner.query(
+        `CREATE TYPE "public"."user_status_enum" AS ENUM('active', 'inactive')`,
+      );
+    } else {
+      this.logger.log('Enum type public.user_status_enum already exists.');
+    }
+
+    if (!(await this.typeExists(queryRunner, 'store_type_enum'))) {
+      await queryRunner.query(
+        `CREATE TYPE "public"."store_type_enum" AS ENUM('Retail', 'Wholesale')`,
+      );
+    } else {
+      this.logger.log('Enum type public.store_type_enum already exists.');
+    }
+
     await queryRunner.createTable(
       new Table({
         name: 'users',
@@ -49,21 +72,21 @@ export class InitDB1744585395861 implements MigrationInterface {
             isNullable: false,
           },
           {
+            name: 'role',
+            type: '"public"."user_role_enum"',
+            default: `'user'`,
+            isNullable: false,
+          },
+          {
+            name: 'status',
+            type: '"public"."user_status_enum"',
+            default: `'active'`,
+            isNullable: false,
+          },
+          {
             name: 'auth_provider',
             type: '"public"."auth_provider_enum"',
             default: "'local'",
-            isNullable: false,
-          },
-          {
-            name: 'is_super_admin',
-            type: 'boolean',
-            default: false,
-            isNullable: false,
-          },
-          {
-            name: 'is_email_verified',
-            type: 'boolean',
-            default: false,
             isNullable: false,
           },
           {
@@ -113,11 +136,13 @@ export class InitDB1744585395861 implements MigrationInterface {
             name: 'created_at',
             type: 'timestamp with time zone',
             default: 'now()',
+            isNullable: false,
           },
           {
             name: 'updated_at',
             type: 'timestamp with time zone',
             default: 'now()',
+            isNullable: false,
           },
         ],
       }),
@@ -144,22 +169,18 @@ export class InitDB1744585395861 implements MigrationInterface {
             name: 'created_at',
             type: 'timestamp with time zone',
             default: 'now()',
+            isNullable: false,
           },
           {
             name: 'updated_at',
             type: 'timestamp with time zone',
             default: 'now()',
+            isNullable: false,
           },
         ],
       }),
       true,
     );
-
-    if (!(await this.typeExists(queryRunner, 'store_type_enum'))) {
-      await queryRunner.query(
-        `CREATE TYPE "public"."store_type_enum" AS ENUM('${StoreType.RETAIL}', '${StoreType.WHOLESALE}')`,
-      );
-    }
 
     await queryRunner.createTable(
       new Table({
@@ -184,7 +205,7 @@ export class InitDB1744585395861 implements MigrationInterface {
           },
           {
             name: 'store_type',
-            type: 'store_type_enum',
+            type: '"public"."store_type_enum"',
             isNullable: false,
           },
           {
@@ -194,7 +215,8 @@ export class InitDB1744585395861 implements MigrationInterface {
           },
           {
             name: 'photos',
-            type: 'jsonb',
+            type: 'text',
+            isArray: true,
             isNullable: true,
           },
           {
@@ -202,12 +224,14 @@ export class InitDB1744585395861 implements MigrationInterface {
             type: 'decimal',
             precision: 10,
             scale: 7,
+            isNullable: false,
           },
           {
             name: 'longitude',
             type: 'decimal',
             precision: 10,
             scale: 7,
+            isNullable: false,
           },
           {
             name: 'district_id',
@@ -228,11 +252,13 @@ export class InitDB1744585395861 implements MigrationInterface {
             name: 'created_at',
             type: 'timestamp with time zone',
             default: 'now()',
+            isNullable: false,
           },
           {
             name: 'updated_at',
             type: 'timestamp with time zone',
             default: 'now()',
+            isNullable: false,
           },
         ],
         foreignKeys: [
@@ -270,5 +296,7 @@ export class InitDB1744585395861 implements MigrationInterface {
     await queryRunner.query(
       `DROP TYPE IF EXISTS "public"."auth_provider_enum"`,
     );
+    await queryRunner.query(`DROP TYPE IF EXISTS "public"."user_status_enum"`);
+    await queryRunner.query(`DROP TYPE IF EXISTS "public"."user_role_enum"`);
   }
 }
