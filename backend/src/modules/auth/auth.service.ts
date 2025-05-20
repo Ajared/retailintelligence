@@ -253,6 +253,13 @@ export class AuthService {
   ): Promise<AbstractResponseDto<{ email: string }>> {
     const { email, role } = sendInviteEmailDto;
 
+    if (role === UserRole.SUPER_ADMIN) {
+      throw new CustomHttpException(
+        SYS_MSG.FORBIDDEN_ACTION,
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
     const existingUser = await this.userService.getUserByEmail(
       email.toLowerCase(),
     );
@@ -276,7 +283,7 @@ export class AuthService {
       context: {
         role,
         name: email.split('@')[0],
-        link: `${inviteToken}`,
+        link: `${this.configService.get<string>('FRONTEND_URL')}/register?inviteToken=${inviteToken}`,
       },
     });
 

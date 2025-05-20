@@ -114,6 +114,9 @@ class EnvVariables {
 
   @IsString()
   SUPER_ADMIN_PASSWORD!: string;
+
+  @IsString()
+  FRONTEND_URL!: string;
 }
 
 export function validateEnv(config: Record<string, unknown>): EnvVariables {

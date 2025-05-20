@@ -4,6 +4,7 @@ import {
   IsStrongPassword,
   IsString,
   MinLength,
+  IsEnum,
 } from 'class-validator';
 import { UserRole } from '~/modules/user/constants/user.constant';
 
@@ -45,6 +46,7 @@ export class SendInviteEmailDto {
 
   @IsString()
   @IsNotEmpty()
+  @IsEnum(UserRole)
   role: UserRole;
 }
 

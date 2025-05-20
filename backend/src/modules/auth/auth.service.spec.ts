@@ -33,6 +33,7 @@ const mockConfigService = {
   get: jest.fn((key: string) => {
     if (key === 'INVITE_JWT_EXPIRES_IN') return '1d';
     if (key === 'EMAIL_OTP_EXPIRES_IN') return 300000;
+    if (key === 'FRONTEND_URL') return 'http://localhost:3000';
     if (key === 'AUTH_CLIENT_ID') return 'test-google-client-id';
     return undefined;
   }),
@@ -857,22 +858,42 @@ describe('AuthService', () => {
 
   describe('sendInviteEmail', () => {
     const inviteDto = { email: testEmail, role: UserRole.USER };
+    const superAdminInviteDto = {
+      email: testEmail,
+      role: UserRole.SUPER_ADMIN,
+    };
+
+    it('should throw ForbiddenException if role is SUPER_ADMIN', async () => {
+      await expect(
+        service.sendInviteEmail(superAdminInviteDto),
+      ).rejects.toThrow(CustomHttpException);
+      await expect(
+        service.sendInviteEmail(superAdminInviteDto),
+      ).rejects.toMatchObject({
+        message: SYS_MSG.FORBIDDEN_ACTION,
+        status: HttpStatus.FORBIDDEN,
+      });
+      expect(userService.getUserByEmail).not.toHaveBeenCalled();
+      expect(tokenService.generateToken).not.toHaveBeenCalled();
+      expect(mailService.sendMail).not.toHaveBeenCalled();
+    });
 
     it('should successfully send an invite email to a new user', async () => {
       userService.getUserByEmail.mockResolvedValue(null);
       tokenService.generateToken.mockReturnValue(testInviteToken);
       mailService.sendMail.mockResolvedValue(undefined);
-      configService.get.mockReturnValue('1d');
 
       const result = await service.sendInviteEmail(inviteDto);
 
       expect(userService.getUserByEmail).toHaveBeenCalledWith(
         testEmail.toLowerCase(),
       );
+      expect(configService.get).toHaveBeenCalledWith('INVITE_JWT_EXPIRES_IN');
       expect(tokenService.generateToken).toHaveBeenCalledWith(
         { email: testEmail.toLowerCase(), role: UserRole.USER },
         { expiresIn: '1d' },
       );
+      expect(configService.get).toHaveBeenCalledWith('FRONTEND_URL');
       expect(mailService.sendMail).toHaveBeenCalledWith({
         to: testEmail,
         subject: 'Invitation to join Retail Intelligence',
@@ -880,7 +901,7 @@ describe('AuthService', () => {
         context: {
           role: UserRole.USER,
           name: testEmail.split('@')[0],
-          link: testInviteToken,
+          link: 'http://localhost:3000/register?inviteToken=' + testInviteToken,
         },
       });
       expect(result).toEqual({
