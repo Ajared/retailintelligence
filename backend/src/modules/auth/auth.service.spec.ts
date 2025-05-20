@@ -11,6 +11,7 @@ import { AuthProvider } from './constants/auth.constant';
 import { UserInterface } from '../user/types/user.interface';
 import { CustomHttpException } from '~/helpers/custom.exception';
 import CreateUserRecordOptions from '../user/types/create-user.type';
+import { UserRole, UserStatus } from '../user/constants/user.constant';
 
 const mockUserService = {
   getUserByEmail: jest.fn(),
@@ -30,8 +31,9 @@ const mockMailService = {
 
 const mockConfigService = {
   get: jest.fn((key: string) => {
-    if (key === 'EMAIL_JWT_EXPIRES_IN') return '15m';
+    if (key === 'INVITE_JWT_EXPIRES_IN') return '1d';
     if (key === 'EMAIL_OTP_EXPIRES_IN') return 300000;
+    if (key === 'FRONTEND_URL') return 'http://localhost:3000';
     if (key === 'AUTH_CLIENT_ID') return 'test-google-client-id';
     return undefined;
   }),
@@ -42,7 +44,7 @@ const testPassword = 'password123';
 const testHashedPassword = 'hashedPassword123';
 const testUserId = 'user-id-123';
 const testAccessToken = 'mockAccessToken';
-const testVerificationToken = 'mockVerificationToken';
+const testInviteToken = 'mockInviteToken';
 const testResetOtp = '123456';
 const testHashedResetOtp = 'hashedResetOtp';
 const testNewPassword = 'newPassword456';
@@ -58,33 +60,28 @@ const mockUser: UserInterface = {
   email: testEmail,
   password: testHashedPassword,
   authProvider: AuthProvider.LOCAL,
-  isEmailVerified: false,
-  isSuperAdmin: false,
   createdAt: date2DaysAgo,
   updatedAt: date2DaysAgo,
   resetPasswordToken: undefined,
   resetPasswordExpires: undefined,
-};
-
-const mockVerifiedUser: UserInterface = {
-  ...mockUser,
-  isEmailVerified: true,
+  role: UserRole.USER,
+  status: UserStatus.ACTIVE,
 };
 
 const mockUserOldUpdate: UserInterface = {
-  ...mockVerifiedUser,
+  ...mockUser,
   updatedAt: date2DaysAgo,
 };
 
 const mockUserWithResetToken: UserInterface = {
-  ...mockVerifiedUser,
+  ...mockUser,
   updatedAt: dateNow,
   resetPasswordToken: testHashedResetOtp,
   resetPasswordExpires: new Date(dateNow.getTime() + 300000),
 };
 
 const mockUserWithExpiredResetToken: UserInterface = {
-  ...mockVerifiedUser,
+  ...mockUser,
   updatedAt: dateNow,
   resetPasswordToken: testHashedResetOtp,
   resetPasswordExpires: new Date(dateNow.getTime() - 10000),
@@ -100,12 +97,12 @@ const mockGoogleUser: UserInterface = {
   email: testEmail,
   password: '',
   authProvider: AuthProvider.GOOGLE,
-  isEmailVerified: true,
-  isSuperAdmin: false,
   createdAt: dateNow,
   updatedAt: dateNow,
   resetPasswordToken: undefined,
   resetPasswordExpires: undefined,
+  role: UserRole.USER,
+  status: UserStatus.ACTIVE,
 };
 
 const mockFetchResponse = (
@@ -193,7 +190,6 @@ describe('AuthService', () => {
       typeof mockConfigService
     >;
 
-    tokenService.generateToken.mockReturnValue(testAccessToken);
     tokenService.generateOtp.mockReturnValue(testResetOtp);
   });
 
@@ -212,35 +208,33 @@ describe('AuthService', () => {
         email: testEmail.toLowerCase(),
         password: testHashedPassword,
         authProvider: AuthProvider.LOCAL,
-        isEmailVerified: false,
+        role: UserRole.USER,
+        status: UserStatus.ACTIVE,
       },
       transactionOptions: { useTransaction: false },
     };
 
     it('should successfully register a new user and send welcome email', async () => {
-      userService.getUserByEmail
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce(mockUser);
+      userService.getUserByEmail.mockResolvedValueOnce(null);
       userService.createUser.mockResolvedValue(mockUser);
-      tokenService.generateToken.mockReturnValueOnce(testVerificationToken);
+      tokenService.generateToken.mockReturnValue(testInviteToken);
+      tokenService.verifyToken.mockResolvedValue({
+        email: testEmail,
+        role: UserRole.USER,
+      });
 
-      const result = await service.register(registerDto);
+      const result = await service.register(registerDto, testInviteToken);
 
       await new Promise(process.nextTick);
 
-      expect(userService.getUserByEmail).toHaveBeenCalledTimes(2);
-      expect(userService.getUserByEmail).toHaveBeenNthCalledWith(
-        1,
-        testEmail.toLowerCase(),
-      );
-      expect(userService.getUserByEmail).toHaveBeenNthCalledWith(
-        2,
+      expect(userService.getUserByEmail).toHaveBeenCalledTimes(1);
+      expect(userService.getUserByEmail).toHaveBeenCalledWith(
         testEmail.toLowerCase(),
       );
       expect(hashSpy).toHaveBeenCalledWith(testPassword, 10);
       expect(userService.createUser).toHaveBeenCalledWith(createUserPayload);
 
-      expect(mailService.sendMail).toHaveBeenCalledTimes(2);
+      expect(mailService.sendMail).toHaveBeenCalledTimes(1);
       expect(mailService.sendMail).toHaveBeenCalledWith(
         expect.objectContaining({
           to: mockUser.email,
@@ -249,22 +243,6 @@ describe('AuthService', () => {
           context: {
             name: mockUser.email.toLowerCase().split('@')[0],
             unsubscribeLink: 'placeholder',
-          },
-        }),
-      );
-      expect(configService.get).toHaveBeenCalledWith('EMAIL_JWT_EXPIRES_IN');
-      expect(tokenService.generateToken).toHaveBeenCalledWith(
-        { email: mockUser.email },
-        { expiresIn: '15m' },
-      );
-      expect(mailService.sendMail).toHaveBeenCalledWith(
-        expect.objectContaining({
-          to: mockUser.email,
-          subject: 'Verify Your Email Address - Retail Intelligence',
-          template: 'verify-email',
-          context: {
-            name: mockUser.email.split('@')[0],
-            link: testVerificationToken,
           },
         }),
       );
@@ -277,11 +255,17 @@ describe('AuthService', () => {
 
     it('should throw ConflictException if user already exists', async () => {
       userService.getUserByEmail.mockResolvedValue(mockUser);
+      tokenService.verifyToken.mockResolvedValue({
+        email: testEmail,
+        role: UserRole.USER,
+      });
 
-      await expect(service.register(registerDto)).rejects.toThrow(
-        CustomHttpException,
-      );
-      await expect(service.register(registerDto)).rejects.toMatchObject({
+      await expect(
+        service.register(registerDto, testInviteToken),
+      ).rejects.toThrow(CustomHttpException);
+      await expect(
+        service.register(registerDto, testInviteToken),
+      ).rejects.toMatchObject({
         message: SYS_MSG.RESOURCE_ALREADY_EXISTS('User'),
         status: HttpStatus.CONFLICT,
       });
@@ -291,12 +275,18 @@ describe('AuthService', () => {
 
     it('should throw InternalServerErrorException if password hashing fails', async () => {
       userService.getUserByEmail.mockResolvedValue(null);
+      tokenService.verifyToken.mockResolvedValue({
+        email: testEmail,
+        role: UserRole.USER,
+      });
       hashSpy.mockRejectedValue(new Error('Hashing failed'));
 
-      await expect(service.register(registerDto)).rejects.toThrow(
-        CustomHttpException,
-      );
-      await expect(service.register(registerDto)).rejects.toMatchObject({
+      await expect(
+        service.register(registerDto, testInviteToken),
+      ).rejects.toThrow(CustomHttpException);
+      await expect(
+        service.register(registerDto, testInviteToken),
+      ).rejects.toMatchObject({
         message: SYS_MSG.INTERNAL_SERVER_ERROR,
         status: HttpStatus.INTERNAL_SERVER_ERROR,
       });
@@ -305,24 +295,33 @@ describe('AuthService', () => {
 
     it('should throw InternalServerErrorException if user creation fails in DB', async () => {
       userService.getUserByEmail.mockResolvedValue(null);
+      tokenService.verifyToken.mockResolvedValue({
+        email: testEmail,
+        role: UserRole.USER,
+      });
       hashSpy.mockResolvedValue(testHashedPassword);
       userService.createUser.mockRejectedValue(new Error('Database error'));
 
-      await expect(service.register(registerDto)).rejects.toThrow(
-        'Database error',
-      );
+      await expect(
+        service.register(registerDto, testInviteToken),
+      ).rejects.toThrow('Database error');
 
       expect(mailService.sendMail).not.toHaveBeenCalled();
     });
   });
+
   describe('googleAuth', () => {
     const googleAuthDto = { token: testGoogleToken };
     it('should successfully create a new user via Google Auth', async () => {
       userService.getUserByEmail.mockResolvedValue(null);
       userService.createUser.mockResolvedValue(mockGoogleUser);
       mailService.sendMail.mockResolvedValue(Promise.resolve());
+      tokenService.verifyToken.mockResolvedValue({
+        email: testEmail,
+        role: UserRole.USER,
+      });
 
-      const result = await service.googleAuth(googleAuthDto);
+      const result = await service.googleAuth(googleAuthDto, testInviteToken);
 
       expect(fetchSpy).toHaveBeenCalledWith(
         `https://www.googleapis.com/oauth2/v3/tokeninfo?id_token=${testGoogleToken}`,
@@ -334,7 +333,8 @@ describe('AuthService', () => {
       expect(userService.createUser).toHaveBeenCalledWith({
         createPayload: {
           email: testEmail.toLowerCase(),
-          isEmailVerified: true,
+          status: UserStatus.ACTIVE,
+          role: UserRole.USER,
           authProvider: AuthProvider.GOOGLE,
         },
         transactionOptions: { useTransaction: false },
@@ -358,6 +358,10 @@ describe('AuthService', () => {
     it('should successfully log in an existing user via Google Auth', async () => {
       userService.getUserByEmail.mockResolvedValue(mockGoogleUser);
       tokenService.generateToken.mockReturnValue(testAccessToken);
+      tokenService.verifyToken.mockResolvedValue({
+        email: testEmail,
+        role: UserRole.USER,
+      });
 
       const result = await service.googleAuth(googleAuthDto);
 
@@ -477,8 +481,14 @@ describe('AuthService', () => {
       userService.getUserByEmail.mockResolvedValue(null);
       const dbError = new Error('DB connection lost');
       userService.createUser.mockRejectedValue(dbError);
+      tokenService.verifyToken.mockResolvedValue({
+        email: testEmail,
+        role: UserRole.USER,
+      });
 
-      await expect(service.googleAuth(googleAuthDto)).rejects.toThrow(dbError);
+      await expect(
+        service.googleAuth(googleAuthDto, testInviteToken),
+      ).rejects.toThrow(dbError);
 
       expect(fetchSpy).toHaveBeenCalled();
       expect(userService.getUserByEmail).toHaveBeenCalledWith(
@@ -493,8 +503,8 @@ describe('AuthService', () => {
   describe('login', () => {
     const loginDto = { email: testEmail, password: testPassword };
 
-    it('should successfully log in a verified local user', async () => {
-      userService.getUserByEmail.mockResolvedValue(mockVerifiedUser);
+    it('should successfully log in a user', async () => {
+      userService.getUserByEmail.mockResolvedValue(mockUser);
       compareSpy.mockResolvedValue(true);
       tokenService.generateToken.mockReturnValue(testAccessToken);
 
@@ -503,18 +513,15 @@ describe('AuthService', () => {
       expect(userService.getUserByEmail).toHaveBeenCalledWith(
         testEmail.toLowerCase(),
       );
-      expect(compareSpy).toHaveBeenCalledWith(
-        testPassword,
-        mockVerifiedUser.password,
-      );
+      expect(compareSpy).toHaveBeenCalledWith(testPassword, mockUser.password);
       expect(tokenService.generateToken).toHaveBeenCalledWith({
-        sub: mockVerifiedUser.id,
-        email: mockVerifiedUser.email.toLowerCase(),
+        sub: mockUser.id,
+        email: mockUser.email.toLowerCase(),
       });
       expect(result).toEqual({
         message: SYS_MSG.RESOURCE_OPERATION_SUCCESSFUL('Login'),
         data: {
-          ...mockVerifiedUser,
+          ...mockUser,
           accessToken: testAccessToken,
         },
       });
@@ -548,22 +555,8 @@ describe('AuthService', () => {
       expect(tokenService.generateToken).not.toHaveBeenCalled();
     });
 
-    it('should throw UnauthorizedException if email is not verified', async () => {
-      userService.getUserByEmail.mockResolvedValue(mockUser);
-
-      await expect(service.login(loginDto)).rejects.toThrow(
-        CustomHttpException,
-      );
-      await expect(service.login(loginDto)).rejects.toMatchObject({
-        message: SYS_MSG.RESOURCE_NOT_VERIFIED('Email'),
-        status: HttpStatus.UNAUTHORIZED,
-      });
-      expect(compareSpy).not.toHaveBeenCalled();
-      expect(tokenService.generateToken).not.toHaveBeenCalled();
-    });
-
     it('should throw UnauthorizedException if password does not match', async () => {
-      userService.getUserByEmail.mockResolvedValue(mockVerifiedUser);
+      userService.getUserByEmail.mockResolvedValue(mockUser);
       compareSpy.mockResolvedValue(false);
 
       await expect(service.login(loginDto)).rejects.toThrow(
@@ -573,15 +566,12 @@ describe('AuthService', () => {
         message: SYS_MSG.INVALID_CREDENTIALS(['Email', 'Password']),
         status: HttpStatus.UNAUTHORIZED,
       });
-      expect(compareSpy).toHaveBeenCalledWith(
-        testPassword,
-        mockVerifiedUser.password,
-      );
+      expect(compareSpy).toHaveBeenCalledWith(testPassword, mockUser.password);
       expect(tokenService.generateToken).not.toHaveBeenCalled();
     });
 
     it('should throw UnauthorizedException if password comparison fails', async () => {
-      userService.getUserByEmail.mockResolvedValue(mockVerifiedUser);
+      userService.getUserByEmail.mockResolvedValue(mockUser);
       compareSpy.mockRejectedValue(new Error('bcrypt error'));
 
       await expect(service.login(loginDto)).rejects.toThrow(
@@ -592,203 +582,6 @@ describe('AuthService', () => {
         status: HttpStatus.UNAUTHORIZED,
       });
       expect(tokenService.generateToken).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('requestEmailVerification', () => {
-    const requestDto = { email: testEmail };
-
-    it('should successfully send verification email for unverified local user', async () => {
-      userService.getUserByEmail.mockResolvedValue(mockUser);
-      tokenService.generateToken.mockReturnValueOnce(testVerificationToken);
-
-      const result = await service.requestEmailVerification(requestDto);
-
-      expect(userService.getUserByEmail).toHaveBeenCalledWith(
-        testEmail.toLowerCase(),
-      );
-      expect(configService.get).toHaveBeenCalledWith('EMAIL_JWT_EXPIRES_IN');
-      expect(tokenService.generateToken).toHaveBeenCalledWith(
-        { email: mockUser.email },
-        { expiresIn: '15m' },
-      );
-      expect(mailService.sendMail).toHaveBeenCalledWith({
-        to: mockUser.email,
-        subject: 'Verify Your Email Address - Retail Intelligence',
-        template: 'verify-email',
-        context: {
-          name: mockUser.email.split('@')[0],
-          link: testVerificationToken,
-        },
-      });
-      expect(result).toEqual({
-        message: SYS_MSG.RESOURCE_OPERATION_SUCCESSFUL(
-          'Email Verification Request',
-        ),
-        data: { email: mockUser.email },
-      });
-    });
-
-    it('should throw BadRequestException if email is already verified', async () => {
-      userService.getUserByEmail.mockResolvedValue(mockVerifiedUser);
-
-      await expect(
-        service.requestEmailVerification(requestDto),
-      ).rejects.toThrow(CustomHttpException);
-      await expect(
-        service.requestEmailVerification(requestDto),
-      ).rejects.toMatchObject({
-        message: SYS_MSG.RESOURCE_ALREADY_VERIFIED('Email'),
-        status: HttpStatus.BAD_REQUEST,
-      });
-      expect(tokenService.generateToken).not.toHaveBeenCalled();
-      expect(mailService.sendMail).not.toHaveBeenCalled();
-    });
-
-    it('should throw ForbiddenException if user not found', async () => {
-      userService.getUserByEmail.mockResolvedValue(null);
-
-      await expect(
-        service.requestEmailVerification(requestDto),
-      ).rejects.toThrow(CustomHttpException);
-      await expect(
-        service.requestEmailVerification(requestDto),
-      ).rejects.toMatchObject({
-        message: SYS_MSG.FORBIDDEN_ACTION,
-        status: HttpStatus.FORBIDDEN,
-      });
-      expect(tokenService.generateToken).not.toHaveBeenCalled();
-      expect(mailService.sendMail).not.toHaveBeenCalled();
-    });
-
-    it('should throw ForbiddenException if user is not local', async () => {
-      userService.getUserByEmail.mockResolvedValue(mockUserNonLocal);
-
-      await expect(
-        service.requestEmailVerification(requestDto),
-      ).rejects.toThrow(CustomHttpException);
-      await expect(
-        service.requestEmailVerification(requestDto),
-      ).rejects.toMatchObject({
-        message: SYS_MSG.FORBIDDEN_ACTION,
-        status: HttpStatus.FORBIDDEN,
-      });
-      expect(tokenService.generateToken).not.toHaveBeenCalled();
-      expect(mailService.sendMail).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('verifyEmail', () => {
-    const verifyDto = { token: testVerificationToken };
-    const decodedTokenPayload = { email: testEmail };
-    const invalidTokenPayloadSub = { email: testEmail, sub: '123' };
-    const invalidTokenPayloadNoEmail = { sub: '123' };
-
-    it('should successfully verify email with a valid token for an unverified local user', async () => {
-      tokenService.verifyToken.mockResolvedValue(decodedTokenPayload);
-      userService.getUserByEmail.mockResolvedValue(mockUser);
-      userService.updateUser.mockResolvedValue(mockVerifiedUser);
-
-      const result = await service.verifyEmail(verifyDto);
-
-      expect(tokenService.verifyToken).toHaveBeenCalledWith(
-        testVerificationToken,
-      );
-      expect(userService.getUserByEmail).toHaveBeenCalledWith(
-        decodedTokenPayload.email.toLowerCase(),
-      );
-      expect(userService.updateUser).toHaveBeenCalledWith({
-        updatePayload: { isEmailVerified: true },
-        identifierOptions: { id: mockUser.id },
-        transactionOptions: { useTransaction: false },
-      });
-      expect(result).toEqual({
-        message: SYS_MSG.RESOURCE_OPERATION_SUCCESSFUL('Verify Email'),
-        data: mockVerifiedUser,
-      });
-    });
-
-    it('should throw BadRequestException if token verification fails (e.g., expired, invalid signature)', async () => {
-      const verificationError = new Error('Invalid token');
-      tokenService.verifyToken.mockRejectedValue(verificationError);
-
-      await expect(service.verifyEmail(verifyDto)).rejects.toThrow(
-        CustomHttpException,
-      );
-      await expect(service.verifyEmail(verifyDto)).rejects.toMatchObject({
-        message: SYS_MSG.TOKEN_INVALID('Email Verification'),
-        status: HttpStatus.BAD_REQUEST,
-      });
-      expect(userService.getUserByEmail).not.toHaveBeenCalled();
-      expect(userService.updateUser).not.toHaveBeenCalled();
-    });
-
-    it('should throw BadRequestException if token payload contains "sub"', async () => {
-      tokenService.verifyToken.mockResolvedValue(invalidTokenPayloadSub);
-
-      await expect(service.verifyEmail(verifyDto)).rejects.toThrow(
-        CustomHttpException,
-      );
-      await expect(service.verifyEmail(verifyDto)).rejects.toMatchObject({
-        message: SYS_MSG.TOKEN_INVALID('Email Verification'),
-        status: HttpStatus.BAD_REQUEST,
-      });
-      expect(userService.getUserByEmail).not.toHaveBeenCalled();
-    });
-
-    it('should throw BadRequestException if token payload lacks "email"', async () => {
-      tokenService.verifyToken.mockResolvedValue(invalidTokenPayloadNoEmail);
-
-      await expect(service.verifyEmail(verifyDto)).rejects.toThrow(
-        CustomHttpException,
-      );
-      await expect(service.verifyEmail(verifyDto)).rejects.toMatchObject({
-        message: SYS_MSG.TOKEN_INVALID('Email Verification'),
-        status: HttpStatus.BAD_REQUEST,
-      });
-      expect(userService.getUserByEmail).not.toHaveBeenCalled();
-    });
-
-    it('should throw BadRequestException if email is already verified', async () => {
-      tokenService.verifyToken.mockResolvedValue(decodedTokenPayload);
-      userService.getUserByEmail.mockResolvedValue(mockVerifiedUser);
-
-      await expect(service.verifyEmail(verifyDto)).rejects.toThrow(
-        CustomHttpException,
-      );
-      await expect(service.verifyEmail(verifyDto)).rejects.toMatchObject({
-        message: SYS_MSG.RESOURCE_ALREADY_VERIFIED('Email'),
-        status: HttpStatus.BAD_REQUEST,
-      });
-      expect(userService.updateUser).not.toHaveBeenCalled();
-    });
-
-    it('should throw ForbiddenException if user from token not found', async () => {
-      tokenService.verifyToken.mockResolvedValue(decodedTokenPayload);
-      userService.getUserByEmail.mockResolvedValue(null);
-
-      await expect(service.verifyEmail(verifyDto)).rejects.toThrow(
-        CustomHttpException,
-      );
-      await expect(service.verifyEmail(verifyDto)).rejects.toMatchObject({
-        message: SYS_MSG.FORBIDDEN_ACTION,
-        status: HttpStatus.FORBIDDEN,
-      });
-      expect(userService.updateUser).not.toHaveBeenCalled();
-    });
-
-    it('should throw ForbiddenException if user from token is not local', async () => {
-      tokenService.verifyToken.mockResolvedValue(decodedTokenPayload);
-      userService.getUserByEmail.mockResolvedValue(mockUserNonLocal);
-
-      await expect(service.verifyEmail(verifyDto)).rejects.toThrow(
-        CustomHttpException,
-      );
-      await expect(service.verifyEmail(verifyDto)).rejects.toMatchObject({
-        message: SYS_MSG.FORBIDDEN_ACTION,
-        status: HttpStatus.FORBIDDEN,
-      });
-      expect(userService.updateUser).not.toHaveBeenCalled();
     });
   });
 
@@ -991,7 +784,7 @@ describe('AuthService', () => {
     });
 
     it('should throw BadRequestException if user has no reset token set', async () => {
-      userService.getUserByEmail.mockResolvedValue(mockVerifiedUser);
+      userService.getUserByEmail.mockResolvedValue(mockUser);
 
       await expect(service.resetPassword(resetDto)).rejects.toThrow(
         CustomHttpException,
@@ -1059,6 +852,108 @@ describe('AuthService', () => {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
       });
       expect(userService.updateUser).not.toHaveBeenCalled();
+      expect(mailService.sendMail).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('sendInviteEmail', () => {
+    const inviteDto = { email: testEmail, role: UserRole.USER };
+    const superAdminInviteDto = {
+      email: testEmail,
+      role: UserRole.SUPER_ADMIN,
+    };
+
+    it('should throw ForbiddenException if role is SUPER_ADMIN', async () => {
+      await expect(
+        service.sendInviteEmail(superAdminInviteDto),
+      ).rejects.toThrow(CustomHttpException);
+      await expect(
+        service.sendInviteEmail(superAdminInviteDto),
+      ).rejects.toMatchObject({
+        message: SYS_MSG.FORBIDDEN_ACTION,
+        status: HttpStatus.FORBIDDEN,
+      });
+      expect(userService.getUserByEmail).not.toHaveBeenCalled();
+      expect(tokenService.generateToken).not.toHaveBeenCalled();
+      expect(mailService.sendMail).not.toHaveBeenCalled();
+    });
+
+    it('should successfully send an invite email to a new user', async () => {
+      userService.getUserByEmail.mockResolvedValue(null);
+      tokenService.generateToken.mockReturnValue(testInviteToken);
+      mailService.sendMail.mockResolvedValue(undefined);
+
+      const result = await service.sendInviteEmail(inviteDto);
+
+      expect(userService.getUserByEmail).toHaveBeenCalledWith(
+        testEmail.toLowerCase(),
+      );
+      expect(configService.get).toHaveBeenCalledWith('INVITE_JWT_EXPIRES_IN');
+      expect(tokenService.generateToken).toHaveBeenCalledWith(
+        { email: testEmail.toLowerCase(), role: UserRole.USER },
+        { expiresIn: '1d' },
+      );
+      expect(configService.get).toHaveBeenCalledWith('FRONTEND_URL');
+      expect(mailService.sendMail).toHaveBeenCalledWith({
+        to: testEmail,
+        subject: 'Invitation to join Retail Intelligence',
+        template: 'invite',
+        context: {
+          role: UserRole.USER,
+          name: testEmail.split('@')[0],
+          link: 'http://localhost:3000/register?inviteToken=' + testInviteToken,
+        },
+      });
+      expect(result).toEqual({
+        message: SYS_MSG.RESOURCE_OPERATION_SUCCESSFUL('Invite Email Sent'),
+        data: { email: testEmail },
+      });
+    });
+
+    it('should throw ConflictException if user already exists', async () => {
+      userService.getUserByEmail.mockResolvedValue(mockUser);
+      await expect(service.sendInviteEmail(inviteDto)).rejects.toThrow(
+        CustomHttpException,
+      );
+      await expect(service.sendInviteEmail(inviteDto)).rejects.toMatchObject({
+        message: SYS_MSG.RESOURCE_ALREADY_EXISTS('User'),
+        status: HttpStatus.CONFLICT,
+      });
+      expect(tokenService.generateToken).not.toHaveBeenCalled();
+      expect(mailService.sendMail).not.toHaveBeenCalled();
+    });
+
+    it('should propagate error if mailService.sendMail fails', async () => {
+      userService.getUserByEmail.mockResolvedValue(null);
+      tokenService.generateToken.mockReturnValue(testInviteToken);
+      mailService.sendMail.mockRejectedValue(new Error('Mail error'));
+      configService.get.mockReturnValue('1d');
+      await expect(service.sendInviteEmail(inviteDto)).rejects.toThrow(
+        'Mail error',
+      );
+    });
+
+    it('should propagate error if tokenService.generateToken fails', async () => {
+      userService.getUserByEmail.mockResolvedValue(null);
+      tokenService.generateToken.mockImplementation(() => {
+        throw new Error('Token error');
+      });
+      configService.get.mockReturnValue('1d');
+      await expect(service.sendInviteEmail(inviteDto)).rejects.toThrow(
+        'Token error',
+      );
+      expect(mailService.sendMail).not.toHaveBeenCalled();
+    });
+
+    it('should propagate error if configService.get fails', async () => {
+      userService.getUserByEmail.mockResolvedValue(null);
+      tokenService.generateToken.mockReturnValue(testInviteToken);
+      configService.get.mockImplementation(() => {
+        throw new Error('Config error');
+      });
+      await expect(service.sendInviteEmail(inviteDto)).rejects.toThrow(
+        'Config error',
+      );
       expect(mailService.sendMail).not.toHaveBeenCalled();
     });
   });

@@ -64,7 +64,7 @@ class EnvVariables {
   JWT_EXPIRES_IN!: string;
 
   @IsString()
-  EMAIL_JWT_EXPIRES_IN!: string;
+  INVITE_JWT_EXPIRES_IN!: string;
 
   @IsNumber()
   @Transform(({ value }) => parseInt(value as string, 10))
@@ -114,6 +114,9 @@ class EnvVariables {
 
   @IsString()
   SUPER_ADMIN_PASSWORD!: string;
+
+  @IsString()
+  FRONTEND_URL!: string;
 }
 
 export function validateEnv(config: Record<string, unknown>): EnvVariables {

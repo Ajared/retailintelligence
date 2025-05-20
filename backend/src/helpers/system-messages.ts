@@ -41,6 +41,8 @@ export const RESOURCE_EXPORTED_SUCCESSFULLY = (resource: string) =>
   createMessage('exported successfully', resource);
 export const RESOURCE_EXPORT_FAILED = (resource: string) =>
   createMessage('export failed', resource);
+export const RESOURCE_NOT_ACTIVE = (resource: string) =>
+  createMessage('is not active', resource);
 export const FORBIDDEN_ACTION = 'Access to this resource is denied';
 
 // Validation messages

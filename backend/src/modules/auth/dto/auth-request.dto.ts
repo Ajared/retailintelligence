@@ -4,7 +4,9 @@ import {
   IsStrongPassword,
   IsString,
   MinLength,
+  IsEnum,
 } from 'class-validator';
+import { UserRole } from '~/modules/user/constants/user.constant';
 
 export class AuthDto {
   @IsEmail()
@@ -37,17 +39,15 @@ export class ResetPasswordDto {
   @IsStrongPassword()
   newPassword: string;
 }
-
-export class VerifyEmailDto {
-  @IsString()
-  @IsNotEmpty()
-  token: string;
-}
-
-export class RequestEmailVerificationDto {
+export class SendInviteEmailDto {
   @IsEmail()
   @IsNotEmpty()
   email: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @IsEnum(UserRole)
+  role: UserRole;
 }
 
 export class GoogleAuthDto {
