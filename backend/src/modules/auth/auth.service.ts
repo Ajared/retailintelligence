@@ -1,13 +1,11 @@
 import {
   AuthDto,
-  VerifyEmailDto,
+  GoogleAuthDto,
   ResetPasswordDto,
   ForgotPasswordDto,
-  RequestEmailVerificationDto,
-  GoogleAuthDto,
+  SendInviteEmailDto,
 } from './dto/auth-request.dto';
 import { compare, hash } from 'bcryptjs';
-import { NullishValueError, trySafe } from '~/helpers/try-safe';
 import { ConfigService } from '@nestjs/config';
 import { MailService } from '../mail/mail.service';
 import { UserService } from '../user/user.service';
@@ -17,24 +15,57 @@ import { AuthProvider } from './constants/auth.constant';
 import { GoogleTokenInfo } from './types/auth.interface';
 import { AbstractResponseDto } from '~/types/response.dto';
 import { UserInterface } from '../user/types/user.interface';
+import { NullishValueError, trySafe } from '~/helpers/try-safe';
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { CustomHttpException } from '~/helpers/custom.exception';
 import CreateUserRecordOptions from '../user/types/create-user.type';
+import { UserRole, UserStatus } from '../user/constants/user.constant';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly userService: UserService,
     private readonly mailService: MailService,
-    private readonly configService: ConfigService,
     private readonly tokenService: TokenService,
+    private readonly configService: ConfigService,
   ) {}
   private readonly logger = new Logger('AuthService');
 
   async register(
     authDto: AuthDto,
+    inviteToken?: string,
   ): Promise<AbstractResponseDto<UserInterface>> {
+    if (!inviteToken) {
+      throw new CustomHttpException(
+        SYS_MSG.MISSING_REQUIRED_PARAMETER('Invite Token'),
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const [error, decoded] = await trySafe(() =>
+      this.tokenService.verifyToken(inviteToken),
+    );
+
+    if (error || !decoded.email || !decoded.role) {
+      throw new CustomHttpException(
+        SYS_MSG.TOKEN_INVALID('Invite'),
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     const { email, password } = authDto;
+    const { email: decodedEmail, role: decodedRole } = decoded;
+
+    if (
+      typeof decodedEmail !== 'string' ||
+      decodedEmail.toLowerCase() !== email.toLowerCase()
+    ) {
+      throw new CustomHttpException(
+        SYS_MSG.INVALID_CREDENTIALS(['Email']),
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     const existingUser = await this.userService.getUserByEmail(
       email.toLowerCase(),
     );
@@ -59,8 +90,9 @@ export class AuthService {
       createPayload: {
         email: email.toLowerCase(),
         password: hashedPassword,
+        status: UserStatus.ACTIVE,
+        role: decodedRole as UserRole,
         authProvider: AuthProvider.LOCAL,
-        isEmailVerified: false,
       },
       transactionOptions: { useTransaction: false },
     };
@@ -77,10 +109,9 @@ export class AuthService {
           unsubscribeLink: 'placeholder',
         },
       }),
-      this.requestEmailVerification({ email: createdUser.email }),
     ]).catch(() => {
       this.logger.error(
-        `Failed to send welcome email or request email verification for user ${createdUser.email}`,
+        `Failed to send welcome email for user ${createdUser.email}`,
       );
     });
 
@@ -92,6 +123,7 @@ export class AuthService {
 
   async googleAuth(
     googleAuthDto: GoogleAuthDto,
+    inviteToken?: string,
   ): Promise<
     | AbstractResponseDto<UserInterface>
     | (AbstractResponseDto<UserInterface> & { data: { accessToken: string } })
@@ -100,10 +132,41 @@ export class AuthService {
     const user = await this.userService.getUserByEmail(email.toLowerCase());
 
     if (!user) {
+      if (!inviteToken) {
+        throw new CustomHttpException(
+          SYS_MSG.MISSING_REQUIRED_PARAMETER('Invite Token'),
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const [error, decoded] = await trySafe(() =>
+        this.tokenService.verifyToken(inviteToken),
+      );
+
+      if (error || !decoded.email || !decoded.role) {
+        throw new CustomHttpException(
+          SYS_MSG.TOKEN_INVALID('Invite'),
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const { email: decodedEmail, role: decodedRole } = decoded;
+
+      if (
+        typeof decodedEmail !== 'string' ||
+        decodedEmail.toLowerCase() !== email.toLowerCase()
+      ) {
+        throw new CustomHttpException(
+          SYS_MSG.INVALID_CREDENTIALS(['Email']),
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
       const createdUser = await this.userService.createUser({
         createPayload: {
           email: email.toLowerCase(),
-          isEmailVerified: true,
+          status: UserStatus.ACTIVE,
+          role: decodedRole as UserRole,
           authProvider: AuthProvider.GOOGLE,
         },
         transactionOptions: { useTransaction: false },
@@ -131,6 +194,13 @@ export class AuthService {
       };
     }
 
+    if (user.status !== UserStatus.ACTIVE) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_NOT_ACTIVE('User'),
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
     const accessToken = this.tokenService.generateToken({
       sub: user.id,
       email: user.email.toLowerCase(),
@@ -150,9 +220,9 @@ export class AuthService {
     const { email, password } = authDto;
     const user = await this.validateLocalUser(email);
 
-    if (!user.isEmailVerified) {
+    if (user.status !== UserStatus.ACTIVE) {
       throw new CustomHttpException(
-        SYS_MSG.RESOURCE_NOT_VERIFIED('Email'),
+        SYS_MSG.RESOURCE_NOT_ACTIVE('User'),
         HttpStatus.UNAUTHORIZED,
       );
     }
@@ -178,75 +248,48 @@ export class AuthService {
     };
   }
 
-  async requestEmailVerification(
-    requestEmailVerificationDto: RequestEmailVerificationDto,
+  async sendInviteEmail(
+    sendInviteEmailDto: SendInviteEmailDto,
   ): Promise<AbstractResponseDto<{ email: string }>> {
-    const { email } = requestEmailVerificationDto;
-    const user = await this.validateLocalUser(email);
+    const { email, role } = sendInviteEmailDto;
 
-    if (user.isEmailVerified) {
+    if (role === UserRole.SUPER_ADMIN) {
       throw new CustomHttpException(
-        SYS_MSG.RESOURCE_ALREADY_VERIFIED('Email'),
-        HttpStatus.BAD_REQUEST,
+        SYS_MSG.FORBIDDEN_ACTION,
+        HttpStatus.FORBIDDEN,
       );
     }
 
-    const verificationToken = this.tokenService.generateToken(
-      { email: user.email },
-      { expiresIn: this.configService.get<string>('EMAIL_JWT_EXPIRES_IN') },
+    const existingUser = await this.userService.getUserByEmail(
+      email.toLowerCase(),
+    );
+
+    if (existingUser) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_ALREADY_EXISTS('User'),
+        HttpStatus.CONFLICT,
+      );
+    }
+
+    const inviteToken = this.tokenService.generateToken(
+      { email: email.toLowerCase(), role },
+      { expiresIn: this.configService.get<string>('INVITE_JWT_EXPIRES_IN') },
     );
 
     await this.mailService.sendMail({
-      to: user.email,
-      subject: 'Verify Your Email Address - Retail Intelligence',
-      template: 'verify-email',
+      to: email,
+      subject: 'Invitation to join Retail Intelligence',
+      template: 'invite',
       context: {
-        name: user.email.split('@')[0],
-        link: `${verificationToken}`,
+        role,
+        name: email.split('@')[0],
+        link: `${this.configService.get<string>('FRONTEND_URL')}/register?inviteToken=${inviteToken}`,
       },
     });
 
     return {
-      message: SYS_MSG.RESOURCE_OPERATION_SUCCESSFUL(
-        'Email Verification Request',
-      ),
-      data: { email: user.email },
-    };
-  }
-
-  async verifyEmail(
-    verifyEmailDto: VerifyEmailDto,
-  ): Promise<AbstractResponseDto<UserInterface>> {
-    const { token } = verifyEmailDto;
-    const [verifyError, decoded] = await trySafe(() =>
-      this.tokenService.verifyToken(token),
-    );
-
-    if (verifyError || !decoded.email || decoded.sub) {
-      throw new CustomHttpException(
-        SYS_MSG.TOKEN_INVALID('Email Verification'),
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
-    const user = await this.validateLocalUser(decoded.email);
-
-    if (user.isEmailVerified) {
-      throw new CustomHttpException(
-        SYS_MSG.RESOURCE_ALREADY_VERIFIED('Email'),
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
-    const updatedUser = await this.userService.updateUser({
-      updatePayload: { isEmailVerified: true },
-      identifierOptions: { id: user.id },
-      transactionOptions: { useTransaction: false },
-    });
-
-    return {
-      message: SYS_MSG.RESOURCE_OPERATION_SUCCESSFUL('Verify Email'),
-      data: updatedUser,
+      message: SYS_MSG.RESOURCE_OPERATION_SUCCESSFUL('Invite Email Sent'),
+      data: { email },
     };
   }
 

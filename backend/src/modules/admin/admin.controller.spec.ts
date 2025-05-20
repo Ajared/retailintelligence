@@ -1,16 +1,22 @@
 import { CanActivate } from '@nestjs/common';
 import { AdminController } from './admin.controller';
 import { Test, TestingModule } from '@nestjs/testing';
-import { SuperAdminGuard } from '~/guards/super-admin.guard';
+import { RoleGuard } from '~/guards/role.guard';
 import { StoreService } from '../store/store.service';
+import { UserService } from '../user/user.service';
 import {
   ExportType,
   ExportTypeValidator,
   PaginationOptions,
 } from '~/helpers/pagination.helper';
 import { Response } from 'express';
+import { AuthGuard } from '~/guards/auth.guard';
 
-const mockSuperAdminGuard: CanActivate = {
+const mockRoleGuard: CanActivate = {
+  canActivate: jest.fn(() => true),
+};
+
+const mockAuthGuard: CanActivate = {
   canActivate: jest.fn(() => true),
 };
 
@@ -18,6 +24,10 @@ const mockStoreService = {
   listStores: jest.fn().mockResolvedValue({ data: [], total: 0 }),
   exportStores: jest.fn(),
   getStoreById: jest.fn().mockResolvedValue({ id: '1', name: 'Test Store' }),
+};
+
+const mockUserService = {
+  deactivateUser: jest.fn().mockResolvedValue(undefined),
 };
 
 const mockResponse = {
@@ -36,13 +46,19 @@ describe('AdminController', () => {
       controllers: [AdminController],
       providers: [
         {
+          provide: UserService,
+          useValue: mockUserService,
+        },
+        {
           provide: StoreService,
           useValue: mockStoreService,
         },
       ],
     })
-      .overrideGuard(SuperAdminGuard)
-      .useValue(mockSuperAdminGuard)
+      .overrideGuard(AuthGuard)
+      .useValue(mockAuthGuard)
+      .overrideGuard(RoleGuard)
+      .useValue(mockRoleGuard)
       .compile();
 
     controller = module.get<AdminController>(AdminController);
@@ -53,6 +69,29 @@ describe('AdminController', () => {
     expect(controller).toBeDefined();
   });
 
+  describe('deactivateUser', () => {
+    it('should call userService.deactivateUser with correct id and return the expected result', async () => {
+      const body = { userId: 'user-123' };
+      const expectedResult = {
+        message: 'User Deactivation operation successful',
+        data: { id: 'user-123', status: 'INACTIVE' },
+      };
+      mockUserService.deactivateUser.mockResolvedValueOnce(expectedResult);
+
+      const result = await controller.deactivateUser(body);
+
+      expect(mockUserService.deactivateUser).toHaveBeenCalledWith('user-123');
+      expect(result).toEqual(expectedResult);
+    });
+
+    it('should handle errors from userService.deactivateUser', async () => {
+      const body = { userId: 'user-123' };
+      const error = new Error('Deactivation failed');
+      mockUserService.deactivateUser.mockRejectedValueOnce(error);
+
+      await expect(controller.deactivateUser(body)).rejects.toThrow(error);
+    });
+  });
   describe('getStores', () => {
     it('should call storeService.listStores with pagination options', async () => {
       const paginationOptions: PaginationOptions = { page: '1', limit: '10' };

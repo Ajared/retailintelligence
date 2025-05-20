@@ -3,14 +3,38 @@ import {
   ExportTypeValidator,
 } from '~/helpers/pagination.helper';
 import { Response } from 'express';
+import { RoleGuard } from '~/guards/role.guard';
+import { UserService } from '../user/user.service';
+import { Roles } from '~/decorators/role.decorator';
 import { StoreService } from '../store/store.service';
-import { SuperAdminGuard } from '~/guards/super-admin.guard';
-import { Controller, Get, Param, Query, Res, UseGuards } from '@nestjs/common';
+import { UserRole } from '~/modules/user/constants/user.constant';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Query,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 
 @Controller('admin')
-@UseGuards(SuperAdminGuard)
+@UseGuards(RoleGuard)
+@Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
 export class AdminController {
-  constructor(private readonly storeService: StoreService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly storeService: StoreService,
+  ) {}
+
+  @HttpCode(HttpStatus.OK)
+  @Post('users/deactivate')
+  async deactivateUser(@Body() body: { userId: string }) {
+    return this.userService.deactivateUser(body.userId);
+  }
 
   @Get('stores')
   async getStores(@Query() query: PaginationOptions) {

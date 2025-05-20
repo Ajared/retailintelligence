@@ -2,8 +2,9 @@ import { hash } from 'bcryptjs';
 import { ConfigService } from '@nestjs/config';
 import { setSeederFactory } from 'typeorm-extension';
 import { User } from '~/modules/user/entities/user.entity';
+import { UserRole } from '~/modules/user/constants/user.constant';
+import { UserStatus } from '~/modules/user/constants/user.constant';
 import { AuthProvider } from '~/modules/auth/constants/auth.constant';
-
 class UserFactoryClass {
   private readonly email: string;
   private readonly password: string;
@@ -15,8 +16,8 @@ class UserFactoryClass {
 
   async createUser(): Promise<User> {
     const user = new User();
-    user.isSuperAdmin = true;
-    user.isEmailVerified = true;
+    user.status = UserStatus.ACTIVE;
+    user.role = UserRole.SUPER_ADMIN;
     user.email = this.email.toLowerCase();
     user.authProvider = AuthProvider.LOCAL;
     user.password = await hash(this.password, 10);
