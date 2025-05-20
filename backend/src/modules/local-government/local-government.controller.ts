@@ -10,9 +10,11 @@ import {
   Patch,
   UseGuards,
 } from '@nestjs/common';
-import { SuperAdminGuard } from '~/guards/super-admin.guard';
+import { RoleGuard } from '~/guards/role.guard';
+import { Roles } from '~/decorators/role.decorator';
 import { LocalGovernmentDto } from './dto/local-government.dto';
 import { PaginationOptions } from '~/helpers/pagination.helper';
+import { UserRole } from '~/modules/user/constants/user.constant';
 import { LocalGovernmentService } from './local-government.service';
 
 @Controller('local-governments')
@@ -22,8 +24,9 @@ export class LocalGovernmentController {
   ) {}
 
   @Post()
-  @UseGuards(SuperAdminGuard)
+  @UseGuards(RoleGuard)
   @HttpCode(HttpStatus.CREATED)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
   async createLocalGovernment(@Body() localGovernmentDto: LocalGovernmentDto) {
     return this.localGovernmentService.createLocalGovernment(
       localGovernmentDto,
@@ -43,8 +46,9 @@ export class LocalGovernmentController {
   }
 
   @Patch(':id')
-  @UseGuards(SuperAdminGuard)
+  @UseGuards(RoleGuard)
   @HttpCode(HttpStatus.OK)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
   async updateLocalGovernment(
     @Param('id') id: string,
     @Body() localGovernmentDto: LocalGovernmentDto,

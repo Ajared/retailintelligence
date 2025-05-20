@@ -10,18 +10,21 @@ import {
   Patch,
   UseGuards,
 } from '@nestjs/common';
-import { DistrictService } from './district.service';
+import { RoleGuard } from '~/guards/role.guard';
 import { DistrictDto } from './dto/district.dto';
-import { SuperAdminGuard } from '~/guards/super-admin.guard';
+import { Roles } from '~/decorators/role.decorator';
+import { DistrictService } from './district.service';
 import { PaginationOptions } from '~/helpers/pagination.helper';
+import { UserRole } from '~/modules/user/constants/user.constant';
 
 @Controller('districts')
 export class DistrictController {
   constructor(private readonly districtService: DistrictService) {}
 
   @Post()
-  @UseGuards(SuperAdminGuard)
+  @UseGuards(RoleGuard)
   @HttpCode(HttpStatus.CREATED)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
   async createDistrict(@Body() districtDto: DistrictDto) {
     return this.districtService.createDistrict(districtDto);
   }
@@ -39,8 +42,9 @@ export class DistrictController {
   }
 
   @Patch(':id')
-  @UseGuards(SuperAdminGuard)
+  @UseGuards(RoleGuard)
   @HttpCode(HttpStatus.OK)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
   async updateDistrict(
     @Param('id') id: string,
     @Body() districtDto: DistrictDto,
