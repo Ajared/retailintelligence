@@ -33,7 +33,7 @@ export class Store extends AbstractBaseEntity {
   @Column({ type: 'text', nullable: true })
   landmarks?: string;
 
-  @Column({ name: 'photos', type: 'jsonb', nullable: true })
+  @Column({ type: 'text', array: true, nullable: true })
   photos?: string[];
 
   @Column({ type: 'decimal', precision: 10, scale: 7 })
