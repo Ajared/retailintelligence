@@ -1,9 +1,9 @@
 import { CanActivate } from '@nestjs/common';
+import { RoleGuard } from '~/guards/role.guard';
 import { DistrictService } from './district.service';
 import { Test, TestingModule } from '@nestjs/testing';
 import { DistrictController } from './district.controller';
 import { DistrictModelAction } from './district.model-action';
-import { SuperAdminGuard } from '~/guards/super-admin.guard';
 
 describe('DistrictController', () => {
   const mockDistrictModelAction = {
@@ -13,7 +13,7 @@ describe('DistrictController', () => {
     delete: jest.fn(),
   };
 
-  const mockSuperAdminGuard: CanActivate = {
+  const mockRoleGuard: CanActivate = {
     canActivate: jest.fn(() => true),
   };
 
@@ -30,8 +30,8 @@ describe('DistrictController', () => {
         },
       ],
     })
-      .overrideGuard(SuperAdminGuard)
-      .useValue(mockSuperAdminGuard)
+      .overrideGuard(RoleGuard)
+      .useValue(mockRoleGuard)
       .compile();
 
     controller = module.get<DistrictController>(DistrictController);

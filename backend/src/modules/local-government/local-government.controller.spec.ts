@@ -1,10 +1,9 @@
+import { CanActivate } from '@nestjs/common';
+import { RoleGuard } from '~/guards/role.guard';
 import { Test, TestingModule } from '@nestjs/testing';
 import { LocalGovernmentService } from './local-government.service';
 import { LocalGovernmentController } from './local-government.controller';
 import { LocalGovernmentModelAction } from './local-government.model-action';
-import { CanActivate } from '@nestjs/common';
-import { SuperAdminGuard } from '~/guards/super-admin.guard';
-
 describe('LocalGovernmentController', () => {
   const mockLocalGovernmentModelAction = {
     get: jest.fn(),
@@ -13,7 +12,7 @@ describe('LocalGovernmentController', () => {
     delete: jest.fn(),
   };
 
-  const mockSuperAdminGuard: CanActivate = {
+  const mockRoleGuard: CanActivate = {
     canActivate: jest.fn(() => true),
   };
 
@@ -30,8 +29,8 @@ describe('LocalGovernmentController', () => {
         },
       ],
     })
-      .overrideGuard(SuperAdminGuard)
-      .useValue(mockSuperAdminGuard)
+      .overrideGuard(RoleGuard)
+      .useValue(mockRoleGuard)
       .compile();
 
     controller = module.get<LocalGovernmentController>(
