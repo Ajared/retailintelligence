@@ -4,7 +4,7 @@ declare module 'express' {
   interface Request {
     user?: JwtPayload;
     headers: {
-      inviteToken?: string;
+      'invite-token'?: string;
       authorization?: string;
     };
   }

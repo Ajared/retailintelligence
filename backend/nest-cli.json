@@ -4,10 +4,12 @@
   "sourceRoot": "src",
   "compilerOptions": {
     "deleteOutDir": true,
-    "assets": [{
-      "include": "modules/**/templates/*.hbs",
-      "outDir": "dist"
-    }]
+    "assets": [
+      {
+        "include": "modules/**/templates/*.hbs",
+        "outDir": "dist"
+      }
+    ]
   },
   "entryFile": "server"
 }
