@@ -61,7 +61,7 @@ describe('AuthController', () => {
         email: 'test@example.com',
         password: 'password123',
       };
-      const req = { headers: { inviteToken: 'invite-token' } } as Request;
+      const req = { headers: { 'invite-token': 'invite-token' } } as Request;
       const expectedResult = {
         id: 'some-uuid',
         email: 'test@example.com',
@@ -83,7 +83,7 @@ describe('AuthController', () => {
         email: 'test@example.com',
         password: 'password123',
       };
-      const req = { headers: { inviteToken: 'invite-token' } } as Request;
+      const req = { headers: { 'invite-token': 'invite-token' } } as Request;
       const expectedError = new Error('Registration failed');
       mockAuthService.register.mockRejectedValue(expectedError);
 
@@ -207,7 +207,7 @@ describe('AuthController', () => {
   describe('googleAuth', () => {
     it('should call authService.googleAuth with correct DTO and return the result', async () => {
       const dto: GoogleAuthDto = { token: 'google-token' };
-      const req = { headers: { inviteToken: 'invite-token' } } as Request;
+      const req = { headers: { 'invite-token': 'invite-token' } } as Request;
       const expectedResult = { data: { accessToken: 'some-jwt-token' } };
       mockAuthService.googleAuth.mockResolvedValue(expectedResult);
 
@@ -222,7 +222,7 @@ describe('AuthController', () => {
 
     it('should handle errors from authService.googleAuth', async () => {
       const dto: GoogleAuthDto = { token: 'google-token' };
-      const req = { headers: { inviteToken: 'invite-token' } } as Request;
+      const req = { headers: { 'invite-token': 'invite-token' } } as Request;
       const error = new Error('Google auth failed');
       mockAuthService.googleAuth.mockRejectedValue(error);
 

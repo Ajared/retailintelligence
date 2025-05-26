@@ -283,12 +283,13 @@ export class AuthService {
       context: {
         role,
         name: email.split('@')[0],
+        isAdmin: role === UserRole.ADMIN,
         link: `${this.configService.get<string>('FRONTEND_URL')}/register?inviteToken=${inviteToken}`,
       },
     });
 
     return {
-      message: SYS_MSG.RESOURCE_OPERATION_SUCCESSFUL('Invite Email Sent'),
+      message: SYS_MSG.RESOURCE_OPERATION_SUCCESSFUL('Invite User'),
       data: { email },
     };
   }

@@ -2,7 +2,6 @@
 
 A form-based web application for collecting retail store data with real-time analytics
 
-
 ## Features
 
 - **Form-based Data Collection**: Intuitive interface for enumerators to input retail store information
@@ -32,7 +31,6 @@ $ npm run build
 $ npm run start:prod
 ```
 
-
 ## Testing
 
 ```bash
@@ -43,10 +41,9 @@ $ npm run test
 $ npm run test:e2e
 ```
 
-
 ## Product Documentation
-![image](https://github.com/user-attachments/assets/a477cd6e-37f6-40b1-8dc2-e389b1f72ad3)
 
+![image](https://github.com/user-attachments/assets/a477cd6e-37f6-40b1-8dc2-e389b1f72ad3)
 
 ## Support
 

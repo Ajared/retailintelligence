@@ -899,13 +899,14 @@ describe('AuthService', () => {
         subject: 'Invitation to join Retail Intelligence',
         template: 'invite',
         context: {
+          isAdmin: false,
           role: UserRole.USER,
           name: testEmail.split('@')[0],
           link: 'http://localhost:3000/register?inviteToken=' + testInviteToken,
         },
       });
       expect(result).toEqual({
-        message: SYS_MSG.RESOURCE_OPERATION_SUCCESSFUL('Invite Email Sent'),
+        message: SYS_MSG.RESOURCE_OPERATION_SUCCESSFUL('Invite User'),
         data: { email: testEmail },
       });
     });
