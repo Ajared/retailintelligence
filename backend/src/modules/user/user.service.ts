@@ -42,8 +42,8 @@ export class UserService {
         return null;
       }
       throw new CustomHttpException(
-        SYS_MSG.RESOURCE_NOT_FOUND('User'),
-        HttpStatus.NOT_FOUND,
+        SYS_MSG.RESOURCE_FETCH_FAILED('User'),
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
 
@@ -64,8 +64,8 @@ export class UserService {
         return null;
       }
       throw new CustomHttpException(
-        SYS_MSG.RESOURCE_NOT_FOUND('User'),
-        HttpStatus.NOT_FOUND,
+        SYS_MSG.RESOURCE_FETCH_FAILED('User'),
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
 

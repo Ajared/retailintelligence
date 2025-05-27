@@ -298,7 +298,24 @@ export class AuthService {
     forgotPasswordDto: ForgotPasswordDto,
   ): Promise<AbstractResponseDto<{ email: string }>> {
     const { email } = forgotPasswordDto;
-    const user = await this.validateLocalUser(email);
+    const user = await this.userService.getUserByEmail(email.toLowerCase());
+
+    if (!user) {
+      throw new CustomHttpException(
+        SYS_MSG.INVALID_CREDENTIALS(['Email']),
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    if (
+      user?.authProvider !== AuthProvider.LOCAL ||
+      user.status !== UserStatus.ACTIVE
+    ) {
+      throw new CustomHttpException(
+        SYS_MSG.FORBIDDEN_ACTION,
+        HttpStatus.FORBIDDEN,
+      );
+    }
 
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     if (user.updatedAt && user.updatedAt > oneDayAgo) {
@@ -429,7 +446,17 @@ export class AuthService {
   private async validateLocalUser(email: string) {
     const user = await this.userService.getUserByEmail(email.toLowerCase());
 
-    if (user?.authProvider !== AuthProvider.LOCAL) {
+    if (!user) {
+      throw new CustomHttpException(
+        SYS_MSG.INVALID_CREDENTIALS(['Email', 'Password']),
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    if (
+      user?.authProvider !== AuthProvider.LOCAL ||
+      user.status !== UserStatus.ACTIVE
+    ) {
       throw new CustomHttpException(
         SYS_MSG.FORBIDDEN_ACTION,
         HttpStatus.FORBIDDEN,
