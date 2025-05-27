@@ -1,7 +1,5 @@
 'use client';
 
-import type React from 'react';
-
 import {
   Card,
   CardContent,
@@ -10,9 +8,9 @@ import {
   CardHeader,
   CardTitle,
 } from '~/components/ui/card';
+import Link from 'next/link';
 import { registerUser } from '../actions';
 import { Response } from '~/types/actions';
-import { useRouter } from 'next/navigation';
 import { UserInterface } from '~/types/user';
 import { RegisterFormData } from '../schema';
 import { Input } from '~/components/ui/input';
@@ -31,7 +29,6 @@ export function RegisterForm({
   inviteToken: string;
   isValidToken: boolean;
 }) {
-  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
 
   const initialState: Response<UserInterface> & { inputs: RegisterFormData } = {
@@ -58,8 +55,8 @@ export function RegisterForm({
           </CardDescription>
         </CardHeader>
         <CardFooter>
-          <Button onClick={() => router.push('/login')} className="w-full">
-            Login
+          <Button asChild className="w-full cursor-pointer">
+            <Link href="/login">Login</Link>
           </Button>
         </CardFooter>
       </Card>
@@ -176,12 +173,8 @@ export function RegisterForm({
           </Button>
           <div className="text-center text-sm">
             Already have an account?{' '}
-            <Button
-              variant="link"
-              className="px-0 cursor-pointer"
-              onClick={() => router.push('/login')}
-            >
-              Sign In
+            <Button variant="link" className="px-0 cursor-pointer" asChild>
+              <Link href="/login">Sign In</Link>
             </Button>
           </div>
         </CardFooter>
