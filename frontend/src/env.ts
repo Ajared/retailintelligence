@@ -6,8 +6,10 @@ export const env = createEnv({
     NODE_ENV: z
       .enum(['local', 'test', 'development', 'staging', 'production'])
       .default('development'),
+    API_URL: z.url(),
+    AUTH_SECRET: z.string(),
   },
-  runtimeEnv: process.env,
   emptyStringAsUndefined: true,
+  experimental__runtimeEnv: process.env,
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,
 });
