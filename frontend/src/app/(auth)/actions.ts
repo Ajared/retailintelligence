@@ -30,19 +30,9 @@ export const registerUser = async (
     const validatedData = registerFormSchema.safeParse(rawData);
 
     if (!validatedData.success) {
-      const messages: string[] = [];
-      const tree = z.treeifyError(validatedData.error);
-
-      function collectMessages(node: any) {
-        if (Array.isArray(node?.errors)) {
-          messages.push(...node.errors);
-        }
-        if (node?.properties && typeof node.properties === 'object') {
-          Object.values(node.properties).forEach(collectMessages);
-        }
-      }
-
-      collectMessages(tree);
+      const messages = collectErrorMessages(
+        z.treeifyError(validatedData.error),
+      );
 
       return {
         inputs: rawData,
@@ -107,19 +97,9 @@ export const loginAction = async (
     const validatedData = loginFormSchema.safeParse(rawData);
 
     if (!validatedData.success) {
-      const messages: string[] = [];
-      const tree = z.treeifyError(validatedData.error);
-
-      function collectMessages(node: any) {
-        if (Array.isArray(node?.errors)) {
-          messages.push(...node.errors);
-        }
-        if (node?.properties && typeof node.properties === 'object') {
-          Object.values(node.properties).forEach(collectMessages);
-        }
-      }
-
-      collectMessages(tree);
+      const messages = collectErrorMessages(
+        z.treeifyError(validatedData.error),
+      );
 
       return {
         inputs: rawData,
@@ -160,4 +140,24 @@ export const loginAction = async (
   } finally {
     redirect('/');
   }
+};
+
+type ErrorNode = {
+  errors?: string[];
+  properties?: Record<string, ErrorNode>;
+};
+
+const collectErrorMessages = (node: ErrorNode): string[] => {
+  const messages: string[] = [];
+
+  if (Array.isArray(node?.errors)) {
+    messages.push(...node.errors);
+  }
+  if (node?.properties && typeof node.properties === 'object') {
+    Object.values(node.properties).forEach((childNode) => {
+      messages.push(...collectErrorMessages(childNode));
+    });
+  }
+
+  return messages;
 };

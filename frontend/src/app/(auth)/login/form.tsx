@@ -121,7 +121,7 @@ export function LoginForm() {
             <Button
               type="button"
               variant="link"
-              className="px-0"
+              className="px-0 cursor-pointer"
               onClick={() => router.push('/register')}
             >
               Create an account
