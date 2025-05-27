@@ -373,6 +373,17 @@ export class AuthService {
     const { email, token, newPassword } = resetPasswordDto;
     const user = await this.validateLocalUser(email);
 
+    const [passwordCompareError, passwordMatch] = await trySafe(() =>
+      compare(newPassword, user.password),
+    );
+
+    if (passwordCompareError || passwordMatch) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_CONFLICT('Password', 'Reset Password'),
+        HttpStatus.CONFLICT,
+      );
+    }
+
     if (!user.resetPasswordToken || !user.resetPasswordExpires) {
       throw new CustomHttpException(
         SYS_MSG.TOKEN_INVALID('Password Reset'),
