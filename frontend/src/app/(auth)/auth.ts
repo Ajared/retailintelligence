@@ -9,17 +9,17 @@ import Credentials from 'next-auth/providers/credentials';
 
 declare module 'next-auth' {
   interface Session extends DefaultSession {
-    user: UserInterface & DefaultSession['user'] & { accessToken: string };
+    user: UserInterface & DefaultSession['user'] & { access_token: string };
   }
 
   interface User extends UserInterface {
-    accessToken: string;
+    access_token: string;
   }
 }
 
 declare module 'next-auth/jwt' {
   interface JWT extends DefaultJWT {
-    user: UserInterface & { accessToken: string };
+    user: UserInterface & { access_token: string };
   }
 }
 
@@ -35,31 +35,35 @@ export const {
       async authorize(credentials) {
         const validatedFields = loginFormSchema.safeParse(credentials);
         if (!validatedFields.success) {
-          return null;
+          throw new Error('Invalid Credentials');
         }
 
         const { email, password } = validatedFields.data;
-        const user = await loginUser(email, password);
+        const response = await loginUser(email, password);
 
-        if (!user || 'error' in user) {
-          return null;
+        if (!response || 'error' in response) {
+          throw new Error(response.message || 'Something went wrong');
         }
 
-        return user;
+        return response.data as UserInterface & { access_token: string };
       },
-    }),  
+    }),
   ],
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.user = user as UserInterface & { accessToken: string };
+        token.user = user as UserInterface & { access_token: string };
       }
 
       return token;
     },
     async session({ session, token }) {
       if (token.user) {
-        session.user = token.user as UserInterface & { accessToken: string; emailVerified: Date | null; id: string };
+        session.user = token.user as UserInterface & {
+          access_token: string;
+          emailVerified: Date | null;
+          id: string;
+        };
       }
 
       return session;

@@ -21,7 +21,7 @@ export interface UserInterface extends AbstractBaseInterface {
   password: string;
   role: UserRole;
   status: UserStatus;
-  authProvider: AuthProvider;
-  resetPasswordToken?: string;
-  resetPasswordExpires?: Date;
+  auth_provider: AuthProvider;
+  reset_password_token?: string;
+  reset_password_expires?: Date;
 }
