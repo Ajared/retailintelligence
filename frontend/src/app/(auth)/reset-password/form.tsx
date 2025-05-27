@@ -121,7 +121,6 @@ export function ResetPasswordForm() {
               maxLength={8}
               className="w-full"
               pattern={REGEXP_ONLY_DIGITS_AND_CHARS}
-              // value={('inputs' in state && state.inputs?.token) || ''}
             >
               <InputOTPGroup className="w-full">
                 <InputOTPSlot className="w-full h-12" index={0} />
