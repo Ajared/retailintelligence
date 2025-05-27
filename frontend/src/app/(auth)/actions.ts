@@ -8,10 +8,10 @@ import {
 } from './schema';
 import { z } from 'zod/v4';
 import { auth, signIn } from './auth';
-import { redirect } from 'next/navigation';
 import customFetch from '~/lib/custom-fetch';
 import { UserInterface } from '~/types/user';
 import { ErrorResponse, Response, SuccessResponse } from '~/types/actions';
+import { isRedirectError } from 'next/dist/client/components/redirect-error';
 
 export const registerUser = async (
   _: Response<UserInterface | null>,
@@ -114,7 +114,8 @@ export const loginAction = async (
     await signIn('credentials', {
       email,
       password,
-      redirect: false,
+      redirect: true,
+      redirectTo: '/',
     });
 
     if (!session?.user) throw new Error('Something went wrong');
@@ -125,6 +126,8 @@ export const loginAction = async (
       timestamp: new Date().toISOString(),
     } as SuccessResponse<UserInterface & { access_token: string }>;
   } catch (error) {
+    if (isRedirectError(error)) throw error;
+
     return {
       inputs: rawData,
       message: 'Something went wrong',
@@ -137,8 +140,6 @@ export const loginAction = async (
           ? (error.cause.err as { message?: string }).message
           : 'Something went wrong',
     } as ErrorResponse & { inputs: LoginFormData };
-  } finally {
-    redirect('/');
   }
 };
 
