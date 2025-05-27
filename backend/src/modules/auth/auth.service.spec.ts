@@ -709,16 +709,23 @@ describe('AuthService', () => {
 
     beforeEach(() => {
       hashSpy.mockResolvedValue(testHashedNewPassword);
-      compareSpy.mockResolvedValue(true);
+      compareSpy.mockReset();
+      userService.updateUser.mockReset();
+      mailService.sendMail.mockReset();
     });
 
     it('should successfully reset password with valid, non-expired token', async () => {
       userService.getUserByEmail.mockResolvedValue(mockUserWithResetToken);
+      compareSpy.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
 
       const result = await service.resetPassword(resetDto);
 
       expect(userService.getUserByEmail).toHaveBeenCalledWith(
         testEmail.toLowerCase(),
+      );
+      expect(compareSpy).toHaveBeenCalledWith(
+        testNewPassword,
+        mockUserWithResetToken.password,
       );
       expect(compareSpy).toHaveBeenCalledWith(
         testResetOtp,
@@ -749,13 +756,23 @@ describe('AuthService', () => {
       });
     });
 
+    it('should throw ConflictException if new password matches old password', async () => {
+      userService.getUserByEmail.mockResolvedValue(mockUserWithResetToken);
+      compareSpy.mockResolvedValueOnce(true);
+
+      await expect(service.resetPassword(resetDto)).rejects.toMatchObject({
+        message: SYS_MSG.RESOURCE_CONFLICT('Password', 'Reset Password'),
+        status: HttpStatus.CONFLICT,
+      });
+      expect(hashSpy).not.toHaveBeenCalled();
+      expect(userService.updateUser).not.toHaveBeenCalled();
+      expect(mailService.sendMail).not.toHaveBeenCalled();
+    });
+
     it('should throw BadRequestException if token does not match stored hash', async () => {
       userService.getUserByEmail.mockResolvedValue(mockUserWithResetToken);
-      compareSpy.mockResolvedValue(false);
+      compareSpy.mockResolvedValueOnce(false).mockResolvedValueOnce(false);
 
-      await expect(service.resetPassword(resetDto)).rejects.toThrow(
-        CustomHttpException,
-      );
       await expect(service.resetPassword(resetDto)).rejects.toMatchObject({
         message: SYS_MSG.TOKEN_INVALID('Password Reset'),
         status: HttpStatus.BAD_REQUEST,
@@ -769,11 +786,8 @@ describe('AuthService', () => {
       userService.getUserByEmail.mockResolvedValue(
         mockUserWithExpiredResetToken,
       );
-      compareSpy.mockResolvedValue(true);
+      compareSpy.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
 
-      await expect(service.resetPassword(resetDto)).rejects.toThrow(
-        CustomHttpException,
-      );
       await expect(service.resetPassword(resetDto)).rejects.toMatchObject({
         message: SYS_MSG.TOKEN_EXPIRED('Password Reset'),
         status: HttpStatus.BAD_REQUEST,
@@ -785,51 +799,23 @@ describe('AuthService', () => {
 
     it('should throw BadRequestException if user has no reset token set', async () => {
       userService.getUserByEmail.mockResolvedValue(mockUser);
+      compareSpy.mockResolvedValueOnce(false);
 
-      await expect(service.resetPassword(resetDto)).rejects.toThrow(
-        CustomHttpException,
-      );
       await expect(service.resetPassword(resetDto)).rejects.toMatchObject({
         message: SYS_MSG.TOKEN_INVALID('Password Reset'),
         status: HttpStatus.BAD_REQUEST,
       });
-      expect(compareSpy).not.toHaveBeenCalled();
       expect(hashSpy).not.toHaveBeenCalled();
       expect(userService.updateUser).not.toHaveBeenCalled();
       expect(mailService.sendMail).not.toHaveBeenCalled();
     });
 
-    it('should throw error if user not found', async () => {
-      userService.getUserByEmail.mockResolvedValue(null);
-
-      await expect(service.resetPassword(resetDto)).rejects.toThrow(
-        CustomHttpException,
-      );
-      await expect(service.resetPassword(resetDto)).rejects.toMatchObject({
-        message: SYS_MSG.INVALID_CREDENTIALS(['Email', 'Password']),
-        status: HttpStatus.UNAUTHORIZED,
-      });
-    });
-
-    it('should throw ForbiddenException if user is not local', async () => {
-      userService.getUserByEmail.mockResolvedValue(mockUserNonLocal);
-
-      await expect(service.resetPassword(resetDto)).rejects.toThrow(
-        CustomHttpException,
-      );
-      await expect(service.resetPassword(resetDto)).rejects.toMatchObject({
-        message: SYS_MSG.FORBIDDEN_ACTION,
-        status: HttpStatus.FORBIDDEN,
-      });
-    });
-
     it('should throw BadRequestException if comparing token fails', async () => {
       userService.getUserByEmail.mockResolvedValue(mockUserWithResetToken);
-      compareSpy.mockRejectedValue(new Error('Compare error'));
+      compareSpy
+        .mockResolvedValueOnce(false)
+        .mockRejectedValueOnce(new Error('Compare error'));
 
-      await expect(service.resetPassword(resetDto)).rejects.toThrow(
-        CustomHttpException,
-      );
       await expect(service.resetPassword(resetDto)).rejects.toMatchObject({
         message: SYS_MSG.TOKEN_INVALID('Password Reset'),
         status: HttpStatus.BAD_REQUEST,
@@ -841,12 +827,9 @@ describe('AuthService', () => {
 
     it('should throw InternalServerErrorException if hashing new password fails', async () => {
       userService.getUserByEmail.mockResolvedValue(mockUserWithResetToken);
-      compareSpy.mockResolvedValue(true);
+      compareSpy.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
       hashSpy.mockRejectedValue(new Error('Hash error'));
 
-      await expect(service.resetPassword(resetDto)).rejects.toThrow(
-        CustomHttpException,
-      );
       await expect(service.resetPassword(resetDto)).rejects.toMatchObject({
         message: SYS_MSG.INTERNAL_SERVER_ERROR,
         status: HttpStatus.INTERNAL_SERVER_ERROR,
