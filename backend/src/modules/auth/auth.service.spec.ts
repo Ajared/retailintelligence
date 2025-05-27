@@ -527,15 +527,15 @@ describe('AuthService', () => {
       });
     });
 
-    it('should throw ForbiddenException if local user not found', async () => {
+    it('should throw error if local user not found', async () => {
       userService.getUserByEmail.mockResolvedValue(null);
 
       await expect(service.login(loginDto)).rejects.toThrow(
         CustomHttpException,
       );
       await expect(service.login(loginDto)).rejects.toMatchObject({
-        message: SYS_MSG.FORBIDDEN_ACTION,
-        status: HttpStatus.FORBIDDEN,
+        message: SYS_MSG.INVALID_CREDENTIALS(['Email', 'Password']),
+        status: HttpStatus.UNAUTHORIZED,
       });
       expect(compareSpy).not.toHaveBeenCalled();
       expect(tokenService.generateToken).not.toHaveBeenCalled();
@@ -659,15 +659,15 @@ describe('AuthService', () => {
       expect(mailService.sendMail).not.toHaveBeenCalled();
     });
 
-    it('should throw ForbiddenException if user not found', async () => {
+    it('should throw error if user not found', async () => {
       userService.getUserByEmail.mockResolvedValue(null);
 
       await expect(service.forgotPassword(forgotDto)).rejects.toThrow(
         CustomHttpException,
       );
       await expect(service.forgotPassword(forgotDto)).rejects.toMatchObject({
-        message: SYS_MSG.FORBIDDEN_ACTION,
-        status: HttpStatus.FORBIDDEN,
+        message: SYS_MSG.INVALID_CREDENTIALS(['Email']),
+        status: HttpStatus.UNAUTHORIZED,
       });
     });
 
@@ -799,15 +799,15 @@ describe('AuthService', () => {
       expect(mailService.sendMail).not.toHaveBeenCalled();
     });
 
-    it('should throw ForbiddenExcepINTERNAL_SERVER_ERRORtion if user not found', async () => {
+    it('should throw error if user not found', async () => {
       userService.getUserByEmail.mockResolvedValue(null);
 
       await expect(service.resetPassword(resetDto)).rejects.toThrow(
         CustomHttpException,
       );
       await expect(service.resetPassword(resetDto)).rejects.toMatchObject({
-        message: SYS_MSG.FORBIDDEN_ACTION,
-        status: HttpStatus.FORBIDDEN,
+        message: SYS_MSG.INVALID_CREDENTIALS(['Email', 'Password']),
+        status: HttpStatus.UNAUTHORIZED,
       });
     });
 
