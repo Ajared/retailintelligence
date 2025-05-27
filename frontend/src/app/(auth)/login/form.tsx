@@ -1,7 +1,5 @@
 'use client';
 
-import type React from 'react';
-
 import {
   Card,
   CardContent,
@@ -10,9 +8,9 @@ import {
   CardHeader,
   CardTitle,
 } from '~/components/ui/card';
+import Link from 'next/link';
 import { loginAction } from '../actions';
 import { Response } from '~/types/actions';
-import { useRouter } from 'next/navigation';
 import { UserInterface } from '~/types/user';
 import { LoginFormData } from '../schema';
 import { Input } from '~/components/ui/input';
@@ -23,7 +21,6 @@ import { Alert, AlertDescription } from '~/components/ui/alert';
 import { CheckCircle2, Eye, EyeOff, Loader2 } from 'lucide-react';
 
 export function LoginForm() {
-  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
 
   const initialState: Response<UserInterface & { access_token: string }> & {
@@ -43,9 +40,9 @@ export function LoginForm() {
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
-        <CardTitle>Create an account</CardTitle>
+        <CardTitle>Log In</CardTitle>
         <CardDescription>
-          Enter your password to get started with your account
+          Welcome back! - Please sign in to continue.
         </CardDescription>
       </CardHeader>
       <form action={action} autoComplete="on" className="flex flex-col gap-5">
@@ -94,14 +91,14 @@ export function LoginForm() {
             <Alert variant={'data' in state ? 'default' : 'destructive'}>
               {'data' in state && <CheckCircle2 className="h-4 w-4" />}
               <AlertDescription>
-                {('error' in state &&
-                  state.error &&
-                  (Array.isArray(state.error)
-                    ? (state.error as string[]).join(', ')
-                    : typeof state.error === 'string'
-                      ? state.error
-                      : 'Invalid form data')) ||
-                  state?.message}
+                {state?.message ||
+                  ('error' in state &&
+                    state.error &&
+                    (Array.isArray(state.error)
+                      ? (state.error as string[]).join(', ')
+                      : typeof state.error === 'string'
+                        ? state.error
+                        : 'Invalid form data'))}
               </AlertDescription>
             </Alert>
           )}
@@ -116,16 +113,28 @@ export function LoginForm() {
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isPending ? 'Processing' : 'Sign In'}
           </Button>
-          <div className="text-center text-sm">
-            Don&apos;t have an account?{' '}
-            <Button
-              type="button"
-              variant="link"
-              className="px-0 cursor-pointer"
-              onClick={() => router.push('/register')}
-            >
-              Create an account
-            </Button>
+          <div className="flex flex-col">
+            <div className="text-center text-sm">
+              Don&apos;t have an account?{' '}
+              <Button
+                asChild
+                type="button"
+                variant="link"
+                className="px-0 cursor-pointer"
+              >
+                <Link href="/register">Register Here</Link>
+              </Button>
+            </div>
+            <div className="text-center text-sm">
+              <Button
+                asChild
+                type="button"
+                variant="link"
+                className="px-0 cursor-pointer"
+              >
+                <Link href="/forgot-password">Reset Password</Link>
+              </Button>
+            </div>
           </div>
         </CardFooter>
       </form>
