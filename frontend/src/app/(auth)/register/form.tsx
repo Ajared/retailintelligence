@@ -178,7 +178,7 @@ export function RegisterForm({
             Already have an account?{' '}
             <Button
               variant="link"
-              className="px-0"
+              className="px-0 cursor-pointer"
               onClick={() => router.push('/login')}
             >
               Sign In
