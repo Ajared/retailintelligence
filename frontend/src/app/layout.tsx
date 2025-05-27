@@ -1,15 +1,24 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { Toaster } from '~/components/ui/sonner';
-import { Geist, Geist_Mono } from 'next/font/google';
+import {
+  JetBrains_Mono,
+  Plus_Jakarta_Sans,
+  Source_Serif_4,
+} from 'next/font/google';
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
+const jakarta = Plus_Jakarta_Sans({
+  variable: '--font-jakarta',
   subsets: ['latin'],
 });
 
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
+const sourceSerif = Source_Serif_4({
+  variable: '--font-source-serif',
+  subsets: ['latin'],
+});
+
+const jetBrainsMono = JetBrains_Mono({
+  variable: '--font-jetbrains-mono',
   subsets: ['latin'],
 });
 
@@ -26,7 +35,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${jakarta.variable} ${sourceSerif.variable} ${jetBrainsMono.variable} antialiased`}
       >
         {children}
         <Toaster />
