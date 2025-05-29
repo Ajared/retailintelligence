@@ -45,7 +45,7 @@ export function RegisterForm({
 
   const [state, action, isPending] = useActionState(registerUser, initialState);
 
-  if (!isValidToken) {
+  if (!isValidToken || !inviteToken) {
     return (
       <Card className="w-full max-w-md">
         <CardHeader>

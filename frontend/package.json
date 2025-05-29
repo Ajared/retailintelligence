@@ -14,6 +14,7 @@
     "code-quality": "npm run lint && npm run typecheck && npm run build && echo Code Quality successfully completed!"
   },
   "dependencies": {
+    "@bprogress/next": "^3.2.12",
     "@radix-ui/react-label": "^2.1.7",
     "@radix-ui/react-progress": "^1.1.7",
     "@radix-ui/react-slot": "^1.2.3",
