@@ -1,0 +1,15 @@
+import { z } from 'zod/v4';
+import { createEnv } from '@t3-oss/env-nextjs';
+
+export const env = createEnv({
+  server: {
+    NODE_ENV: z
+      .enum(['local', 'test', 'development', 'staging', 'production'])
+      .default('development'),
+    API_URL: z.url(),
+    AUTH_SECRET: z.string(),
+  },
+  emptyStringAsUndefined: true,
+  experimental__runtimeEnv: process.env,
+  skipValidation: !!process.env.SKIP_ENV_VALIDATION,
+});
