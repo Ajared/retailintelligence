@@ -1,11 +1,12 @@
-import './globals.css';
-import type { Metadata } from 'next';
-import { Toaster } from '~/components/ui/sonner';
 import {
   JetBrains_Mono,
   Plus_Jakarta_Sans,
   Source_Serif_4,
 } from 'next/font/google';
+import './globals.css';
+import Providers from './providers';
+import type { Metadata } from 'next';
+import { Toaster } from '~/components/ui/sonner';
 
 const jakarta = Plus_Jakarta_Sans({
   variable: '--font-jakarta',
@@ -37,8 +38,10 @@ export default function RootLayout({
       <body
         className={`${jakarta.variable} ${sourceSerif.variable} ${jetBrainsMono.variable} antialiased`}
       >
-        {children}
-        <Toaster />
+        <Providers>
+          {children}
+          <Toaster />
+        </Providers>
       </body>
     </html>
   );

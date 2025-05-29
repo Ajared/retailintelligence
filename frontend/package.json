@@ -14,12 +14,14 @@
     "code-quality": "npm run lint && npm run typecheck && npm run build && echo Code Quality successfully completed!"
   },
   "dependencies": {
+    "@bprogress/next": "^3.2.12",
     "@radix-ui/react-label": "^2.1.7",
     "@radix-ui/react-progress": "^1.1.7",
     "@radix-ui/react-slot": "^1.2.3",
     "@t3-oss/env-nextjs": "^0.13.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "input-otp": "^1.4.2",
     "jose": "^6.0.11",
     "lucide-react": "^0.511.0",
     "next": "15.3.2",
