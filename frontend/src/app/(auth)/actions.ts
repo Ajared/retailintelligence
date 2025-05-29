@@ -5,6 +5,10 @@ import {
   RegisterFormData,
   registerFormSchema,
   loginFormSchema,
+  ForgotPasswordFormData,
+  forgotPasswordFormSchema,
+  ResetPasswordFormData,
+  resetPasswordFormSchema,
 } from './schema';
 import { z } from 'zod/v4';
 import { auth, signIn } from './auth';
@@ -140,6 +144,111 @@ export const loginAction = async (
           ? (error.cause.err as { message?: string }).message
           : 'Something went wrong',
     } as ErrorResponse & { inputs: LoginFormData };
+  }
+};
+
+export const forgotPasswordAction = async (
+  _: Response<{ email: string } | null>,
+  formData: FormData,
+) => {
+  let rawData: ForgotPasswordFormData | null = null;
+
+  try {
+    rawData = {
+      email: formData.get('email') as string,
+    };
+
+    const validatedData = forgotPasswordFormSchema.safeParse(rawData);
+
+    if (!validatedData.success) {
+      const messages = collectErrorMessages(
+        z.treeifyError(validatedData.error),
+      );
+
+      return {
+        inputs: rawData,
+        message: 'Invalid form data',
+        timestamp: new Date().toISOString(),
+        error: messages,
+      } as ErrorResponse & { inputs: ForgotPasswordFormData };
+    }
+
+    const { email } = validatedData.data;
+
+    const response = await customFetch.post<{ email: string }>(
+      '/auth/forgot-password',
+      { email },
+    );
+
+    if (!('data' in response)) {
+      return {
+        ...response,
+        inputs: rawData,
+      } as ErrorResponse & { inputs: ForgotPasswordFormData };
+    }
+
+    return response;
+  } catch (error) {
+    return {
+      inputs: rawData,
+      message: 'Something went wrong',
+      timestamp: new Date().toISOString(),
+      error: error instanceof Error ? error.message : 'Something went wrong',
+    } as ErrorResponse & { inputs: ForgotPasswordFormData };
+  }
+};
+
+export const resetPasswordAction = async (
+  _: Response<UserInterface | null>,
+  formData: FormData,
+) => {
+  let rawData: ResetPasswordFormData | null = null;
+
+  try {
+    rawData = {
+      email: formData.get('email') as string,
+      password: formData.get('password') as string,
+      confirmPassword: formData.get('confirmPassword') as string,
+      token: formData.get('token') as string,
+    };
+
+    const validatedData = resetPasswordFormSchema.safeParse(rawData);
+
+    if (!validatedData.success) {
+      const messages = collectErrorMessages(
+        z.treeifyError(validatedData.error),
+      );
+
+      return {
+        inputs: rawData,
+        message: 'Invalid form data',
+        timestamp: new Date().toISOString(),
+        error: messages,
+      } as ErrorResponse & { inputs: ResetPasswordFormData };
+    }
+
+    const { email, confirmPassword, token } = validatedData.data;
+
+    const response = await customFetch.post<UserInterface>(
+      '/auth/reset-password',
+      { email, newPassword: confirmPassword, token },
+    );
+
+    if (!('data' in response)) {
+      return {
+        ...response,
+        inputs: rawData,
+      } as ErrorResponse & { inputs: ResetPasswordFormData };
+    }
+
+    return response;
+  } catch (error) {
+    return {
+      inputs: rawData,
+      message: 'Something went wrong',
+      timestamp: new Date().toISOString(),
+      error: error instanceof Error ? error.message : 'Something went wrong',
+    } as ErrorResponse & { inputs: ResetPasswordFormData };
   }
 };
 
