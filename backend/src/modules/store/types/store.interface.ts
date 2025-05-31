@@ -1,4 +1,3 @@
-import { StoreType } from '../constants/store.constant';
 import { AbstractBaseInterface } from '~/database/base/base.interface';
 
 export interface StoreInterface extends AbstractBaseInterface {
@@ -6,7 +5,7 @@ export interface StoreInterface extends AbstractBaseInterface {
   localGovernmentId: string;
   stateId: string;
   address: string;
-  storeType: StoreType;
+  storeType: string;
   landmarks?: string;
   photos?: string[];
   latitude: number;

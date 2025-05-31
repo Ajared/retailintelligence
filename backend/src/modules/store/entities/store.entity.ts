@@ -1,4 +1,3 @@
-import { StoreType } from '../constants/store.constant';
 import { User } from '~/modules/user/entities/user.entity';
 import { Column, Entity, ManyToOne, JoinColumn } from 'typeorm';
 import { AbstractBaseEntity } from '~/database/base/base.entity';
@@ -27,8 +26,8 @@ export class Store extends AbstractBaseEntity {
   @Column()
   address: string;
 
-  @Column({ type: 'enum', enum: StoreType })
-  storeType: StoreType;
+  @Column()
+  storeType: string;
 
   @Column({ type: 'text', nullable: true })
   landmarks?: string;

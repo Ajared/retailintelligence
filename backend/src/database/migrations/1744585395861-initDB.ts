@@ -41,14 +41,6 @@ export class InitDB1744585395861 implements MigrationInterface {
       this.logger.log('Enum type public.user_status_enum already exists.');
     }
 
-    if (!(await this.typeExists(queryRunner, 'store_type_enum'))) {
-      await queryRunner.query(
-        `CREATE TYPE "public"."store_type_enum" AS ENUM('Retail', 'Wholesale')`,
-      );
-    } else {
-      this.logger.log('Enum type public.store_type_enum already exists.');
-    }
-
     await queryRunner.createTable(
       new Table({
         name: 'users',
@@ -218,7 +210,7 @@ export class InitDB1744585395861 implements MigrationInterface {
           },
           {
             name: 'store_type',
-            type: '"public"."store_type_enum"',
+            type: 'varchar',
             isNullable: false,
           },
           {
