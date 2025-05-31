@@ -20,10 +20,12 @@ export class LocalGovernmentService {
   async createLocalGovernment(
     localGovernmentDto: LocalGovernmentDto,
   ): Promise<AbstractResponseDto<LocalGovernmentInterface>> {
-    const { name } = localGovernmentDto;
+    const { name, stateId } = localGovernmentDto;
 
     const [existingLocalGovernmentError, existingLocalGovernment] =
-      await trySafe(() => this.localGovernmentModelAction.get({ name }));
+      await trySafe(() =>
+        this.localGovernmentModelAction.get({ name, stateId }),
+      );
 
     if (
       existingLocalGovernmentError &&

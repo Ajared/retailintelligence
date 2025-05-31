@@ -1,12 +1,12 @@
 import { CanActivate } from '@nestjs/common';
 import { RoleGuard } from '~/guards/role.guard';
-import { DistrictService } from './district.service';
+import { StateService } from './state.service';
 import { Test, TestingModule } from '@nestjs/testing';
-import { DistrictController } from './district.controller';
-import { DistrictModelAction } from './district.model-action';
+import { StateController } from './state.controller';
+import { StateModelAction } from './state.model-action';
 
-describe('DistrictController', () => {
-  const mockDistrictModelAction = {
+describe('StateController', () => {
+  const mockStateModelAction = {
     get: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
@@ -17,16 +17,16 @@ describe('DistrictController', () => {
     canActivate: jest.fn(() => true),
   };
 
-  let controller: DistrictController;
+  let controller: StateController;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      controllers: [DistrictController],
+      controllers: [StateController],
       providers: [
-        DistrictService,
+        StateService,
         {
-          provide: DistrictModelAction,
-          useValue: mockDistrictModelAction,
+          provide: StateModelAction,
+          useValue: mockStateModelAction,
         },
       ],
     })
@@ -34,7 +34,7 @@ describe('DistrictController', () => {
       .useValue(mockRoleGuard)
       .compile();
 
-    controller = module.get<DistrictController>(DistrictController);
+    controller = module.get<StateController>(StateController);
   });
 
   it('should be defined', () => {
