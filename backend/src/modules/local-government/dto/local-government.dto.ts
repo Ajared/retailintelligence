@@ -4,4 +4,8 @@ export class LocalGovernmentDto {
   @IsString()
   @IsNotEmpty()
   name: string;
+
+  @IsString()
+  @IsNotEmpty()
+  stateId: string;
 }

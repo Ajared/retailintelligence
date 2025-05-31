@@ -4,7 +4,7 @@ import { AbstractBaseInterface } from '~/database/base/base.interface';
 export interface StoreInterface extends AbstractBaseInterface {
   storeName: string;
   localGovernmentId: string;
-  districtId: string;
+  stateId: string;
   address: string;
   storeType: StoreType;
   landmarks?: string;

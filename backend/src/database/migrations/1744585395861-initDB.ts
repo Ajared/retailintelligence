@@ -118,7 +118,7 @@ export class InitDB1744585395861 implements MigrationInterface {
 
     await queryRunner.createTable(
       new Table({
-        name: 'districts',
+        name: 'states',
         columns: [
           {
             name: 'id',
@@ -166,6 +166,11 @@ export class InitDB1744585395861 implements MigrationInterface {
             isNullable: false,
           },
           {
+            name: 'state_id',
+            type: 'uuid',
+            isNullable: false,
+          },
+          {
             name: 'created_at',
             type: 'timestamp with time zone',
             default: 'now()',
@@ -176,6 +181,14 @@ export class InitDB1744585395861 implements MigrationInterface {
             type: 'timestamp with time zone',
             default: 'now()',
             isNullable: false,
+          },
+        ],
+        foreignKeys: [
+          {
+            columnNames: ['state_id'],
+            referencedTableName: 'states',
+            referencedColumnNames: ['id'],
+            onDelete: 'CASCADE',
           },
         ],
       }),
@@ -234,7 +247,7 @@ export class InitDB1744585395861 implements MigrationInterface {
             isNullable: false,
           },
           {
-            name: 'district_id',
+            name: 'state_id',
             type: 'uuid',
             isNullable: false,
           },
@@ -263,8 +276,8 @@ export class InitDB1744585395861 implements MigrationInterface {
         ],
         foreignKeys: [
           {
-            columnNames: ['district_id'],
-            referencedTableName: 'districts',
+            columnNames: ['state_id'],
+            referencedTableName: 'states',
             referencedColumnNames: ['id'],
             onDelete: 'CASCADE',
           },
@@ -289,7 +302,7 @@ export class InitDB1744585395861 implements MigrationInterface {
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.dropTable('stores', true);
     await queryRunner.dropTable('local_governments', true);
-    await queryRunner.dropTable('districts', true);
+    await queryRunner.dropTable('states', true);
     await queryRunner.dropTable('users', true);
 
     await queryRunner.query(`DROP TYPE IF EXISTS "public"."store_type_enum"`);

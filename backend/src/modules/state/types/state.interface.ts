@@ -1,5 +1,5 @@
 import { AbstractBaseInterface } from '~/database/base/base.interface';
 
-export interface DistrictInterface extends AbstractBaseInterface {
+export interface StateInterface extends AbstractBaseInterface {
   name: string;
 }

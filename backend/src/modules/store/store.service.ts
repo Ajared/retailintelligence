@@ -177,9 +177,9 @@ export class StoreService {
         paginationPayload,
         filterRecordOptions: {},
         relations: {
-          localGovernment: true,
-          district: true,
+          state: true,
           enumerator: true,
+          localGovernment: true,
         },
       };
 
