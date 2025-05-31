@@ -4,9 +4,13 @@ on:
   push:
     branches:
       - dev
+    paths:
+      - "backend/**"
   pull_request:
     branches:
       - dev
+    paths:
+      - "backend/**"
   workflow_dispatch:
 
 jobs:
@@ -32,6 +36,18 @@ jobs:
         run: pnpm install --frozen-lockfile
         working-directory: ./backend
 
-      - name: Run Code Quality
-        run: pnpm code-quality
+      - name: Run Lint
+        run: pnpm lint
+        working-directory: ./backend
+
+      - name: Run Typecheck
+        run: pnpm typecheck
+        working-directory: ./backend
+
+      - name: Run Tests
+        run: pnpm test
+        working-directory: ./backend
+
+      - name: Build Project
+        run: pnpm build
         working-directory: ./backend
