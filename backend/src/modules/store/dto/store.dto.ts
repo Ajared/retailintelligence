@@ -2,10 +2,8 @@ import {
   IsString,
   IsNotEmpty,
   IsNumber,
-  IsEnum,
   IsOptional,
 } from 'class-validator';
-import { StoreType } from '../constants/store.constant';
 
 export class StoreDto {
   @IsString()
@@ -24,9 +22,9 @@ export class StoreDto {
   @IsNotEmpty()
   address: string;
 
-  @IsEnum(StoreType)
+  @IsString()
   @IsNotEmpty()
-  storeType: StoreType;
+  storeType: string;
 
   @IsString()
   @IsOptional()
