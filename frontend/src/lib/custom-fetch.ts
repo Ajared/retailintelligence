@@ -1,4 +1,5 @@
 import { env } from '~/env';
+import { auth } from '~/app/(auth)/auth';
 import { ErrorResponse, Response, SuccessResponse } from '~/types/actions';
 
 interface FetchOptions extends RequestInit {
@@ -16,6 +17,7 @@ async function customFetcher<T>(
   options: FetchOptions = {},
 ): Promise<Response<T>> {
   const { baseURL = env.API_URL, ...fetchOptions } = options;
+  const session = await auth();
 
   const mergedOptions: RequestInit = {
     ...defaultOptions,
@@ -23,6 +25,9 @@ async function customFetcher<T>(
     headers: {
       ...defaultOptions.headers,
       ...fetchOptions.headers,
+      ...(session?.user?.access_token
+        ? { Authorization: `Bearer ${session.user.access_token}` }
+        : {}),
     },
   };
 
