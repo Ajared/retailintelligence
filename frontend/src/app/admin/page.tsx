@@ -4,19 +4,20 @@ import { Button } from '~/components/ui/button';
 
 export default function AdminPage() {
   return (
-    <div className="flex items-center justify-center w-full flex-col gap-4 h-full">
+    <div className="flex items-center justify-center w-full flex-col gap-4 h-full p-4">
       <Image
         src="/empty-box.png"
         alt="empty-box"
         width={350}
         height={350}
         priority
-        style={{ width: 'auto', height: 'auto' }}
+        className="w-60 sm:w-80 md:w-[350px] h-auto"
+        style={{ height: 'auto' }}
       />
-      <div className="flex flex-col gap-2 items-center justify-center">
+      <div className="flex flex-col gap-5 items-center justify-center">
         <div className="flex flex-col items-center justify-center">
           <h3 className="text-lg font-semibold">Not enough data to display</h3>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground text-center">
             Enumerate stores and add users to view application metrics
           </p>
         </div>
