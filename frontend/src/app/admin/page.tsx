@@ -11,8 +11,8 @@ export default function AdminPage() {
         width={350}
         height={350}
         priority
-        className="w-60 sm:w-80 md:w-[350px] h-auto"
         style={{ height: 'auto' }}
+        className="w-60 sm:w-80 md:w-[350px] h-auto"
       />
       <div className="flex flex-col gap-5 items-center justify-center">
         <div className="flex flex-col items-center justify-center">
