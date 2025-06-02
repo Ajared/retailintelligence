@@ -11,9 +11,9 @@ import {
   resetPasswordFormSchema,
 } from './schema';
 import { z } from 'zod/v4';
-import { auth, signIn } from './auth';
 import customFetch from '~/lib/custom-fetch';
 import { UserInterface } from '~/types/user';
+import { auth, signIn, signOut } from './auth';
 import { ErrorResponse, Response, SuccessResponse } from '~/types/actions';
 import { isRedirectError } from 'next/dist/client/components/redirect-error';
 
@@ -270,4 +270,8 @@ const collectErrorMessages = (node: ErrorNode): string[] => {
   }
 
   return messages;
+};
+
+export const logoutAction = async () => {
+  await signOut({ redirectTo: '/login' });
 };
