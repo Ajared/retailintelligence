@@ -22,7 +22,7 @@ import {
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu';
 
-const navigationItems = [
+export const navigationItems = [
   {
     title: 'Home',
     icon: Home,
@@ -49,15 +49,17 @@ export function AppSidebar() {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton className="p-0" size="lg" asChild>
+            <SidebarMenuButton
+              className="p-0 hover:bg-transparent bg-transparent data-[state=active]:bg-transparent data-[state=open]:bg-transparent focus:bg-transparent focus-visible:bg-transparent active:bg-transparent"
+              size="lg"
+              asChild
+            >
               <Link href="/" className="flex items-center gap-2">
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold text-foreground">
-                    Retail
-                    <br />
-                    Intelligence
-                  </span>
-                </div>
+                <span className="truncate font-semibold text-foreground">
+                  Retail
+                  <br />
+                  Intelligence
+                </span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -71,7 +73,11 @@ export function AppSidebar() {
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild
-                    isActive={pathname.startsWith(item.url)}
+                    isActive={
+                      item.url === '/admin'
+                        ? pathname === item.url
+                        : pathname.startsWith(item.url)
+                    }
                     className="data-[state=active]:bg-sidebar-accent data-[state=active]:text-sidebar-accent-foreground"
                   >
                     <Link href={item.url} className="flex items-center gap-2">
