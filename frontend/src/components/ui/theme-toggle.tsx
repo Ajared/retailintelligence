@@ -6,11 +6,21 @@ import {
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu';
 import { useTheme } from 'next-themes';
+import { useState, useEffect } from 'react';
 import { Button } from '~/components/ui/button';
 import { Moon, Sun, Monitor, SunMoon } from 'lucide-react';
 
 export function ThemeToggle() {
   const { setTheme, theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <DropdownMenu>
