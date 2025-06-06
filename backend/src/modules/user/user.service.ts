@@ -182,4 +182,72 @@ export class UserService {
       data,
     };
   }
+
+  async reactivateUser(id: string, reactivatedBy: string) {
+    const [userError, user] = await trySafe(() => this.getUserById(id));
+    const [reactivatedByError, reactivatedByUser] = await trySafe(() =>
+      this.getUserById(reactivatedBy),
+    );
+
+    if (userError || reactivatedByError) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_NOT_FOUND('User'),
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    if (user.status === UserStatus.ACTIVE) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_OPERATION_FAILED('User Reactivation'),
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const userRole = user.role;
+    const reactivatedByRole = reactivatedByUser.role;
+
+    if (
+      userRole === UserRole.SUPER_ADMIN &&
+      reactivatedByRole !== UserRole.SUPER_ADMIN
+    ) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_OPERATION_FAILED('User Reactivation'),
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
+    if (
+      userRole === UserRole.ADMIN &&
+      reactivatedByRole !== UserRole.SUPER_ADMIN
+    ) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_OPERATION_FAILED('User Reactivation'),
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
+    const payload: UpdateUserRecordOptions = {
+      identifierOptions: { id },
+      updatePayload: { status: UserStatus.ACTIVE },
+      transactionOptions: {
+        useTransaction: false,
+      },
+    };
+
+    const [error, data] = await trySafe(() =>
+      this.userModelAction.update(payload),
+    );
+
+    if (error) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_OPERATION_FAILED('User Reactivation'),
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    return {
+      message: SYS_MSG.RESOURCE_OPERATION_SUCCESSFUL('User Reactivation'),
+      data,
+    };
+  }
 }

@@ -28,6 +28,7 @@ const mockStoreService = {
 
 const mockUserService = {
   deactivateUser: jest.fn().mockResolvedValue(undefined),
+  reactivateUser: jest.fn().mockResolvedValue(undefined),
 };
 
 const mockResponse = {
@@ -95,6 +96,35 @@ describe('AdminController', () => {
       mockUserService.deactivateUser.mockRejectedValueOnce(error);
 
       await expect(controller.deactivateUser(body, req)).rejects.toThrow(error);
+    });
+  });
+
+  describe('reactivateUser', () => {
+    it('should call userService.reactivateUser with correct id and return the expected result', async () => {
+      const body = { userId: 'user-123' };
+      const req = { user: { sub: 'admin-123' } } as Request;
+      const expectedResult = {
+        message: 'User Reactivation operation successful',
+        data: { id: 'user-123', status: 'ACTIVE' },
+      };
+      mockUserService.reactivateUser.mockResolvedValueOnce(expectedResult);
+
+      const result = await controller.reactivateUser(body, req);
+
+      expect(mockUserService.reactivateUser).toHaveBeenCalledWith(
+        'user-123',
+        'admin-123',
+      );
+      expect(result).toEqual(expectedResult);
+    });
+
+    it('should handle errors from userService.reactivateUser', async () => {
+      const body = { userId: 'user-123' };
+      const req = { user: { sub: 'admin-123' } } as Request;
+      const error = new Error('Reactivation failed');
+      mockUserService.reactivateUser.mockRejectedValueOnce(error);
+
+      await expect(controller.reactivateUser(body, req)).rejects.toThrow(error);
     });
   });
 
