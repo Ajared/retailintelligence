@@ -40,6 +40,15 @@ export class AdminController {
     );
   }
 
+  @HttpCode(HttpStatus.OK)
+  @Post('users/reactivate')
+  async reactivateUser(@Body() body: { userId: string }, @Req() req: Request) {
+    return this.userService.reactivateUser(
+      body.userId,
+      req.user?.sub as string,
+    );
+  }
+
   @Get('users')
   async getUsers(@Query() query: PaginationOptions) {
     return this.userService.listUsers(query);
