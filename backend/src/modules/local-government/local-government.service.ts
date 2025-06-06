@@ -113,7 +113,7 @@ export class LocalGovernmentService {
 
     if (error) {
       throw new CustomHttpException(
-        SYS_MSG.RESOURCE_FETCH_FAILED('Local Government'),
+        SYS_MSG.RESOURCE_FETCH_FAILED('Local Governments'),
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -121,7 +121,7 @@ export class LocalGovernmentService {
     return {
       data: list.payload,
       meta: list.paginationMeta,
-      message: SYS_MSG.RESOURCE_FETCHED_SUCCESSFULLY('Local Government'),
+      message: SYS_MSG.RESOURCE_FETCHED_SUCCESSFULLY('Local Governments'),
     };
   }
 

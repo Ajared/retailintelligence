@@ -7,7 +7,7 @@ import CreateUserRecordOptions from './types/create-user.type';
 import { NullishValueError, trySafe } from '~/helpers/try-safe';
 import { PaginationOptions } from '~/helpers/pagination.helper';
 import { CustomHttpException } from '~/helpers/custom.exception';
-import { UserStatus } from './constants/user.constant';
+import { UserRole, UserStatus } from './constants/user.constant';
 
 @Injectable()
 export class UserService {
@@ -115,7 +115,49 @@ export class UserService {
     return data;
   }
 
-  async deactivateUser(id: string) {
+  async deactivateUser(id: string, deactivatedBy: string) {
+    const [userError, user] = await trySafe(() => this.getUserById(id));
+    const [deactivatedByError, deactivatedByUser] = await trySafe(() =>
+      this.getUserById(deactivatedBy),
+    );
+
+    if (userError || deactivatedByError) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_NOT_FOUND('User'),
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    if (user.status === UserStatus.INACTIVE) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_OPERATION_FAILED('User Deactivation'),
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const userRole = user.role;
+    const deactivatedByRole = deactivatedByUser.role;
+
+    if (
+      userRole === UserRole.SUPER_ADMIN &&
+      deactivatedByRole !== UserRole.SUPER_ADMIN
+    ) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_OPERATION_FAILED('User Deactivation'),
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
+    if (
+      userRole === UserRole.ADMIN &&
+      deactivatedByRole !== UserRole.SUPER_ADMIN
+    ) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_OPERATION_FAILED('User Deactivation'),
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
     const payload: UpdateUserRecordOptions = {
       identifierOptions: { id },
       updatePayload: { status: UserStatus.INACTIVE },

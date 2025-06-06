@@ -9,7 +9,7 @@ import {
   ExportTypeValidator,
   PaginationOptions,
 } from '~/helpers/pagination.helper';
-import { Response } from 'express';
+import { Response, Request } from 'express';
 import { AuthGuard } from '~/guards/auth.guard';
 
 const mockRoleGuard: CanActivate = {
@@ -72,26 +72,32 @@ describe('AdminController', () => {
   describe('deactivateUser', () => {
     it('should call userService.deactivateUser with correct id and return the expected result', async () => {
       const body = { userId: 'user-123' };
+      const req = { user: { sub: 'admin-123' } } as Request;
       const expectedResult = {
         message: 'User Deactivation operation successful',
         data: { id: 'user-123', status: 'INACTIVE' },
       };
       mockUserService.deactivateUser.mockResolvedValueOnce(expectedResult);
 
-      const result = await controller.deactivateUser(body);
+      const result = await controller.deactivateUser(body, req);
 
-      expect(mockUserService.deactivateUser).toHaveBeenCalledWith('user-123');
+      expect(mockUserService.deactivateUser).toHaveBeenCalledWith(
+        'user-123',
+        'admin-123',
+      );
       expect(result).toEqual(expectedResult);
     });
 
     it('should handle errors from userService.deactivateUser', async () => {
       const body = { userId: 'user-123' };
+      const req = { user: { sub: 'admin-123' } } as Request;
       const error = new Error('Deactivation failed');
       mockUserService.deactivateUser.mockRejectedValueOnce(error);
 
-      await expect(controller.deactivateUser(body)).rejects.toThrow(error);
+      await expect(controller.deactivateUser(body, req)).rejects.toThrow(error);
     });
   });
+
   describe('getStores', () => {
     it('should call storeService.listStores with pagination options', async () => {
       const paginationOptions: PaginationOptions = { page: '1', limit: '10' };
