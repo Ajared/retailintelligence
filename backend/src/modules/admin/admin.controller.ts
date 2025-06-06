@@ -2,7 +2,7 @@ import {
   PaginationOptions,
   ExportTypeValidator,
 } from '~/helpers/pagination.helper';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { RoleGuard } from '~/guards/role.guard';
 import { UserService } from '../user/user.service';
 import { Roles } from '~/decorators/role.decorator';
@@ -17,6 +17,7 @@ import {
   Param,
   Post,
   Query,
+  Req,
   Res,
   UseGuards,
 } from '@nestjs/common';
@@ -32,8 +33,16 @@ export class AdminController {
 
   @HttpCode(HttpStatus.OK)
   @Post('users/deactivate')
-  async deactivateUser(@Body() body: { userId: string }) {
-    return this.userService.deactivateUser(body.userId);
+  async deactivateUser(@Body() body: { userId: string }, @Req() req: Request) {
+    return this.userService.deactivateUser(
+      body.userId,
+      req.user?.sub as string,
+    );
+  }
+
+  @Get('users')
+  async getUsers(@Query() query: PaginationOptions) {
+    return this.userService.listUsers(query);
   }
 
   @Get('stores')

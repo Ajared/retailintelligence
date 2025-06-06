@@ -115,7 +115,7 @@ export class StoreService {
 
     if (error) {
       throw new CustomHttpException(
-        SYS_MSG.RESOURCE_FETCH_FAILED('Store'),
+        SYS_MSG.RESOURCE_FETCH_FAILED('Stores'),
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -123,7 +123,7 @@ export class StoreService {
     return {
       data: data.payload,
       meta: data.paginationMeta,
-      message: SYS_MSG.RESOURCE_FETCHED_SUCCESSFULLY('Store'),
+      message: SYS_MSG.RESOURCE_FETCHED_SUCCESSFULLY('Stores'),
     };
   }
 
