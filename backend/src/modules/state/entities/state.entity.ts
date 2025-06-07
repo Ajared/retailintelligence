@@ -11,10 +11,6 @@ export class State extends AbstractBaseEntity {
   @OneToMany(() => Store, (store) => store.state)
   stores: Store[];
 
-  @OneToMany(
-    () => LocalGovernment,
-    (localGovernment) => localGovernment.state,
-    { eager: true },
-  )
+  @OneToMany(() => LocalGovernment, (localGovernment) => localGovernment.state)
   localGovernments: LocalGovernment[];
 }
