@@ -107,6 +107,11 @@ export class StoreService {
     const listStoreRecordOptions: ListStoreRecordOptions = {
       paginationPayload,
       filterRecordOptions: {},
+      relations: {
+        state: true,
+        enumerator: true,
+        localGovernment: true,
+      },
     };
 
     const [error, data] = await trySafe(() =>
