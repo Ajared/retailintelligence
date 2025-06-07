@@ -16,6 +16,7 @@ import {
   ListStoreRecordOptions,
   StoreQueryOptions,
 } from './types/list-store.type';
+import { EntityPropertyNotFoundError } from 'typeorm';
 
 @Injectable()
 export class StoreService {
@@ -104,6 +105,10 @@ export class StoreService {
   ): Promise<AbstractResponseDto<StoreInterface[]>> {
     const { page, limit, ...filterOptions } = queryOptions;
 
+    const filterRecordOptions = Object.fromEntries(
+      Object.entries(filterOptions).filter(([, value]) => value !== undefined),
+    );
+
     const paginationPayload = {
       page: page ? +page : 1,
       limit: limit ? +limit : 10,
@@ -111,7 +116,7 @@ export class StoreService {
 
     const listStoreRecordOptions: ListStoreRecordOptions = {
       paginationPayload,
-      filterRecordOptions: filterOptions,
+      filterRecordOptions,
       relations: {
         state: true,
         enumerator: true,
@@ -124,6 +129,12 @@ export class StoreService {
     );
 
     if (error) {
+      if (error instanceof EntityPropertyNotFoundError) {
+        throw new CustomHttpException(
+          SYS_MSG.INVALID_PARAMETER('Filter Query'),
+          HttpStatus.BAD_REQUEST,
+        );
+      }
       throw new CustomHttpException(
         SYS_MSG.RESOURCE_FETCH_FAILED('Stores'),
         HttpStatus.INTERNAL_SERVER_ERROR,

@@ -10,6 +10,7 @@ import {
   StateQueryOptions,
   ListStateRecordOptions,
 } from './modules/state/types/list-state.type';
+import { EntityPropertyNotFoundError } from 'typeorm';
 
 @Injectable()
 export class AppService {
@@ -38,6 +39,10 @@ export class AppService {
   ): Promise<AbstractResponseDto<StateInterface[]>> {
     const { page, limit, ...filterOptions } = queryOptions;
 
+    const filterRecordOptions = Object.fromEntries(
+      Object.entries(filterOptions).filter(([, value]) => value !== undefined),
+    );
+
     const paginationPayload = {
       page: page ? +page : 1,
       limit: limit ? +limit : 10,
@@ -45,7 +50,7 @@ export class AppService {
 
     const listStateRecordOptions: ListStateRecordOptions = {
       paginationPayload,
-      filterRecordOptions: filterOptions,
+      filterRecordOptions,
       relations: {
         localGovernments: true,
       },
@@ -56,6 +61,12 @@ export class AppService {
     );
 
     if (listStatesError) {
+      if (listStatesError instanceof EntityPropertyNotFoundError) {
+        throw new CustomHttpException(
+          SYS_MSG.INVALID_PARAMETER('Filter Query'),
+          HttpStatus.BAD_REQUEST,
+        );
+      }
       throw new CustomHttpException(
         SYS_MSG.RESOURCE_FETCH_FAILED('Locations'),
         HttpStatus.INTERNAL_SERVER_ERROR,
