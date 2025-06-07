@@ -1,4 +1,4 @@
-import { PaginationOptions, ExportTypeValidator } from '~/helpers/query.helper';
+import { QueryValidator } from '~/helpers/query.helper';
 import { Request, Response } from 'express';
 import { RoleGuard } from '~/guards/role.guard';
 import { UserService } from '../user/user.service';
@@ -61,14 +61,9 @@ export class AdminController {
   @Get('stores/export')
   async exportStores(
     @Res() response: Response,
-    @Query() paginationOptions: PaginationOptions,
-    @Query() exportTypeOptions: ExportTypeValidator,
+    @Query() queryOptions: QueryValidator,
   ) {
-    return this.storeService.exportStores(
-      response,
-      paginationOptions,
-      exportTypeOptions.type,
-    );
+    return this.storeService.exportStores(response, queryOptions);
   }
 
   @Get('stores/:id')
