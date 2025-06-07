@@ -4,10 +4,10 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { AbstractResponseDto } from '~/types/response.dto';
 import { StateModelAction } from './state.model-action';
 import { StateInterface } from './types/state.interface';
-import { PaginationOptions } from '~/helpers/pagination.helper';
+import { PaginationOptions } from '~/helpers/query.helper';
 import { NullishValueError, trySafe } from '~/helpers/try-safe';
 import { CustomHttpException } from '~/helpers/custom.exception';
-import ListStateRecordOptions from './types/list-state.type';
+import { ListStateRecordOptions } from './types/list-state.type';
 import CreateStateRecordOptions from './types/create-state.type';
 import UpdateStateRecordOptions from './types/update-state.type';
 

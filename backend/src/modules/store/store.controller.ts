@@ -10,10 +10,9 @@ import {
   Patch,
   Req,
 } from '@nestjs/common';
-import { StoreService } from './store.service';
-import { StoreDto } from './dto/store.dto';
-import { PaginationValidator } from '~/helpers/pagination.helper';
 import { Request } from 'express';
+import { StoreService } from './store.service';
+import { StoreDto, StoreQueryValidator } from './dto/store.dto';
 
 @Controller('stores')
 export class StoreController {
@@ -34,8 +33,8 @@ export class StoreController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  async listStores(@Query() paginationOptions: PaginationValidator) {
-    return this.storeService.listStores(paginationOptions);
+  async listStores(@Query() queryOptions: StoreQueryValidator) {
+    return this.storeService.listStores(queryOptions);
   }
 
   @Patch(':id')

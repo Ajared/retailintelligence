@@ -1,5 +1,5 @@
 interface ListGenericRecord<FilterRecordOptions> {
-  filterRecordOptions: FilterRecordOptions;
+  filterRecordOptions: FilterRecordOptions | undefined;
   relations?: object;
   paginationPayload?: {
     limit: number;

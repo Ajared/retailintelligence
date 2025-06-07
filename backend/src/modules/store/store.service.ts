@@ -6,13 +6,16 @@ import * as SYS_MSG from '~/helpers/system-messages';
 import { StoreModelAction } from './store.model-action';
 import { StoreInterface } from './types/store.interface';
 import { AbstractResponseDto } from '~/types/response.dto';
-import ListStoreRecordOptions from './types/list-store.type';
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { NullishValueError, trySafe } from '~/helpers/try-safe';
 import { CustomHttpException } from '~/helpers/custom.exception';
 import CreateStoreRecordOptions from './types/create-store.type';
 import UpdateStoreRecordOptions from './types/update-store.type';
-import { ExportType, PaginationOptions } from '~/helpers/pagination.helper';
+import { ExportType, QueryOptions } from '~/helpers/query.helper';
+import {
+  ListStoreRecordOptions,
+  StoreQueryOptions,
+} from './types/list-store.type';
 
 @Injectable()
 export class StoreService {
@@ -97,16 +100,18 @@ export class StoreService {
   }
 
   async listStores(
-    paginationOptions: PaginationOptions,
+    queryOptions: StoreQueryOptions,
   ): Promise<AbstractResponseDto<StoreInterface[]>> {
+    const { page, limit, ...filterOptions } = queryOptions;
+
     const paginationPayload = {
-      page: paginationOptions?.page ? +paginationOptions.page : 1,
-      limit: paginationOptions?.limit ? +paginationOptions.limit : 10,
+      page: page ? +page : 1,
+      limit: limit ? +limit : 10,
     };
 
     const listStoreRecordOptions: ListStoreRecordOptions = {
       paginationPayload,
-      filterRecordOptions: {},
+      filterRecordOptions: filterOptions,
       relations: {
         state: true,
         enumerator: true,
@@ -159,13 +164,13 @@ export class StoreService {
     };
   }
 
-  async exportStores(
-    response: Response,
-    paginationOptions: PaginationOptions,
-    exportType: ExportType,
-  ) {
+  async exportStores(response: Response, queryOptions: QueryOptions) {
     try {
-      const { contentType, filename } = this.getExportMetadata(exportType);
+      const { page, limit, exportType } = queryOptions;
+
+      const { contentType, filename } = this.getExportMetadata(
+        exportType ?? ExportType.JSON,
+      );
 
       response.setHeader('Content-Type', contentType);
       response.setHeader(
@@ -174,8 +179,8 @@ export class StoreService {
       );
 
       const paginationPayload = {
-        page: paginationOptions?.page ? +paginationOptions.page : 1,
-        limit: paginationOptions?.limit ? +paginationOptions.limit : 10,
+        page: page ? +page : 1,
+        limit: limit ? +limit : 10,
       };
 
       const listStoreRecordOptions: ListStoreRecordOptions = {
@@ -227,7 +232,7 @@ export class StoreService {
             await this._streamExcel(data.payload, response);
             break;
           default:
-            if (!response.finished) {
+            if (!response.writableEnded) {
               response.status(HttpStatus.BAD_REQUEST).send({
                 message: SYS_MSG.INVALID_PARAMETER('Export Type'),
               });
@@ -240,13 +245,13 @@ export class StoreService {
         }
 
         if (exportType === ExportType.JSON || exportType === ExportType.EXCEL) {
-          if (!response.finished) {
+          if (!response.writableEnded) {
             response.end();
           }
         }
       } catch (streamError) {
         this.logger.error('Streaming/Writing error:', streamError);
-        if (!response.finished) {
+        if (!response.writableEnded) {
           response.end();
         }
       }

@@ -1,3 +1,4 @@
+import { QueryValidator } from '~/helpers/query.helper';
 import { IsString, IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
 
 export class StoreDto {
@@ -39,4 +40,22 @@ export class StoreDto {
   @IsString()
   @IsOptional()
   enumeratorId: string;
+}
+
+export class StoreQueryValidator extends QueryValidator {
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  localGovernmentId?: string;
+
+  @IsOptional()
+  @IsString()
+  stateId?: string;
+
+  @IsOptional()
+  @IsString()
+  enumeratorId?: string;
 }
