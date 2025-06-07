@@ -4,10 +4,12 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { AbstractResponseDto } from '~/types/response.dto';
 import { LocalGovernmentModelAction } from './local-government.model-action';
 import { LocalGovernmentInterface } from './types/local-government.interface';
-import { PaginationOptions } from '~/helpers/pagination.helper';
 import { NullishValueError, trySafe } from '~/helpers/try-safe';
 import { CustomHttpException } from '~/helpers/custom.exception';
-import ListLocalGovernmentRecordOptions from './types/list-local-government.type';
+import {
+  ListLocalGovernmentRecordOptions,
+  LocalGovernmentQueryOptions,
+} from './types/list-local-government.type';
 import CreateLocalGovernmentRecordOptions from './types/create-local-government.type';
 import UpdateLocalGovernmentRecordOptions from './types/update-local-government.type';
 
@@ -95,16 +97,18 @@ export class LocalGovernmentService {
   }
 
   async listLocalGovernments(
-    paginationOptions: PaginationOptions,
+    queryOptions: LocalGovernmentQueryOptions,
   ): Promise<AbstractResponseDto<LocalGovernmentInterface[]>> {
+    const { page, limit, ...filterOptions } = queryOptions;
+
     const paginationPayload = {
-      page: paginationOptions?.page ? +paginationOptions.page : 1,
-      limit: paginationOptions?.limit ? +paginationOptions.limit : 10,
+      page: page ? +page : 1,
+      limit: limit ? +limit : 10,
     };
 
     const listOptions: ListLocalGovernmentRecordOptions = {
       paginationPayload,
-      filterRecordOptions: {},
+      filterRecordOptions: filterOptions,
     };
 
     const [error, list] = await trySafe(() =>

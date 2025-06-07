@@ -5,6 +5,7 @@ import {
   IsNotEmpty,
   IsEnum,
 } from 'class-validator';
+
 export interface PaginationMeta {
   total: number;
   limit: number;
@@ -13,13 +14,10 @@ export interface PaginationMeta {
   hasNext: boolean;
   hasPrevious: boolean;
 }
-
-export type PaginationOptions =
-  | {
-      page?: string;
-      limit?: string;
-    }
-  | undefined;
+export interface PaginationOptions {
+  page?: string;
+  limit?: string;
+}
 
 export const computePaginationMeta = (
   total: number,
@@ -40,16 +38,6 @@ export const computePaginationMeta = (
   };
 };
 
-export class PaginationValidator {
-  @IsOptional()
-  @IsNumberString({}, { message: 'Page must be a number string' })
-  page?: string;
-
-  @IsOptional()
-  @IsNumberString({}, { message: 'Limit must be a number string' })
-  limit?: string;
-}
-
 export enum ExportType {
   CSV = 'csv',
   JSON = 'json',
@@ -61,4 +49,27 @@ export class ExportTypeValidator {
   @IsNotEmpty()
   @IsEnum(ExportType)
   type: ExportType;
+}
+
+export enum SortOrder {
+  ASC = 'ASC',
+  DESC = 'DESC',
+}
+
+export interface FilterOptions {
+  sort?: SortOrder;
+}
+
+export class QueryValidator {
+  @IsOptional()
+  @IsNumberString({}, { message: 'Page must be a number string' })
+  page?: string;
+
+  @IsOptional()
+  @IsNumberString({}, { message: 'Limit must be a number string' })
+  limit?: string;
+
+  @IsOptional()
+  @IsEnum(SortOrder, { message: "Order must be either 'ASC' or 'DESC'" })
+  sort?: SortOrder;
 }

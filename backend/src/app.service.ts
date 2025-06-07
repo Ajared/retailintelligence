@@ -3,11 +3,13 @@ import { ConfigService } from '@nestjs/config';
 import * as SYS_MSG from '~/helpers/system-messages';
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { AbstractResponseDto } from './types/response.dto';
-import { PaginationOptions } from './helpers/pagination.helper';
 import { CustomHttpException } from './helpers/custom.exception';
 import { StateModelAction } from './modules/state/state.model-action';
 import { StateInterface } from './modules/state/types/state.interface';
-import ListStateRecordOptions from './modules/state/types/list-state.type';
+import {
+  StateQueryOptions,
+  ListStateRecordOptions,
+} from './modules/state/types/list-state.type';
 
 @Injectable()
 export class AppService {
@@ -32,16 +34,18 @@ export class AppService {
   }
 
   async getLocations(
-    paginationOptions: PaginationOptions,
+    queryOptions: StateQueryOptions,
   ): Promise<AbstractResponseDto<StateInterface[]>> {
+    const { page, limit, ...filterOptions } = queryOptions;
+
     const paginationPayload = {
-      page: paginationOptions?.page ? +paginationOptions.page : 1,
-      limit: paginationOptions?.limit ? +paginationOptions.limit : 10,
+      page: page ? +page : 1,
+      limit: limit ? +limit : 10,
     };
 
     const listStateRecordOptions: ListStateRecordOptions = {
       paginationPayload,
-      filterRecordOptions: {},
+      filterRecordOptions: filterOptions,
       relations: {
         localGovernments: true,
       },

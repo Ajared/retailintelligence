@@ -1,13 +1,15 @@
 import * as SYS_MSG from '~/helpers/system-messages';
 import { UserModelAction } from './user.model-action';
 import { HttpStatus, Injectable } from '@nestjs/common';
-import ListUserRecordOptions from './types/list-user.type';
 import UpdateUserRecordOptions from './types/update-user.type';
 import CreateUserRecordOptions from './types/create-user.type';
 import { NullishValueError, trySafe } from '~/helpers/try-safe';
-import { PaginationOptions } from '~/helpers/pagination.helper';
 import { CustomHttpException } from '~/helpers/custom.exception';
 import { UserRole, UserStatus } from './constants/user.constant';
+import {
+  ListUserRecordOptions,
+  UserQueryOptions,
+} from './types/list-user.type';
 
 @Injectable()
 export class UserService {
@@ -72,15 +74,17 @@ export class UserService {
     return data;
   }
 
-  async listUsers(paginationOptions: PaginationOptions) {
+  async listUsers(queryOptions: UserQueryOptions) {
+    const { page, limit, ...filterOptions } = queryOptions;
+
     const paginationPayload = {
-      page: paginationOptions?.page ? +paginationOptions.page : 1,
-      limit: paginationOptions?.limit ? +paginationOptions.limit : 10,
+      page: page ? +page : 1,
+      limit: limit ? +limit : 10,
     };
 
     const listUserRecordOptions: ListUserRecordOptions = {
       paginationPayload,
-      filterRecordOptions: {},
+      filterRecordOptions: filterOptions,
     };
 
     const [error, data] = await trySafe(() =>

@@ -8,9 +8,10 @@ import {
   ExportType,
   ExportTypeValidator,
   PaginationOptions,
-} from '~/helpers/pagination.helper';
+} from '~/helpers/query.helper';
 import { Response, Request } from 'express';
 import { AuthGuard } from '~/guards/auth.guard';
+import { StoreQueryOptions } from '../store/types/list-store.type';
 
 const mockRoleGuard: CanActivate = {
   canActivate: jest.fn(() => true),
@@ -130,13 +131,13 @@ describe('AdminController', () => {
 
   describe('getStores', () => {
     it('should call storeService.listStores with pagination options', async () => {
-      const paginationOptions: PaginationOptions = { page: '1', limit: '10' };
+      const queryOptions: StoreQueryOptions = { page: '1', limit: '10' };
       const expectedResult = { data: [], total: 0 };
       mockStoreService.listStores.mockResolvedValueOnce(expectedResult);
 
-      const result = await controller.getStores(paginationOptions);
+      const result = await controller.getStores(queryOptions);
 
-      expect(storeService.listStores).toHaveBeenCalledWith(paginationOptions);
+      expect(storeService.listStores).toHaveBeenCalledWith(queryOptions);
       expect(result).toEqual(expectedResult);
     });
   });
