@@ -13,11 +13,8 @@ export const getAllStores = async (): Promise<Response<StoreInterface[]>> => {
       throw new Error(response.message);
     }
 
-    console.log('Response => ', response);
-
     return response as SuccessResponse<StoreInterface[]>;
   } catch (error) {
-    console.error('Failed to fetch store data => ', error);
     const errorMessage =
       error instanceof Error ? error.message : 'Something went wrong';
     return {
@@ -36,10 +33,8 @@ export const getAllUsers = async (): Promise<Response<UserInterface[]>> => {
       throw new Error(response.message);
     }
 
-    console.log('Response => ', response);
     return response as SuccessResponse<UserInterface[]>;
   } catch (error) {
-    console.error('Failed to fetch users => ', error);
     const errorMessage =
       error instanceof Error ? error.message : 'Something went wrong';
     return {
@@ -62,11 +57,8 @@ export const deactivateUser = async (
       throw new Error(response.message);
     }
 
-    console.log('User deactivated => ', response);
-
     return response as SuccessResponse<UserInterface>;
   } catch (error) {
-    console.error('Failed to deactivate user => ', error);
     const errorMessage =
       error instanceof Error ? error.message : 'Something went wrong';
     return {
@@ -89,11 +81,8 @@ export const reactivateUser = async (
       throw new Error(response.message);
     }
 
-    console.log('User reactivated => ', response);
-
     return response as SuccessResponse<UserInterface>;
   } catch (error) {
-    console.error('Failed to reactivate user => ', error);
     const errorMessage =
       error instanceof Error ? error.message : 'Something went wrong';
     return {
