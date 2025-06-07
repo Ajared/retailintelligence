@@ -4,11 +4,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { RoleGuard } from '~/guards/role.guard';
 import { StoreService } from '../store/store.service';
 import { UserService } from '../user/user.service';
-import {
-  ExportType,
-  ExportTypeValidator,
-  PaginationOptions,
-} from '~/helpers/query.helper';
+import { ExportType } from '~/helpers/query.helper';
 import { Response, Request } from 'express';
 import { AuthGuard } from '~/guards/auth.guard';
 import { StoreQueryOptions } from '../store/types/list-store.type';
@@ -144,19 +140,13 @@ describe('AdminController', () => {
 
   describe('exportStores', () => {
     it('should call storeService.exportStores with correct arguments', async () => {
-      const paginationOptions: PaginationOptions = { page: '1', limit: '10' };
-      const exportTypeOptions: ExportTypeValidator = { type: ExportType.CSV };
+      const queryOptions = { exportType: ExportType.CSV };
 
-      await controller.exportStores(
-        mockResponse,
-        paginationOptions,
-        exportTypeOptions,
-      );
+      await controller.exportStores(mockResponse, queryOptions);
 
       expect(storeService.exportStores).toHaveBeenCalledWith(
         mockResponse,
-        paginationOptions,
-        exportTypeOptions.type,
+        queryOptions,
       );
     });
   });
