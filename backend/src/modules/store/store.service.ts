@@ -246,13 +246,22 @@ export class StoreService {
 
         if (exportType === ExportType.JSON || exportType === ExportType.EXCEL) {
           if (!response.writableEnded) {
-            response.end();
+            response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+              error: SYS_MSG.RESOURCE_EXPORT_FAILED('Stores'),
+              message: SYS_MSG.RESOURCE_EXPORT_FAILED('Stores'),
+            });
           }
         }
       } catch (streamError) {
         this.logger.error('Streaming/Writing error:', streamError);
         if (!response.writableEnded) {
-          response.end();
+          response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+            error:
+              streamError instanceof Error
+                ? streamError.message
+                : 'Unknown error occurred',
+            message: SYS_MSG.RESOURCE_EXPORT_FAILED('Stores'),
+          });
         }
       }
     } catch (error) {

@@ -6,4 +6,4 @@ type UpdateStateRecordOptions = UpdateGenericRecord<
   Record<string, unknown>
 >;
 
-export default UpdateStateRecordOptions;
+export { UpdateStateRecordOptions };

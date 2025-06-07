@@ -6,7 +6,6 @@ import {
   ListUserRecordOptions,
   UserQueryOptions,
 } from './types/list-user.type';
-import { PaginationOptions } from '~/helpers/query.helper';
 
 interface MockUserModelAction {
   list: jest.Mock<
@@ -121,7 +120,7 @@ describe('UserService', () => {
     });
 
     it('should use default page when only limit is provided', async () => {
-      const paginationOptions: PaginationOptions = { limit: '15' };
+      const queryOptions: UserQueryOptions = { limit: '15' };
       const mockResponse = {
         payload: [{ id: 'user-2' }],
         paginationMeta: { total: 1 },
@@ -136,7 +135,7 @@ describe('UserService', () => {
         filterRecordOptions: {},
       };
 
-      const result = await service.listUsers(paginationOptions);
+      const result = await service.listUsers(queryOptions);
 
       expect(mockModelAction.list).toHaveBeenCalledTimes(1);
       expect(mockModelAction.list).toHaveBeenCalledWith(expectedListOptions);
@@ -148,7 +147,7 @@ describe('UserService', () => {
     });
 
     it('should use default limit when only page is provided', async () => {
-      const paginationOptions: PaginationOptions = { page: '4' };
+      const queryOptions: UserQueryOptions = { page: '4' };
       const mockResponse = {
         payload: [{ id: 'user-3' }],
         paginationMeta: { total: 1 },
@@ -163,7 +162,7 @@ describe('UserService', () => {
         filterRecordOptions: {},
       };
 
-      const result = await service.listUsers(paginationOptions);
+      const result = await service.listUsers(queryOptions);
 
       expect(mockModelAction.list).toHaveBeenCalledTimes(1);
       expect(mockModelAction.list).toHaveBeenCalledWith(expectedListOptions);
