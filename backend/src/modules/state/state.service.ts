@@ -4,12 +4,15 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { AbstractResponseDto } from '~/types/response.dto';
 import { StateModelAction } from './state.model-action';
 import { StateInterface } from './types/state.interface';
-import { PaginationOptions } from '~/helpers/query.helper';
 import { NullishValueError, trySafe } from '~/helpers/try-safe';
 import { CustomHttpException } from '~/helpers/custom.exception';
-import { ListStateRecordOptions } from './types/list-state.type';
+import {
+  ListStateRecordOptions,
+  StateQueryOptions,
+} from './types/list-state.type';
 import { CreateStateRecordOptions } from './types/create-state.type';
 import { UpdateStateRecordOptions } from './types/update-state.type';
+import { EntityPropertyNotFoundError } from 'typeorm';
 
 @Injectable()
 export class StateService {
@@ -93,16 +96,22 @@ export class StateService {
   }
 
   async listStates(
-    paginationOptions: PaginationOptions,
+    queryOptions: StateQueryOptions,
   ): Promise<AbstractResponseDto<StateInterface[]>> {
+    const { page, limit, ...filterOptions } = queryOptions;
+
+    const filterRecordOptions = Object.fromEntries(
+      Object.entries(filterOptions).filter(([, value]) => value !== undefined),
+    );
+
     const paginationPayload = {
-      page: paginationOptions?.page ? +paginationOptions.page : 1,
-      limit: paginationOptions?.limit ? +paginationOptions.limit : 10,
+      page: page ? +page : 1,
+      limit: limit ? +limit : 10,
     };
 
     const listStateRecordOptions: ListStateRecordOptions = {
       paginationPayload,
-      filterRecordOptions: {},
+      filterRecordOptions,
     };
 
     const [listStatesError, listStates] = await trySafe(() =>
@@ -110,6 +119,12 @@ export class StateService {
     );
 
     if (listStatesError) {
+      if (listStatesError instanceof EntityPropertyNotFoundError) {
+        throw new CustomHttpException(
+          SYS_MSG.INVALID_PARAMETER('Filter Query'),
+          HttpStatus.BAD_REQUEST,
+        );
+      }
       throw new CustomHttpException(
         SYS_MSG.RESOURCE_FETCH_FAILED('States'),
         HttpStatus.INTERNAL_SERVER_ERROR,

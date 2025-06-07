@@ -12,6 +12,7 @@ import {
 } from './types/list-local-government.type';
 import CreateLocalGovernmentRecordOptions from './types/create-local-government.type';
 import UpdateLocalGovernmentRecordOptions from './types/update-local-government.type';
+import { EntityPropertyNotFoundError } from 'typeorm';
 
 @Injectable()
 export class LocalGovernmentService {
@@ -101,6 +102,10 @@ export class LocalGovernmentService {
   ): Promise<AbstractResponseDto<LocalGovernmentInterface[]>> {
     const { page, limit, ...filterOptions } = queryOptions;
 
+    const filterRecordOptions = Object.fromEntries(
+      Object.entries(filterOptions).filter(([, value]) => value !== undefined),
+    );
+
     const paginationPayload = {
       page: page ? +page : 1,
       limit: limit ? +limit : 10,
@@ -108,7 +113,7 @@ export class LocalGovernmentService {
 
     const listOptions: ListLocalGovernmentRecordOptions = {
       paginationPayload,
-      filterRecordOptions: filterOptions,
+      filterRecordOptions,
     };
 
     const [error, list] = await trySafe(() =>
@@ -116,6 +121,12 @@ export class LocalGovernmentService {
     );
 
     if (error) {
+      if (error instanceof EntityPropertyNotFoundError) {
+        throw new CustomHttpException(
+          SYS_MSG.INVALID_PARAMETER('Filter Query'),
+          HttpStatus.BAD_REQUEST,
+        );
+      }
       throw new CustomHttpException(
         SYS_MSG.RESOURCE_FETCH_FAILED('Local Governments'),
         HttpStatus.INTERNAL_SERVER_ERROR,

@@ -10,6 +10,7 @@ import {
   ListUserRecordOptions,
   UserQueryOptions,
 } from './types/list-user.type';
+import { EntityPropertyNotFoundError } from 'typeorm';
 
 @Injectable()
 export class UserService {
@@ -77,6 +78,10 @@ export class UserService {
   async listUsers(queryOptions: UserQueryOptions) {
     const { page, limit, ...filterOptions } = queryOptions;
 
+    const filterRecordOptions = Object.fromEntries(
+      Object.entries(filterOptions).filter(([, value]) => value !== undefined),
+    );
+
     const paginationPayload = {
       page: page ? +page : 1,
       limit: limit ? +limit : 10,
@@ -84,7 +89,7 @@ export class UserService {
 
     const listUserRecordOptions: ListUserRecordOptions = {
       paginationPayload,
-      filterRecordOptions: filterOptions,
+      filterRecordOptions,
     };
 
     const [error, data] = await trySafe(() =>
@@ -92,6 +97,12 @@ export class UserService {
     );
 
     if (error) {
+      if (error instanceof EntityPropertyNotFoundError) {
+        throw new CustomHttpException(
+          SYS_MSG.INVALID_PARAMETER('Filter Query'),
+          HttpStatus.BAD_REQUEST,
+        );
+      }
       throw new CustomHttpException(
         SYS_MSG.RESOURCE_FETCH_FAILED('Users'),
         HttpStatus.INTERNAL_SERVER_ERROR,
