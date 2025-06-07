@@ -23,10 +23,10 @@ export class StoreService {
     enumeratorId: string,
     storeDto: StoreDto,
   ): Promise<AbstractResponseDto<StoreInterface>> {
-    const { storeName } = storeDto;
+    const { name } = storeDto;
 
     const [existingStoreError, existingStore] = await trySafe(() =>
-      this.storeModelAction.get({ storeName }),
+      this.storeModelAction.get({ name }),
     );
 
     if (
