@@ -33,19 +33,13 @@ export class AdminController {
   @HttpCode(HttpStatus.OK)
   @Post('users/deactivate')
   async deactivateUser(@Body() body: { userId: string }, @Req() req: Request) {
-    return this.userService.deactivateUser(
-      body.userId,
-      req.user?.sub as string,
-    );
+    return this.userService.deactivateUser(body.userId, req.user?.sub!);
   }
 
   @HttpCode(HttpStatus.OK)
   @Post('users/reactivate')
   async reactivateUser(@Body() body: { userId: string }, @Req() req: Request) {
-    return this.userService.reactivateUser(
-      body.userId,
-      req.user?.sub as string,
-    );
+    return this.userService.reactivateUser(body.userId, req.user?.sub!);
   }
 
   @Get('users')

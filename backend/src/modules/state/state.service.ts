@@ -8,8 +8,8 @@ import { PaginationOptions } from '~/helpers/query.helper';
 import { NullishValueError, trySafe } from '~/helpers/try-safe';
 import { CustomHttpException } from '~/helpers/custom.exception';
 import { ListStateRecordOptions } from './types/list-state.type';
-import CreateStateRecordOptions from './types/create-state.type';
-import UpdateStateRecordOptions from './types/update-state.type';
+import { CreateStateRecordOptions } from './types/create-state.type';
+import { UpdateStateRecordOptions } from './types/update-state.type';
 
 @Injectable()
 export class StateService {
@@ -138,6 +138,12 @@ export class StateService {
     );
 
     if (updateStateError) {
+      if (updateStateError instanceof NullishValueError) {
+        throw new CustomHttpException(
+          SYS_MSG.RESOURCE_NOT_FOUND('State'),
+          HttpStatus.NOT_FOUND,
+        );
+      }
       throw new CustomHttpException(
         SYS_MSG.RESOURCE_UPDATE_FAILED('State'),
         HttpStatus.INTERNAL_SERVER_ERROR,

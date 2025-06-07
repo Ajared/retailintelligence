@@ -1,4 +1,4 @@
-import { IsOptional, IsNumberString, IsString, IsEnum } from 'class-validator';
+import { IsOptional, IsNumberString, IsEnum } from 'class-validator';
 
 export interface PaginationMeta {
   total: number;
@@ -60,7 +60,6 @@ export class QueryValidator {
   @IsEnum(SortOrder, { message: "Order must be either 'ASC' or 'DESC'" })
   sort?: SortOrder;
 
-  @IsString()
   @IsOptional()
   @IsEnum(ExportType, {
     message: 'Export type must be either csv, json, or excel',

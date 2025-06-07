@@ -33,18 +33,28 @@ export class AppSeeder implements Seeder {
 
         const stateCount = await stateRepository.count();
         if (stateCount === 0) {
-          for (const [stateName, lgas] of Object.entries(statesWithLGA)) {
+          const states = Object.keys(statesWithLGA).map((stateName) => {
             const state = new State();
             state.name = stateName;
-            const savedState = await stateRepository.save(state);
+            return state;
+          });
 
-            for (const lgaName of lgas) {
+          const savedStates = await stateRepository.save(states);
+
+          const allLgas = [];
+          for (const savedState of savedStates) {
+            const lgaNames =
+              statesWithLGA[savedState.name as keyof typeof statesWithLGA];
+            const lgas = lgaNames.map((lgaName: string) => {
               const lga = new LocalGovernment();
               lga.name = lgaName;
               lga.stateId = savedState.id;
-              await lgaRepository.save(lga);
-            }
+              return lga;
+            });
+            allLgas.push(...lgas);
           }
+
+          await lgaRepository.save(allLgas);
 
           logger.log(`Locations successfully seeded`);
         } else {
