@@ -62,7 +62,9 @@ export class QueryValidator {
 
   @IsString()
   @IsOptional()
-  @IsEnum(ExportType)
+  @IsEnum(ExportType, {
+    message: 'Export type must be either csv, json, or excel',
+  })
   exportType?: ExportType;
 }
 
