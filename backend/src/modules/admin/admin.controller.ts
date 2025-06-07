@@ -1,7 +1,4 @@
-import {
-  PaginationOptions,
-  ExportTypeValidator,
-} from '~/helpers/pagination.helper';
+import { PaginationOptions, ExportTypeValidator } from '~/helpers/query.helper';
 import { Request, Response } from 'express';
 import { RoleGuard } from '~/guards/role.guard';
 import { UserService } from '../user/user.service';
@@ -21,6 +18,8 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
+import { StoreQueryValidator } from '../store/dto/store.dto';
+import { UserQueryValidator } from '../user/dto/user.dto';
 
 @Controller('admin')
 @UseGuards(RoleGuard)
@@ -50,13 +49,13 @@ export class AdminController {
   }
 
   @Get('users')
-  async getUsers(@Query() query: PaginationOptions) {
+  async getUsers(@Query() query: UserQueryValidator) {
     return this.userService.listUsers(query);
   }
 
   @Get('stores')
-  async getStores(@Query() query: PaginationOptions) {
-    return this.storeService.listStores(query);
+  async getStores(@Query() queryOptions: StoreQueryValidator) {
+    return this.storeService.listStores(queryOptions);
   }
 
   @Get('stores/export')
