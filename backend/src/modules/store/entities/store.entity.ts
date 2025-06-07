@@ -6,8 +6,8 @@ import { LocalGovernment } from '~/modules/local-government/entities/local-gover
 
 @Entity({ name: 'stores' })
 export class Store extends AbstractBaseEntity {
-  @Column({ name: 'store_name' })
-  storeName: string;
+  @Column()
+  name: string;
 
   @JoinColumn({ name: 'local_government_id' })
   @ManyToOne(() => LocalGovernment, (localGov) => localGov.stores)

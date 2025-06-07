@@ -1,7 +1,7 @@
 import ListGenericRecord from '~/types/generic/list-record.type';
 
 interface StoreFilterOptions {
-  storeName?: string;
+  name?: string;
   localGovernmentId?: string;
   stateId?: string;
   storeType?: string;

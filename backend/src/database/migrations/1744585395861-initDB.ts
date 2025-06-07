@@ -199,7 +199,7 @@ export class InitDB1744585395861 implements MigrationInterface {
             generationStrategy: 'uuid',
           },
           {
-            name: 'store_name',
+            name: 'name',
             type: 'varchar',
             isNullable: false,
           },
@@ -297,7 +297,6 @@ export class InitDB1744585395861 implements MigrationInterface {
     await queryRunner.dropTable('states', true);
     await queryRunner.dropTable('users', true);
 
-    await queryRunner.query(`DROP TYPE IF EXISTS "public"."store_type_enum"`);
     await queryRunner.query(
       `DROP TYPE IF EXISTS "public"."auth_provider_enum"`,
     );
