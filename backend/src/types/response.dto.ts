@@ -1,4 +1,4 @@
-import { PaginationMeta } from '~/helpers/pagination.helper';
+import { PaginationMeta } from '~/helpers/query.helper';
 
 export class AbstractResponseDto<T> {
   message: string;

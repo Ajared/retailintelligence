@@ -1,13 +1,14 @@
 import ListGenericRecord from '~/types/generic/list-record.type';
+import { FilterOptions, PaginationOptions } from '~/helpers/query.helper';
 
-interface StoreFilterOptions {
+interface StoreFilterOptions extends FilterOptions {
   name?: string;
-  localGovernmentId?: string;
   stateId?: string;
-  storeType?: string;
   enumeratorId?: string;
+  localGovernmentId?: string;
 }
 
+interface StoreQueryOptions extends StoreFilterOptions, PaginationOptions {}
 type ListStoreRecordOptions = ListGenericRecord<StoreFilterOptions>;
 
-export default ListStoreRecordOptions;
+export { StoreQueryOptions, StoreFilterOptions, ListStoreRecordOptions };

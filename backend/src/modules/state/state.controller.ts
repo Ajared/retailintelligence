@@ -11,10 +11,9 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { RoleGuard } from '~/guards/role.guard';
-import { StateDto } from './dto/state.dto';
+import { StateDto, StateQueryValidator } from './dto/state.dto';
 import { Roles } from '~/decorators/role.decorator';
 import { StateService } from './state.service';
-import { PaginationOptions } from '~/helpers/pagination.helper';
 import { UserRole } from '~/modules/user/constants/user.constant';
 
 @Controller('states')
@@ -37,8 +36,8 @@ export class StateController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  async listStates(@Query() paginationOptions: PaginationOptions) {
-    return this.stateService.listStates(paginationOptions);
+  async listStates(@Query() queryOptions: StateQueryValidator) {
+    return this.stateService.listStates(queryOptions);
   }
 
   @Patch(':id')

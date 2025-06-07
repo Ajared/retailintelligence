@@ -12,8 +12,10 @@ import {
 } from '@nestjs/common';
 import { RoleGuard } from '~/guards/role.guard';
 import { Roles } from '~/decorators/role.decorator';
-import { LocalGovernmentDto } from './dto/local-government.dto';
-import { PaginationOptions } from '~/helpers/pagination.helper';
+import {
+  LocalGovernmentDto,
+  LocalGovernmentQueryValidator,
+} from './dto/local-government.dto';
 import { UserRole } from '~/modules/user/constants/user.constant';
 import { LocalGovernmentService } from './local-government.service';
 
@@ -41,8 +43,10 @@ export class LocalGovernmentController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  async listLocalGovernments(@Query() paginationOptions: PaginationOptions) {
-    return this.localGovernmentService.listLocalGovernments(paginationOptions);
+  async listLocalGovernments(
+    @Query() queryOptions: LocalGovernmentQueryValidator,
+  ) {
+    return this.localGovernmentService.listLocalGovernments(queryOptions);
   }
 
   @Patch(':id')
