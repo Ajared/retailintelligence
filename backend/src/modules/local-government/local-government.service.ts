@@ -103,7 +103,9 @@ export class LocalGovernmentService {
     const { page, limit, ...filterOptions } = queryOptions;
 
     const filterRecordOptions = Object.fromEntries(
-      Object.entries(filterOptions).filter(([, value]) => value !== undefined),
+      Object.entries(filterOptions).filter(
+        ([, value]) => value !== undefined && value !== '',
+      ),
     );
 
     const paginationPayload = {
