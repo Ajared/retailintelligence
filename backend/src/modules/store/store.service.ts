@@ -78,7 +78,12 @@ export class StoreService {
     relations?: Record<string, unknown>,
   ): Promise<AbstractResponseDto<StoreInterface>> {
     const [error, data] = await trySafe(() =>
-      this.storeModelAction.get({ id }, queryOptions, relations),
+      this.storeModelAction.get({ id }, queryOptions, {
+        ...relations,
+        state: true,
+        enumerator: true,
+        localGovernment: true,
+      }),
     );
 
     if (error) {
