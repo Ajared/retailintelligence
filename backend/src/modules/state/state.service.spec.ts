@@ -1,29 +1,29 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { DistrictService } from './district.service';
-import { DistrictModelAction } from './district.model-action';
+import { StateService } from './state.service';
+import { StateModelAction } from './state.model-action';
 
-const mockDistrictModelAction = {
+const mockStateModelAction = {
   get: jest.fn(),
   create: jest.fn(),
   update: jest.fn(),
   delete: jest.fn(),
 };
 
-describe('DistrictService', () => {
-  let service: DistrictService;
+describe('StateService', () => {
+  let service: StateService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        DistrictService,
+        StateService,
         {
-          provide: DistrictModelAction,
-          useValue: mockDistrictModelAction,
+          provide: StateModelAction,
+          useValue: mockStateModelAction,
         },
       ],
     }).compile();
 
-    service = module.get<DistrictService>(DistrictService);
+    service = module.get<StateService>(StateService);
   });
 
   it('should be defined', () => {

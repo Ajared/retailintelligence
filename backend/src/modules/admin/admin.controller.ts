@@ -1,8 +1,5 @@
-import {
-  PaginationOptions,
-  ExportTypeValidator,
-} from '~/helpers/pagination.helper';
-import { Response } from 'express';
+import { QueryValidator } from '~/helpers/query.helper';
+import { Request, Response } from 'express';
 import { RoleGuard } from '~/guards/role.guard';
 import { UserService } from '../user/user.service';
 import { Roles } from '~/decorators/role.decorator';
@@ -17,9 +14,12 @@ import {
   Param,
   Post,
   Query,
+  Req,
   Res,
   UseGuards,
 } from '@nestjs/common';
+import { StoreQueryValidator } from '../store/dto/store.dto';
+import { UserQueryValidator } from '../user/dto/user.dto';
 
 @Controller('admin')
 @UseGuards(RoleGuard)
@@ -32,26 +32,38 @@ export class AdminController {
 
   @HttpCode(HttpStatus.OK)
   @Post('users/deactivate')
-  async deactivateUser(@Body() body: { userId: string }) {
-    return this.userService.deactivateUser(body.userId);
+  async deactivateUser(
+    @Body() body: { userId: string },
+    @Req() req: Request & { user: { sub: string } },
+  ) {
+    return this.userService.deactivateUser(body.userId, req.user.sub);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('users/reactivate')
+  async reactivateUser(
+    @Body() body: { userId: string },
+    @Req() req: Request & { user: { sub: string } },
+  ) {
+    return this.userService.reactivateUser(body.userId, req.user.sub);
+  }
+
+  @Get('users')
+  async getUsers(@Query() query: UserQueryValidator) {
+    return this.userService.listUsers(query);
   }
 
   @Get('stores')
-  async getStores(@Query() query: PaginationOptions) {
-    return this.storeService.listStores(query);
+  async getStores(@Query() queryOptions: StoreQueryValidator) {
+    return this.storeService.listStores(queryOptions);
   }
 
   @Get('stores/export')
   async exportStores(
     @Res() response: Response,
-    @Query() paginationOptions: PaginationOptions,
-    @Query() exportTypeOptions: ExportTypeValidator,
+    @Query() queryOptions: QueryValidator,
   ) {
-    return this.storeService.exportStores(
-      response,
-      paginationOptions,
-      exportTypeOptions.type,
-    );
+    return this.storeService.exportStores(response, queryOptions);
   }
 
   @Get('stores/:id')

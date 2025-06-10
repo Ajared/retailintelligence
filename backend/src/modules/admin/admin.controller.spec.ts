@@ -4,13 +4,10 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { RoleGuard } from '~/guards/role.guard';
 import { StoreService } from '../store/store.service';
 import { UserService } from '../user/user.service';
-import {
-  ExportType,
-  ExportTypeValidator,
-  PaginationOptions,
-} from '~/helpers/pagination.helper';
-import { Response } from 'express';
+import { ExportType } from '~/helpers/query.helper';
+import { Response, Request } from 'express';
 import { AuthGuard } from '~/guards/auth.guard';
+import { StoreQueryOptions } from '../store/types/list-store.type';
 
 const mockRoleGuard: CanActivate = {
   canActivate: jest.fn(() => true),
@@ -28,6 +25,7 @@ const mockStoreService = {
 
 const mockUserService = {
   deactivateUser: jest.fn().mockResolvedValue(undefined),
+  reactivateUser: jest.fn().mockResolvedValue(undefined),
 };
 
 const mockResponse = {
@@ -72,54 +70,91 @@ describe('AdminController', () => {
   describe('deactivateUser', () => {
     it('should call userService.deactivateUser with correct id and return the expected result', async () => {
       const body = { userId: 'user-123' };
+      const req = { user: { sub: 'admin-123' } } as Request & {
+        user: { sub: string };
+      };
       const expectedResult = {
         message: 'User Deactivation operation successful',
         data: { id: 'user-123', status: 'INACTIVE' },
       };
       mockUserService.deactivateUser.mockResolvedValueOnce(expectedResult);
 
-      const result = await controller.deactivateUser(body);
+      const result = await controller.deactivateUser(body, req);
 
-      expect(mockUserService.deactivateUser).toHaveBeenCalledWith('user-123');
+      expect(mockUserService.deactivateUser).toHaveBeenCalledWith(
+        'user-123',
+        'admin-123',
+      );
       expect(result).toEqual(expectedResult);
     });
 
     it('should handle errors from userService.deactivateUser', async () => {
       const body = { userId: 'user-123' };
+      const req = { user: { sub: 'admin-123' } } as Request & {
+        user: { sub: string };
+      };
       const error = new Error('Deactivation failed');
       mockUserService.deactivateUser.mockRejectedValueOnce(error);
 
-      await expect(controller.deactivateUser(body)).rejects.toThrow(error);
+      await expect(controller.deactivateUser(body, req)).rejects.toThrow(error);
     });
   });
+
+  describe('reactivateUser', () => {
+    it('should call userService.reactivateUser with correct id and return the expected result', async () => {
+      const body = { userId: 'user-123' };
+      const req = { user: { sub: 'admin-123' } } as Request & {
+        user: { sub: string };
+      };
+      const expectedResult = {
+        message: 'User Reactivation operation successful',
+        data: { id: 'user-123', status: 'ACTIVE' },
+      };
+      mockUserService.reactivateUser.mockResolvedValueOnce(expectedResult);
+
+      const result = await controller.reactivateUser(body, req);
+
+      expect(mockUserService.reactivateUser).toHaveBeenCalledWith(
+        'user-123',
+        'admin-123',
+      );
+      expect(result).toEqual(expectedResult);
+    });
+
+    it('should handle errors from userService.reactivateUser', async () => {
+      const body = { userId: 'user-123' };
+      const req = { user: { sub: 'admin-123' } } as Request & {
+        user: { sub: string };
+      };
+      const error = new Error('Reactivation failed');
+      mockUserService.reactivateUser.mockRejectedValueOnce(error);
+
+      await expect(controller.reactivateUser(body, req)).rejects.toThrow(error);
+    });
+  });
+
   describe('getStores', () => {
     it('should call storeService.listStores with pagination options', async () => {
-      const paginationOptions: PaginationOptions = { page: '1', limit: '10' };
+      const queryOptions: StoreQueryOptions = { page: '1', limit: '10' };
       const expectedResult = { data: [], total: 0 };
       mockStoreService.listStores.mockResolvedValueOnce(expectedResult);
 
-      const result = await controller.getStores(paginationOptions);
+      const result = await controller.getStores(queryOptions);
 
-      expect(storeService.listStores).toHaveBeenCalledWith(paginationOptions);
+      expect(storeService.listStores).toHaveBeenCalledWith(queryOptions);
       expect(result).toEqual(expectedResult);
     });
   });
 
   describe('exportStores', () => {
     it('should call storeService.exportStores with correct arguments', async () => {
-      const paginationOptions: PaginationOptions = { page: '1', limit: '10' };
-      const exportTypeOptions: ExportTypeValidator = { type: ExportType.CSV };
+      const queryOptions = { exportType: ExportType.CSV };
 
-      await controller.exportStores(
-        mockResponse,
-        paginationOptions,
-        exportTypeOptions,
-      );
+      await controller.exportStores(mockResponse, queryOptions);
 
       expect(storeService.exportStores).toHaveBeenCalledWith(
         mockResponse,
-        paginationOptions,
-        exportTypeOptions.type,
+        queryOptions,
       );
     });
   });

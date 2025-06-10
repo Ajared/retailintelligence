@@ -4,12 +4,15 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { AbstractResponseDto } from '~/types/response.dto';
 import { LocalGovernmentModelAction } from './local-government.model-action';
 import { LocalGovernmentInterface } from './types/local-government.interface';
-import { PaginationOptions } from '~/helpers/pagination.helper';
 import { NullishValueError, trySafe } from '~/helpers/try-safe';
 import { CustomHttpException } from '~/helpers/custom.exception';
-import ListLocalGovernmentRecordOptions from './types/list-local-government.type';
+import {
+  ListLocalGovernmentRecordOptions,
+  LocalGovernmentQueryOptions,
+} from './types/list-local-government.type';
 import CreateLocalGovernmentRecordOptions from './types/create-local-government.type';
 import UpdateLocalGovernmentRecordOptions from './types/update-local-government.type';
+import { EntityPropertyNotFoundError } from 'typeorm';
 
 @Injectable()
 export class LocalGovernmentService {
@@ -20,10 +23,12 @@ export class LocalGovernmentService {
   async createLocalGovernment(
     localGovernmentDto: LocalGovernmentDto,
   ): Promise<AbstractResponseDto<LocalGovernmentInterface>> {
-    const { name } = localGovernmentDto;
+    const { name, stateId } = localGovernmentDto;
 
     const [existingLocalGovernmentError, existingLocalGovernment] =
-      await trySafe(() => this.localGovernmentModelAction.get({ name }));
+      await trySafe(() =>
+        this.localGovernmentModelAction.get({ name, stateId }),
+      );
 
     if (
       existingLocalGovernmentError &&
@@ -93,16 +98,24 @@ export class LocalGovernmentService {
   }
 
   async listLocalGovernments(
-    paginationOptions: PaginationOptions,
+    queryOptions: LocalGovernmentQueryOptions,
   ): Promise<AbstractResponseDto<LocalGovernmentInterface[]>> {
+    const { page, limit, ...filterOptions } = queryOptions;
+
+    const filterRecordOptions = Object.fromEntries(
+      Object.entries(filterOptions).filter(
+        ([, value]) => value !== undefined && value !== '',
+      ),
+    );
+
     const paginationPayload = {
-      page: paginationOptions?.page ? +paginationOptions.page : 1,
-      limit: paginationOptions?.limit ? +paginationOptions.limit : 10,
+      page: page ? +page : 1,
+      limit: limit ? +limit : 10,
     };
 
     const listOptions: ListLocalGovernmentRecordOptions = {
       paginationPayload,
-      filterRecordOptions: {},
+      filterRecordOptions,
     };
 
     const [error, list] = await trySafe(() =>
@@ -110,8 +123,14 @@ export class LocalGovernmentService {
     );
 
     if (error) {
+      if (error instanceof EntityPropertyNotFoundError) {
+        throw new CustomHttpException(
+          SYS_MSG.INVALID_PARAMETER('Filter Query'),
+          HttpStatus.BAD_REQUEST,
+        );
+      }
       throw new CustomHttpException(
-        SYS_MSG.RESOURCE_FETCH_FAILED('Local Government'),
+        SYS_MSG.RESOURCE_FETCH_FAILED('Local Governments'),
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -119,7 +138,7 @@ export class LocalGovernmentService {
     return {
       data: list.payload,
       meta: list.paginationMeta,
-      message: SYS_MSG.RESOURCE_FETCHED_SUCCESSFULLY('Local Government'),
+      message: SYS_MSG.RESOURCE_FETCHED_SUCCESSFULLY('Local Governments'),
     };
   }
 

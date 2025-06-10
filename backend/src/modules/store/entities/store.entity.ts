@@ -1,14 +1,13 @@
-import { StoreType } from '../constants/store.constant';
 import { User } from '~/modules/user/entities/user.entity';
 import { Column, Entity, ManyToOne, JoinColumn } from 'typeorm';
 import { AbstractBaseEntity } from '~/database/base/base.entity';
-import { District } from '~/modules/district/entities/district.entity';
+import { State } from '~/modules/state/entities/state.entity';
 import { LocalGovernment } from '~/modules/local-government/entities/local-government.entity';
 
 @Entity({ name: 'stores' })
 export class Store extends AbstractBaseEntity {
-  @Column({ name: 'store_name' })
-  storeName: string;
+  @Column()
+  name: string;
 
   @JoinColumn({ name: 'local_government_id' })
   @ManyToOne(() => LocalGovernment, (localGov) => localGov.stores)
@@ -17,18 +16,18 @@ export class Store extends AbstractBaseEntity {
   @Column()
   localGovernmentId: string;
 
-  @JoinColumn({ name: 'district_id' })
-  @ManyToOne(() => District, (district) => district.stores)
-  district: District;
+  @JoinColumn({ name: 'state_id' })
+  @ManyToOne(() => State, (state) => state.stores)
+  state: State;
 
   @Column()
-  districtId: string;
+  stateId: string;
 
   @Column()
   address: string;
 
-  @Column({ type: 'enum', enum: StoreType })
-  storeType: StoreType;
+  @Column()
+  storeType: string;
 
   @Column({ type: 'text', nullable: true })
   landmarks?: string;
