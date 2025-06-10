@@ -70,7 +70,9 @@ describe('AdminController', () => {
   describe('deactivateUser', () => {
     it('should call userService.deactivateUser with correct id and return the expected result', async () => {
       const body = { userId: 'user-123' };
-      const req = { user: { sub: 'admin-123' } } as Request;
+      const req = { user: { sub: 'admin-123' } } as Request & {
+        user: { sub: string };
+      };
       const expectedResult = {
         message: 'User Deactivation operation successful',
         data: { id: 'user-123', status: 'INACTIVE' },
@@ -88,7 +90,9 @@ describe('AdminController', () => {
 
     it('should handle errors from userService.deactivateUser', async () => {
       const body = { userId: 'user-123' };
-      const req = { user: { sub: 'admin-123' } } as Request;
+      const req = { user: { sub: 'admin-123' } } as Request & {
+        user: { sub: string };
+      };
       const error = new Error('Deactivation failed');
       mockUserService.deactivateUser.mockRejectedValueOnce(error);
 
@@ -99,7 +103,9 @@ describe('AdminController', () => {
   describe('reactivateUser', () => {
     it('should call userService.reactivateUser with correct id and return the expected result', async () => {
       const body = { userId: 'user-123' };
-      const req = { user: { sub: 'admin-123' } } as Request;
+      const req = { user: { sub: 'admin-123' } } as Request & {
+        user: { sub: string };
+      };
       const expectedResult = {
         message: 'User Reactivation operation successful',
         data: { id: 'user-123', status: 'ACTIVE' },
@@ -117,7 +123,9 @@ describe('AdminController', () => {
 
     it('should handle errors from userService.reactivateUser', async () => {
       const body = { userId: 'user-123' };
-      const req = { user: { sub: 'admin-123' } } as Request;
+      const req = { user: { sub: 'admin-123' } } as Request & {
+        user: { sub: string };
+      };
       const error = new Error('Reactivation failed');
       mockUserService.reactivateUser.mockRejectedValueOnce(error);
 
