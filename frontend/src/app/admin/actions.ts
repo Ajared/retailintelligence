@@ -1,9 +1,12 @@
 'use server';
 
+import { z } from 'zod/v4';
 import { UserInterface } from '~/types/user';
 import customFetch from '~/lib/custom-fetch';
 import { StoreInterface } from '~/types/store';
+import { collectErrorMessages } from '~/lib/utils';
 import { Response, ErrorResponse } from '~/types/actions';
+import { InviteUserFormData, inviteUserFormSchema } from './schema';
 
 export const getAllStores = async (
   page: number = 1,
@@ -157,5 +160,57 @@ export const reactivateUser = async (
       message: errorMessage,
       timestamp: new Date().toISOString(),
     } as ErrorResponse;
+  }
+};
+
+export const inviteUser = async (
+  _: Response<{ email: string } | null>,
+  formData: FormData,
+) => {
+  let rawData: InviteUserFormData | null = null;
+
+  try {
+    rawData = {
+      email: formData.get('email') as string,
+      role: formData.get('role') as 'user' | 'admin',
+    };
+
+    const validatedData = inviteUserFormSchema.safeParse(rawData);
+
+    if (!validatedData.success) {
+      const messages = collectErrorMessages(
+        z.treeifyError(validatedData.error),
+      );
+
+      return {
+        inputs: rawData,
+        message: 'Invalid form data',
+        timestamp: new Date().toISOString(),
+        error: messages,
+      } as ErrorResponse & { inputs: InviteUserFormData };
+    }
+
+    const { email, role } = validatedData.data;
+
+    const response = await customFetch.post<{ email: string }>('/auth/invite', {
+      email,
+      role,
+    });
+
+    if (!('data' in response)) {
+      return {
+        ...response,
+        inputs: rawData,
+      } as ErrorResponse & { inputs: InviteUserFormData };
+    }
+
+    return response;
+  } catch (error) {
+    return {
+      inputs: rawData,
+      message: 'Something went wrong',
+      timestamp: new Date().toISOString(),
+      error: error instanceof Error ? error.message : 'Something went wrong',
+    } as ErrorResponse & { inputs: InviteUserFormData };
   }
 };
