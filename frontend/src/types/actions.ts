@@ -1,27 +1,28 @@
 export interface PaginationMeta {
-  total: number;
-  limit: number;
   page: number;
-  totalPages: number;
-  hasNext: boolean;
-  hasPrevious: boolean;
+  limit: number;
+  total: number;
+  total_pages: number;
+  has_next: boolean;
+  has_previous: boolean;
 }
 
-export type SuccessResponse<T> = {
-  message: string;
+export interface SuccessResponse<T> {
   data: T;
-  meta?: Record<string, unknown> | PaginationMeta;
-  timestamp: Date | string;
-};
-
-export type ErrorResponse = {
   message: string;
-  error:
-    | string
-    | string[]
-    | Record<string, unknown>
-    | Record<string, unknown>[];
-  timestamp: Date | string;
-};
+  timestamp: string;
+}
 
-export type Response<T> = SuccessResponse<T> | ErrorResponse;
+export interface PaginatedSuccessResponse<T> extends SuccessResponse<T> {
+  meta: PaginationMeta;
+}
+
+export interface ErrorResponse {
+  error: string | string[];
+  message: string;
+  timestamp: string;
+}
+
+export type Response<T> = T extends unknown[]
+  ? PaginatedSuccessResponse<T> | ErrorResponse
+  : SuccessResponse<T> | ErrorResponse;

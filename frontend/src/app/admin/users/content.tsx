@@ -1,10 +1,16 @@
 'use client';
 
-import { useState, use } from 'react';
-import { useActionState } from 'react';
+import { useCallback, useMemo } from 'react';
 import { Input } from '~/components/ui/input';
 import { Button } from '~/components/ui/button';
-import { Search, Filter, X, MoreHorizontal } from 'lucide-react';
+import {
+  Search,
+  Filter,
+  X,
+  MoreHorizontal,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -31,156 +37,64 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog';
-import { Response } from '~/types/actions';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '~/components/ui/select';
 import { useIsMobile } from '~/hooks/use-mobile';
-import { UserInterface, UserRole } from '~/types/user';
-import { deactivateUser, reactivateUser } from '../actions';
-import { toast } from 'sonner';
-import { useEffect, startTransition } from 'react';
-import EmptyState from '../_components/empty';
+import { UserRole } from '~/types/user';
+import { useUsers } from './context';
 
-type ActionState = {
-  loading: boolean;
-  error?: string;
-  updatedUser?: UserInterface;
-};
-
-export default function Content({
-  users,
-}: {
-  users: Promise<Response<UserInterface[]>>;
-}) {
-  const response = use(users);
+export default function Content() {
   const isMobile = useIsMobile();
-
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showDialog, setShowDialog] = useState(false);
-  const [isSearchActive, setIsSearchActive] = useState(false);
-  const [userList, setUserList] = useState<UserInterface[]>(
-    'error' in response ? [] : (response.data ?? []),
-  );
-  const [selectedUser, setSelectedUser] = useState<UserInterface | null>(null);
-  const [actionType, setActionType] = useState<'activate' | 'deactivate'>(
-    'deactivate',
-  );
-  const [filterOptions, setFilterOptions] = useState<FilterOptions>({
-    roles: {
-      [UserRole.SUPER_ADMIN]: true,
-      [UserRole.ADMIN]: true,
-      [UserRole.USER]: true,
-    },
-    status: {
-      active: true,
-      inactive: true,
-    },
-  });
-
-  const userStatusAction = async (
-    prevState: ActionState,
-    payload: { userId: string; actionType: 'activate' | 'deactivate' },
-  ): Promise<ActionState> => {
-    let response: Response<UserInterface>;
-    if (payload.actionType === 'activate') {
-      response = await reactivateUser(payload.userId);
-    } else {
-      response = await deactivateUser(payload.userId);
-    }
-    if ('error' in response) {
-      toast.error(response.message || 'Failed to update user');
-      return {
-        ...prevState,
-        error: response.message,
-        loading: false,
-      };
-    }
-    toast.success(
-      `${payload.actionType === 'activate' ? 'Reactivated' : 'Deactivated'} user successfully`,
-    );
-    return {
-      loading: false,
-      updatedUser: response.data,
-    };
-  };
-
-  const [actionState, dispatchAction, isPending] = useActionState(
-    userStatusAction,
-    { loading: false },
-  );
-
-  useEffect(() => {
-    if (actionState && actionState.updatedUser) {
-      setUserList((prevUsers) =>
-        prevUsers.map((user) =>
-          user.id === actionState.updatedUser!.id
-            ? { ...user, status: actionState.updatedUser!.status }
-            : user,
-        ),
-      );
-      setShowDialog(false);
-      setSelectedUser(null);
-    }
-  }, [actionState]);
-
-  if ('error' in response) {
-    return <EmptyState />;
-  }
-
-  const filteredUsers = userList.filter((user) => {
-    const matchesSearch =
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.role.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = filterOptions.roles[user.role as UserRole];
-    const matchesStatus =
-      filterOptions.status[user.status as keyof typeof filterOptions.status];
-    return matchesSearch && matchesRole && matchesStatus;
-  });
-
-  const handleStatusChange = (
-    user: UserInterface,
-    action: 'activate' | 'deactivate',
-  ) => {
-    setSelectedUser(user);
-    setActionType(action);
-    setShowDialog(true);
-  };
-
-  const confirmStatusChange = () => {
-    if (!selectedUser || !selectedUser.id) return;
-    startTransition(() => {
-      dispatchAction({ userId: selectedUser.id as string, actionType });
+  const {
+    users,
+    searchTerm,
+    setSearchTerm,
+    filterOptions,
+    toggleRoleFilter,
+    toggleStatusFilter,
+    handleStatusChange,
+    isSearchActive,
+    toggleSearchMode,
+    showDialog,
+    setShowDialog,
+    selectedUser,
+    actionType,
+    confirmStatusChange,
+    isPending,
+    pagination,
+    setPage,
+    setLimit,
+  } = useUsers();
+  const filteredUsers = useMemo(() => {
+    return users.filter((user) => {
+      const matchesSearch =
+        searchTerm === '' ||
+        user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.status.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.role.toLowerCase().includes(searchTerm.toLowerCase());
+      return matchesSearch;
     });
-  };
+  }, [users, searchTerm]);
 
-  const toggleSearchMode = () => {
-    setIsSearchActive(!isSearchActive);
-    if (isSearchActive) {
-      setSearchTerm('');
-    }
-  };
+  const handleSearch = useCallback(
+    (value: string) => {
+      setSearchTerm(value);
+    },
+    [setSearchTerm],
+  );
 
-  const toggleRoleFilter = (role: UserRole) => {
-    setFilterOptions((prev) => ({
-      ...prev,
-      roles: {
-        ...prev.roles,
-        [role]: !prev.roles[role],
-      },
-    }));
-  };
-
-  const toggleStatusFilter = (status: keyof FilterOptions['status']) => {
-    setFilterOptions((prev) => ({
-      ...prev,
-      status: {
-        ...prev.status,
-        [status]: !prev.status[status],
-      },
-    }));
-  };
-
-  if (userList.length === 0 && !isPending) {
-    return <EmptyState />;
-  }
+  const renderEmptyState = () => (
+    <TableRow>
+      <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+        {'No users found matching selected criteria.'}
+      </TableCell>
+    </TableRow>
+  );
 
   return (
     <div className="space-y-6 p-4 md:p-6">
@@ -192,7 +106,7 @@ export default function Content({
               type="text"
               placeholder="Search users..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => handleSearch(e.target.value)}
               className="border-0 border-b border-input rounded-none shadow-none focus-visible:ring-0 pl-0 text-base bg-transparent focus:bg-transparent dark:bg-transparent dark:focus:bg-transparent"
               autoFocus
             />
@@ -217,7 +131,7 @@ export default function Content({
                 <Input
                   placeholder="Search users..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => handleSearch(e.target.value)}
                   className="pl-10"
                 />
               </div>
@@ -300,73 +214,66 @@ export default function Content({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredUsers.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={4}
-                    className="text-center py-8 text-muted-foreground"
-                  >
-                    No users found matching your criteria.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredUsers.map((user) => (
-                  <TableRow
-                    key={user.id}
-                    className={`cursor-pointer ${
-                      user.status === 'inactive' ? 'bg-muted/30' : ''
-                    }`}
-                  >
-                    <TableCell className="font-medium">
-                      <span
-                        className={
-                          user.status === 'inactive'
-                            ? 'line-through opacity-70'
-                            : ''
-                        }
-                      >
-                        {user.email}
-                      </span>
-                    </TableCell>
-                    <TableCell className="capitalize">{user.role}</TableCell>
-                    <TableCell className="capitalize">{user.status}</TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            className="h-8 w-8 p-0 cursor-pointer"
-                          >
-                            <span className="sr-only">Open menu</span>
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          {user.status === 'active' ? (
-                            <DropdownMenuItem
-                              onClick={() =>
-                                handleStatusChange(user, 'deactivate')
-                              }
-                              className="cursor-pointer"
+              {filteredUsers.length === 0
+                ? renderEmptyState()
+                : filteredUsers.map((user) => (
+                    <TableRow
+                      key={user.id}
+                      className={`cursor-pointer ${
+                        user.status === 'inactive' ? 'bg-muted/30' : ''
+                      }`}
+                    >
+                      <TableCell className="font-medium">
+                        <span
+                          className={
+                            user.status === 'inactive'
+                              ? 'line-through opacity-70'
+                              : ''
+                          }
+                        >
+                          {user.email}
+                        </span>
+                      </TableCell>
+                      <TableCell className="capitalize">{user.role}</TableCell>
+                      <TableCell className="capitalize">
+                        {user.status}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              className="h-8 w-8 p-0 cursor-pointer"
                             >
-                              Deactivate User
-                            </DropdownMenuItem>
-                          ) : (
-                            <DropdownMenuItem
-                              onClick={() =>
-                                handleStatusChange(user, 'activate')
-                              }
-                              className="cursor-pointer"
-                            >
-                              Reactivate User
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
+                              <span className="sr-only">Open menu</span>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {user.status === 'active' ? (
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  handleStatusChange(user, 'deactivate')
+                                }
+                                className="cursor-pointer"
+                              >
+                                Deactivate User
+                              </DropdownMenuItem>
+                            ) : (
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  handleStatusChange(user, 'activate')
+                                }
+                                className="cursor-pointer"
+                              >
+                                Reactivate User
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
             </TableBody>
           </Table>
         </div>
@@ -380,7 +287,9 @@ export default function Content({
 
           {filteredUsers.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No users found matching your criteria.
+              {users.length === 0
+                ? 'No users found.'
+                : 'No users found matching your criteria.'}
             </div>
           ) : (
             filteredUsers.map((user) => (
@@ -443,6 +352,65 @@ export default function Content({
         </div>
       </div>
 
+      <div className="flex flex-col gap-4 items-center justify-center md:flex-row md:items-center md:justify-between">
+        <div className="flex gap-2 justify-between items-center w-full md:w-auto">
+          <p className="text-sm text-muted-foreground">
+            {pagination.total === 0 || filteredUsers.length === 0 ? (
+              <>No results found</>
+            ) : (
+              <>
+                Showing {(pagination.page - 1) * pagination.limit + 1} to{' '}
+                {Math.min(pagination.page * pagination.limit, pagination.total)}{' '}
+                of {pagination.total} results
+              </>
+            )}
+          </p>
+          {pagination.total !== 0 && filteredUsers.length !== 0 && (
+            <Select
+              value={pagination.limit.toString()}
+              onValueChange={(value) => setLimit(Number(value))}
+            >
+              <SelectTrigger className="h-8 w-[70px]">
+                <SelectValue placeholder={pagination.limit} />
+              </SelectTrigger>
+              <SelectContent side="top">
+                {[10, 20, 30, 40, 50].map((pageSize) => (
+                  <SelectItem key={pageSize} value={pageSize.toString()}>
+                    {pageSize}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
+
+        <div className="flex gap-2 items-center">
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage(pagination.page - 1)}
+              disabled={!pagination.has_previous}
+            >
+              <ChevronLeft className="h-4 w-4" />
+              <span className="sr-only">Previous page</span>
+            </Button>
+            <div className="text-sm text-muted-foreground whitespace-nowrap">
+              Page {pagination.page} of {pagination.total_pages ?? 1}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage(pagination.page + 1)}
+              disabled={!pagination.has_next}
+            >
+              <ChevronRight className="h-4 w-4" />
+              <span className="sr-only">Next page</span>
+            </Button>
+          </div>
+        </div>
+      </div>
+
       <AlertDialog open={showDialog} onOpenChange={setShowDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -468,11 +436,11 @@ export default function Content({
             <AlertDialogAction
               autoFocus
               onClick={confirmStatusChange}
-              className={
+              className={`cursor-pointer ${
                 actionType === 'deactivate'
-                  ? 'bg-destructive hover:bg-destructive/90 text-white cursor-pointer'
+                  ? 'bg-destructive hover:bg-destructive/90 text-white'
                   : ''
-              }
+              }`}
               disabled={isPending}
             >
               {actionType === 'activate' ? 'Reactivate' : 'Deactivate'}
@@ -483,15 +451,3 @@ export default function Content({
     </div>
   );
 }
-
-type FilterOptions = {
-  roles: {
-    [UserRole.SUPER_ADMIN]: boolean;
-    [UserRole.ADMIN]: boolean;
-    [UserRole.USER]: boolean;
-  };
-  status: {
-    active: boolean;
-    inactive: boolean;
-  };
-};

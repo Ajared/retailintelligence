@@ -1,9 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useSession } from 'next-auth/react';
+import type { Session } from 'next-auth';
 import { usePathname } from 'next/navigation';
-import { Store, Users, ChevronsUpDown, Key, Undo, Home } from 'lucide-react';
+import { ChevronsUpDown, Key, Undo } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -21,28 +21,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu';
+import { navigationItems } from './navigation';
 
-export const navigationItems = [
-  {
-    title: 'Home',
-    icon: Home,
-    url: '/admin',
-  },
-  {
-    title: 'Users',
-    icon: Users,
-    url: '/admin/users',
-  },
-  {
-    title: 'Stores',
-    icon: Store,
-    url: '/admin/stores',
-  },
-];
-
-export function AppSidebar() {
+export function AppSidebar({ session }: { session: Session | null }) {
   const pathname = usePathname();
-  const { data: session } = useSession();
 
   return (
     <Sidebar variant="inset">
