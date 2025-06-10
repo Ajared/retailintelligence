@@ -5,6 +5,7 @@
   "author": "",
   "private": true,
   "license": "MIT",
+  "packageManager": "pnpm@10.12.1",
   "scripts": {
     "build": "nest build",
     "start": "nest start",
