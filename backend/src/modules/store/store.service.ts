@@ -6,13 +6,17 @@ import * as SYS_MSG from '~/helpers/system-messages';
 import { StoreModelAction } from './store.model-action';
 import { StoreInterface } from './types/store.interface';
 import { AbstractResponseDto } from '~/types/response.dto';
-import ListStoreRecordOptions from './types/list-store.type';
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { NullishValueError, trySafe } from '~/helpers/try-safe';
 import { CustomHttpException } from '~/helpers/custom.exception';
 import CreateStoreRecordOptions from './types/create-store.type';
 import UpdateStoreRecordOptions from './types/update-store.type';
-import { ExportType, PaginationOptions } from '~/helpers/pagination.helper';
+import { ExportType, QueryOptions } from '~/helpers/query.helper';
+import {
+  ListStoreRecordOptions,
+  StoreQueryOptions,
+} from './types/list-store.type';
+import { EntityPropertyNotFoundError } from 'typeorm';
 
 @Injectable()
 export class StoreService {
@@ -23,10 +27,10 @@ export class StoreService {
     enumeratorId: string,
     storeDto: StoreDto,
   ): Promise<AbstractResponseDto<StoreInterface>> {
-    const { storeName } = storeDto;
+    const { name } = storeDto;
 
     const [existingStoreError, existingStore] = await trySafe(() =>
-      this.storeModelAction.get({ storeName }),
+      this.storeModelAction.get({ name }),
     );
 
     if (
@@ -74,7 +78,12 @@ export class StoreService {
     relations?: Record<string, unknown>,
   ): Promise<AbstractResponseDto<StoreInterface>> {
     const [error, data] = await trySafe(() =>
-      this.storeModelAction.get({ id }, queryOptions, relations),
+      this.storeModelAction.get({ id }, queryOptions, {
+        ...relations,
+        state: true,
+        enumerator: true,
+        localGovernment: true,
+      }),
     );
 
     if (error) {
@@ -97,16 +106,29 @@ export class StoreService {
   }
 
   async listStores(
-    paginationOptions: PaginationOptions,
+    queryOptions: StoreQueryOptions,
   ): Promise<AbstractResponseDto<StoreInterface[]>> {
+    const { page, limit, ...filterOptions } = queryOptions;
+
+    const filterRecordOptions = Object.fromEntries(
+      Object.entries(filterOptions).filter(
+        ([, value]) => value !== undefined && value !== '',
+      ),
+    );
+
     const paginationPayload = {
-      page: paginationOptions?.page ? +paginationOptions.page : 1,
-      limit: paginationOptions?.limit ? +paginationOptions.limit : 10,
+      page: page ? +page : 1,
+      limit: limit ? +limit : 10,
     };
 
     const listStoreRecordOptions: ListStoreRecordOptions = {
       paginationPayload,
-      filterRecordOptions: {},
+      filterRecordOptions,
+      relations: {
+        state: true,
+        enumerator: true,
+        localGovernment: true,
+      },
     };
 
     const [error, data] = await trySafe(() =>
@@ -114,8 +136,14 @@ export class StoreService {
     );
 
     if (error) {
+      if (error instanceof EntityPropertyNotFoundError) {
+        throw new CustomHttpException(
+          SYS_MSG.INVALID_PARAMETER('Filter Query'),
+          HttpStatus.BAD_REQUEST,
+        );
+      }
       throw new CustomHttpException(
-        SYS_MSG.RESOURCE_FETCH_FAILED('Store'),
+        SYS_MSG.RESOURCE_FETCH_FAILED('Stores'),
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -123,7 +151,7 @@ export class StoreService {
     return {
       data: data.payload,
       meta: data.paginationMeta,
-      message: SYS_MSG.RESOURCE_FETCHED_SUCCESSFULLY('Store'),
+      message: SYS_MSG.RESOURCE_FETCHED_SUCCESSFULLY('Stores'),
     };
   }
 
@@ -154,13 +182,13 @@ export class StoreService {
     };
   }
 
-  async exportStores(
-    response: Response,
-    paginationOptions: PaginationOptions,
-    exportType: ExportType,
-  ) {
+  async exportStores(response: Response, queryOptions: QueryOptions) {
     try {
-      const { contentType, filename } = this.getExportMetadata(exportType);
+      const { page, limit, exportType } = queryOptions;
+
+      const { contentType, filename } = this.getExportMetadata(
+        exportType ?? ExportType.JSON,
+      );
 
       response.setHeader('Content-Type', contentType);
       response.setHeader(
@@ -169,17 +197,17 @@ export class StoreService {
       );
 
       const paginationPayload = {
-        page: paginationOptions?.page ? +paginationOptions.page : 1,
-        limit: paginationOptions?.limit ? +paginationOptions.limit : 10,
+        page: page ? +page : 1,
+        limit: limit ? +limit : 10,
       };
 
       const listStoreRecordOptions: ListStoreRecordOptions = {
         paginationPayload,
         filterRecordOptions: {},
         relations: {
-          localGovernment: true,
-          district: true,
+          state: true,
           enumerator: true,
+          localGovernment: true,
         },
       };
 
@@ -222,7 +250,7 @@ export class StoreService {
             await this._streamExcel(data.payload, response);
             break;
           default:
-            if (!response.finished) {
+            if (!response.writableEnded) {
               response.status(HttpStatus.BAD_REQUEST).send({
                 message: SYS_MSG.INVALID_PARAMETER('Export Type'),
               });
@@ -235,14 +263,23 @@ export class StoreService {
         }
 
         if (exportType === ExportType.JSON || exportType === ExportType.EXCEL) {
-          if (!response.finished) {
-            response.end();
+          if (!response.writableEnded) {
+            response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+              error: SYS_MSG.RESOURCE_EXPORT_FAILED('Stores'),
+              message: SYS_MSG.RESOURCE_EXPORT_FAILED('Stores'),
+            });
           }
         }
       } catch (streamError) {
         this.logger.error('Streaming/Writing error:', streamError);
-        if (!response.finished) {
-          response.end();
+        if (!response.writableEnded) {
+          response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+            error:
+              streamError instanceof Error
+                ? streamError.message
+                : 'Unknown error occurred',
+            message: SYS_MSG.RESOURCE_EXPORT_FAILED('Stores'),
+          });
         }
       }
     } catch (error) {

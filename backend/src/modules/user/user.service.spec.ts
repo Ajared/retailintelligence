@@ -2,8 +2,10 @@ import { UserService } from './user.service';
 import * as SYS_MSG from '~/helpers/system-messages';
 import { Test, TestingModule } from '@nestjs/testing';
 import { UserModelAction } from './user.model-action';
-import ListUserRecordOptions from './types/list-user.type';
-import { PaginationOptions } from '~/helpers/pagination.helper';
+import {
+  ListUserRecordOptions,
+  UserQueryOptions,
+} from './types/list-user.type';
 
 interface MockUserModelAction {
   list: jest.Mock<
@@ -42,7 +44,7 @@ describe('UserService', () => {
 
   describe('listUsers', () => {
     it('should call modelAction.list with provided pagination options (as strings) and return formatted result', async () => {
-      const paginationOptions: PaginationOptions = { page: '2', limit: '20' };
+      const queryOptions = { page: '2', limit: '20' };
       const mockData = [{ id: 'user-1', name: 'Test User' }];
       const mockMeta = { total: 1 };
       mockModelAction.list.mockResolvedValue({
@@ -58,7 +60,7 @@ describe('UserService', () => {
         filterRecordOptions: {},
       };
 
-      const result = await service.listUsers(paginationOptions);
+      const result = await service.listUsers(queryOptions);
 
       expect(mockModelAction.list).toHaveBeenCalledTimes(1);
       expect(mockModelAction.list).toHaveBeenCalledWith(expectedListOptions);
@@ -70,7 +72,7 @@ describe('UserService', () => {
     });
 
     it('should call modelAction.list with default pagination when options are undefined', async () => {
-      const paginationOptions: PaginationOptions | undefined = undefined;
+      const queryOptions: UserQueryOptions = {};
       const mockResponse = { payload: [], paginationMeta: { total: 0 } };
       mockModelAction.list.mockResolvedValue(mockResponse);
 
@@ -82,7 +84,7 @@ describe('UserService', () => {
         filterRecordOptions: {},
       };
 
-      const result = await service.listUsers(paginationOptions);
+      const result = await service.listUsers(queryOptions);
 
       expect(mockModelAction.list).toHaveBeenCalledTimes(1);
       expect(mockModelAction.list).toHaveBeenCalledWith(expectedListOptions);
@@ -94,7 +96,7 @@ describe('UserService', () => {
     });
 
     it('should call modelAction.list with default pagination when options is an empty object', async () => {
-      const paginationOptions: PaginationOptions = {};
+      const queryOptions: UserQueryOptions = {};
       const mockResponse = { payload: [], paginationMeta: { total: 0 } };
       mockModelAction.list.mockResolvedValue(mockResponse);
 
@@ -106,7 +108,7 @@ describe('UserService', () => {
         filterRecordOptions: {},
       };
 
-      const result = await service.listUsers(paginationOptions);
+      const result = await service.listUsers(queryOptions);
 
       expect(mockModelAction.list).toHaveBeenCalledTimes(1);
       expect(mockModelAction.list).toHaveBeenCalledWith(expectedListOptions);
@@ -118,7 +120,7 @@ describe('UserService', () => {
     });
 
     it('should use default page when only limit is provided', async () => {
-      const paginationOptions: PaginationOptions = { limit: '15' };
+      const queryOptions: UserQueryOptions = { limit: '15' };
       const mockResponse = {
         payload: [{ id: 'user-2' }],
         paginationMeta: { total: 1 },
@@ -133,7 +135,7 @@ describe('UserService', () => {
         filterRecordOptions: {},
       };
 
-      const result = await service.listUsers(paginationOptions);
+      const result = await service.listUsers(queryOptions);
 
       expect(mockModelAction.list).toHaveBeenCalledTimes(1);
       expect(mockModelAction.list).toHaveBeenCalledWith(expectedListOptions);
@@ -145,7 +147,7 @@ describe('UserService', () => {
     });
 
     it('should use default limit when only page is provided', async () => {
-      const paginationOptions: PaginationOptions = { page: '4' };
+      const queryOptions: UserQueryOptions = { page: '4' };
       const mockResponse = {
         payload: [{ id: 'user-3' }],
         paginationMeta: { total: 1 },
@@ -160,7 +162,7 @@ describe('UserService', () => {
         filterRecordOptions: {},
       };
 
-      const result = await service.listUsers(paginationOptions);
+      const result = await service.listUsers(queryOptions);
 
       expect(mockModelAction.list).toHaveBeenCalledTimes(1);
       expect(mockModelAction.list).toHaveBeenCalledWith(expectedListOptions);

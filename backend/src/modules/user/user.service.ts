@@ -1,13 +1,16 @@
 import * as SYS_MSG from '~/helpers/system-messages';
 import { UserModelAction } from './user.model-action';
 import { HttpStatus, Injectable } from '@nestjs/common';
-import ListUserRecordOptions from './types/list-user.type';
 import UpdateUserRecordOptions from './types/update-user.type';
 import CreateUserRecordOptions from './types/create-user.type';
 import { NullishValueError, trySafe } from '~/helpers/try-safe';
-import { PaginationOptions } from '~/helpers/pagination.helper';
 import { CustomHttpException } from '~/helpers/custom.exception';
-import { UserStatus } from './constants/user.constant';
+import { UserRole, UserStatus } from './constants/user.constant';
+import {
+  ListUserRecordOptions,
+  UserQueryOptions,
+} from './types/list-user.type';
+import { EntityPropertyNotFoundError } from 'typeorm';
 
 @Injectable()
 export class UserService {
@@ -72,15 +75,23 @@ export class UserService {
     return data;
   }
 
-  async listUsers(paginationOptions: PaginationOptions) {
+  async listUsers(queryOptions: UserQueryOptions) {
+    const { page, limit, ...filterOptions } = queryOptions;
+
+    const filterRecordOptions = Object.fromEntries(
+      Object.entries(filterOptions).filter(
+        ([, value]) => value !== undefined && value !== '',
+      ),
+    );
+
     const paginationPayload = {
-      page: paginationOptions?.page ? +paginationOptions.page : 1,
-      limit: paginationOptions?.limit ? +paginationOptions.limit : 10,
+      page: page ? +page : 1,
+      limit: limit ? +limit : 10,
     };
 
     const listUserRecordOptions: ListUserRecordOptions = {
       paginationPayload,
-      filterRecordOptions: {},
+      filterRecordOptions,
     };
 
     const [error, data] = await trySafe(() =>
@@ -88,6 +99,12 @@ export class UserService {
     );
 
     if (error) {
+      if (error instanceof EntityPropertyNotFoundError) {
+        throw new CustomHttpException(
+          SYS_MSG.INVALID_PARAMETER('Filter Query'),
+          HttpStatus.BAD_REQUEST,
+        );
+      }
       throw new CustomHttpException(
         SYS_MSG.RESOURCE_FETCH_FAILED('Users'),
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -115,7 +132,49 @@ export class UserService {
     return data;
   }
 
-  async deactivateUser(id: string) {
+  async deactivateUser(id: string, deactivatedBy: string) {
+    const [userError, user] = await trySafe(() => this.getUserById(id));
+    const [deactivatedByError, deactivatedByUser] = await trySafe(() =>
+      this.getUserById(deactivatedBy),
+    );
+
+    if (userError || deactivatedByError) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_NOT_FOUND('User'),
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    if (user.status === UserStatus.INACTIVE) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_OPERATION_FAILED('User Deactivation'),
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const userRole = user.role;
+    const deactivatedByRole = deactivatedByUser.role;
+
+    if (
+      userRole === UserRole.SUPER_ADMIN &&
+      deactivatedByRole !== UserRole.SUPER_ADMIN
+    ) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_OPERATION_FAILED('User Deactivation'),
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
+    if (
+      userRole === UserRole.ADMIN &&
+      deactivatedByRole !== UserRole.SUPER_ADMIN
+    ) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_OPERATION_FAILED('User Deactivation'),
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
     const payload: UpdateUserRecordOptions = {
       identifierOptions: { id },
       updatePayload: { status: UserStatus.INACTIVE },
@@ -137,6 +196,74 @@ export class UserService {
 
     return {
       message: SYS_MSG.RESOURCE_OPERATION_SUCCESSFUL('User Deactivation'),
+      data,
+    };
+  }
+
+  async reactivateUser(id: string, reactivatedBy: string) {
+    const [userError, user] = await trySafe(() => this.getUserById(id));
+    const [reactivatedByError, reactivatedByUser] = await trySafe(() =>
+      this.getUserById(reactivatedBy),
+    );
+
+    if (userError || reactivatedByError) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_NOT_FOUND('User'),
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    if (user.status === UserStatus.ACTIVE) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_OPERATION_FAILED('User Reactivation'),
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const userRole = user.role;
+    const reactivatedByRole = reactivatedByUser.role;
+
+    if (
+      userRole === UserRole.SUPER_ADMIN &&
+      reactivatedByRole !== UserRole.SUPER_ADMIN
+    ) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_OPERATION_FAILED('User Reactivation'),
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
+    if (
+      userRole === UserRole.ADMIN &&
+      reactivatedByRole !== UserRole.SUPER_ADMIN
+    ) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_OPERATION_FAILED('User Reactivation'),
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
+    const payload: UpdateUserRecordOptions = {
+      identifierOptions: { id },
+      updatePayload: { status: UserStatus.ACTIVE },
+      transactionOptions: {
+        useTransaction: false,
+      },
+    };
+
+    const [error, data] = await trySafe(() =>
+      this.userModelAction.update(payload),
+    );
+
+    if (error) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_OPERATION_FAILED('User Reactivation'),
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    return {
+      message: SYS_MSG.RESOURCE_OPERATION_SUCCESSFUL('User Reactivation'),
       data,
     };
   }

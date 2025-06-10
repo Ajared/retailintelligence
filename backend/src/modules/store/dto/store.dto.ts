@@ -1,16 +1,10 @@
-import {
-  IsString,
-  IsNotEmpty,
-  IsNumber,
-  IsEnum,
-  IsOptional,
-} from 'class-validator';
-import { StoreType } from '../constants/store.constant';
+import { QueryValidator } from '~/helpers/query.helper';
+import { IsString, IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
 
 export class StoreDto {
   @IsString()
   @IsNotEmpty()
-  storeName: string;
+  name: string;
 
   @IsString()
   @IsNotEmpty()
@@ -18,15 +12,15 @@ export class StoreDto {
 
   @IsString()
   @IsNotEmpty()
-  districtId: string;
+  stateId: string;
 
   @IsString()
   @IsNotEmpty()
   address: string;
 
-  @IsEnum(StoreType)
+  @IsString()
   @IsNotEmpty()
-  storeType: StoreType;
+  storeType: string;
 
   @IsString()
   @IsOptional()
@@ -46,4 +40,22 @@ export class StoreDto {
   @IsString()
   @IsOptional()
   enumeratorId: string;
+}
+
+export class StoreQueryValidator extends QueryValidator {
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  localGovernmentId?: string;
+
+  @IsOptional()
+  @IsString()
+  stateId?: string;
+
+  @IsOptional()
+  @IsString()
+  enumeratorId?: string;
 }

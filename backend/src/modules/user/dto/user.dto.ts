@@ -5,9 +5,9 @@ import {
   IsStrongPassword,
   MinLength,
   IsEnum,
-  IsBoolean,
   IsOptional,
 } from 'class-validator';
+import { QueryValidator } from '~/helpers/query.helper';
 import { AuthProvider } from '~/modules/auth/constants/auth.constant';
 
 export default class UserDto {
@@ -25,18 +25,20 @@ export default class UserDto {
   @IsEnum(AuthProvider)
   authProvider?: AuthProvider;
 
-  @IsBoolean()
-  @IsOptional()
-  isSuperAdmin?: boolean;
-
-  @IsBoolean()
-  @IsOptional()
-  isEmailVerified?: boolean;
-
   @IsString()
   @IsOptional()
   resetPasswordToken?: string;
 
   @IsOptional()
   resetPasswordExpires?: Date;
+}
+
+export class UserQueryValidator extends QueryValidator {
+  @IsOptional()
+  @IsString()
+  email?: string;
+
+  @IsOptional()
+  @IsEnum(AuthProvider)
+  authProvider?: AuthProvider;
 }

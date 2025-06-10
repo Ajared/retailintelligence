@@ -21,13 +21,14 @@ import { AdminModule } from './modules/admin/admin.module';
 import { StoreModule } from './modules/store/store.module';
 import { TokenModule } from './modules/token/token.module';
 import { ValidationPipe } from './helpers/validation.pipe';
-import { DistrictModule } from './modules/district/district.module';
+import { StateModule } from './modules/state/state.module';
 import { ResponseInterceptor } from './helpers/response.interceptor';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { ValidationExceptionFilter } from './helpers/validation-filter.exception';
 import { LocalGovernmentModule } from './modules/local-government/local-government.module';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -162,7 +163,7 @@ import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConne
     AuthModule,
     StoreModule,
     LocalGovernmentModule,
-    DistrictModule,
+    StateModule,
     AdminModule,
     GuardModule,
   ],
