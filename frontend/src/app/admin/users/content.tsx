@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { Input } from '~/components/ui/input';
 import { Button } from '~/components/ui/button';
 import {
@@ -10,6 +10,7 @@ import {
   MoreHorizontal,
   ChevronLeft,
   ChevronRight,
+  UserPlus,
 } from 'lucide-react';
 import {
   Table,
@@ -47,6 +48,23 @@ import {
 import { useIsMobile } from '~/hooks/use-mobile';
 import { UserRole } from '~/types/user';
 import { useUsers } from './context';
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from '~/components/ui/dialog';
+import { Label } from '~/components/ui/label';
+import { inviteUser } from '../actions';
+import { useActionState } from 'react';
+import { Alert, AlertDescription } from '~/components/ui/alert';
+import { CheckCircle2, Loader2 } from 'lucide-react';
+import { Response } from '~/types/actions';
+import { InviteUserFormData } from '../schema';
 
 export default function Content() {
   const isMobile = useIsMobile();
@@ -70,6 +88,38 @@ export default function Content() {
     setPage,
     setLimit,
   } = useUsers();
+
+  const inviteInitialState: Response<{
+    email: string;
+    role: 'user' | 'admin';
+  }> & {
+    inputs: InviteUserFormData;
+  } = {
+    inputs: { email: '', role: 'user' },
+    error: '',
+    message: '',
+    timestamp: '',
+  };
+  const [inviteState, inviteAction, invitePending] = useActionState(
+    inviteUser,
+    inviteInitialState,
+  );
+
+  const dialogRef = useRef<HTMLButtonElement>(null);
+
+  const handleInviteSuccess = useCallback(() => {
+    if ('data' in inviteState && inviteState.data) {
+      setTimeout(() => {
+        inviteState.message = '';
+        dialogRef.current?.click();
+      }, 1000);
+    }
+  }, [inviteState]);
+
+  if ('data' in inviteState && inviteState.data) {
+    handleInviteSuccess();
+  }
+
   const filteredUsers = useMemo(() => {
     return users.filter((user) => {
       const matchesSearch =
@@ -199,6 +249,92 @@ export default function Content() {
               </DropdownMenuCheckboxItem>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="default" size="sm" className="gap-2">
+                <UserPlus className="h-4 w-4" />
+                <span className="hidden md:block">Invite User</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Invite User</DialogTitle>
+                <DialogDescription>
+                  Send an invitation by email and assign a role.
+                </DialogDescription>
+              </DialogHeader>
+              <form action={inviteAction} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="invite-email">Email</Label>
+                  <Input
+                    id="invite-email"
+                    name="email"
+                    type="email"
+                    placeholder="name@example.com"
+                    defaultValue={
+                      ('inputs' in inviteState && inviteState.inputs?.email) ||
+                      ''
+                    }
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="invite-role">Role</Label>
+                  <Select
+                    defaultValue={
+                      ('inputs' in inviteState && inviteState.inputs?.role) ||
+                      'user'
+                    }
+                    name="role"
+                  >
+                    <SelectTrigger
+                      id="invite-role"
+                      className="w-full border rounded px-2 py-2"
+                    >
+                      <SelectValue placeholder="Select a role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="user">User</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {inviteState?.message && inviteState.message !== '' && (
+                  <Alert
+                    variant={'data' in inviteState ? 'default' : 'destructive'}
+                  >
+                    {'data' in inviteState && (
+                      <CheckCircle2 className="h-4 w-4" />
+                    )}
+                    <AlertDescription>
+                      {inviteState?.message ||
+                        ('error' in inviteState &&
+                          inviteState.error &&
+                          (Array.isArray(inviteState.error)
+                            ? (inviteState.error as string[]).join(', ')
+                            : typeof inviteState.error === 'string'
+                              ? inviteState.error
+                              : 'Invalid form data'))}
+                    </AlertDescription>
+                  </Alert>
+                )}
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button type="button" variant="outline" ref={dialogRef}>
+                      Cancel
+                    </Button>
+                  </DialogClose>
+                  <Button type="submit" disabled={invitePending}>
+                    {invitePending && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    {invitePending ? 'Inviting...' : 'Send Invite'}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 

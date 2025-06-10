@@ -14,6 +14,7 @@ import { z } from 'zod/v4';
 import customFetch from '~/lib/custom-fetch';
 import { UserInterface } from '~/types/user';
 import { auth, signIn, signOut } from './auth';
+import { collectErrorMessages } from '~/lib/utils';
 import { ErrorResponse, Response, SuccessResponse } from '~/types/actions';
 import { isRedirectError } from 'next/dist/client/components/redirect-error';
 
@@ -251,27 +252,6 @@ export const resetPasswordAction = async (
     } as ErrorResponse & { inputs: ResetPasswordFormData };
   }
 };
-
-type ErrorNode = {
-  errors?: string[];
-  properties?: Record<string, ErrorNode>;
-};
-
-const collectErrorMessages = (node: ErrorNode): string[] => {
-  const messages: string[] = [];
-
-  if (Array.isArray(node?.errors)) {
-    messages.push(...node.errors);
-  }
-  if (node?.properties && typeof node.properties === 'object') {
-    Object.values(node.properties).forEach((childNode) => {
-      messages.push(...collectErrorMessages(childNode));
-    });
-  }
-
-  return messages;
-};
-
 export const logoutAction = async () => {
   await signOut({ redirectTo: '/login' });
 };
