@@ -1,4 +1,4 @@
-import { AbstractBaseInterface } from './index';
+import { AbstractBaseInterface } from './base';
 
 export enum UserRole {
   SUPER_ADMIN = 'super_admin',
