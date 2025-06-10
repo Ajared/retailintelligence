@@ -1,0 +1,19 @@
+import { Home, Users, Store } from 'lucide-react';
+
+export const navigationItems = [
+  {
+    title: 'Home',
+    icon: Home,
+    url: '/admin',
+  },
+  {
+    title: 'Users',
+    icon: Users,
+    url: '/admin/users',
+  },
+  {
+    title: 'Stores',
+    icon: Store,
+    url: '/admin/stores',
+  },
+];

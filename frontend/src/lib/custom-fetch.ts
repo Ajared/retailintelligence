@@ -1,5 +1,6 @@
 import { env } from '~/env';
-import { ErrorResponse, Response, SuccessResponse } from '~/types/actions';
+import { auth } from '~/app/(auth)/auth';
+import { Response, ErrorResponse } from '~/types/actions';
 
 interface FetchOptions extends RequestInit {
   baseURL?: string;
@@ -16,6 +17,7 @@ async function customFetcher<T>(
   options: FetchOptions = {},
 ): Promise<Response<T>> {
   const { baseURL = env.API_URL, ...fetchOptions } = options;
+  const session = await auth().catch(() => null);
 
   const mergedOptions: RequestInit = {
     ...defaultOptions,
@@ -23,36 +25,35 @@ async function customFetcher<T>(
     headers: {
       ...defaultOptions.headers,
       ...fetchOptions.headers,
+      ...(session?.user?.access_token
+        ? { Authorization: `Bearer ${session.user.access_token}` }
+        : {}),
     },
   };
 
   try {
     const response = await fetch(`${baseURL}${url}`, mergedOptions);
-    const data = (await response.json()) as Response<T>;
+    const data = await response.json();
 
     if (!('data' in data)) {
-      return {
+      const errorResponse: ErrorResponse = {
         message: data.message,
         error: data.error,
-        timestamp: new Date(),
-      } as ErrorResponse;
+        timestamp: new Date().toISOString(),
+      };
+      return errorResponse as Response<T>;
     }
 
-    return data as SuccessResponse<T>;
+    return data as Response<T>;
   } catch (error) {
-    if (error instanceof Error) {
-      return {
-        message: error.message,
-        error: error.message,
-        timestamp: new Date(),
-      } as ErrorResponse;
-    }
-
-    return {
-      message: 'Network error occurred',
-      error: 'Network error occurred',
-      timestamp: new Date(),
-    } as ErrorResponse;
+    const errorMessage =
+      error instanceof Error ? error.message : 'Network error occurred';
+    const errorResponse: ErrorResponse = {
+      message: errorMessage,
+      error: errorMessage,
+      timestamp: new Date().toISOString(),
+    };
+    return errorResponse as Response<T>;
   }
 }
 
