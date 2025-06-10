@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import type { Session } from 'next-auth';
 import { usePathname } from 'next/navigation';
-import { ChevronsUpDown, Key, Undo } from 'lucide-react';
+import { logoutAction } from '~/app/(auth)/actions';
+import { ChevronsUpDown, Key, Loader2, Undo } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -21,10 +22,22 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu';
+import { useProgress } from '@bprogress/next';
 import { navigationItems } from './navigation';
+import { useActionState, useEffect } from 'react';
 
 export function AppSidebar({ session }: { session: Session | null }) {
   const pathname = usePathname();
+  const { start, stop } = useProgress();
+  const [, action, isPending] = useActionState(logoutAction, null);
+
+  useEffect(() => {
+    if (isPending) {
+      start();
+    } else {
+      stop();
+    }
+  }, [isPending, start, stop]);
 
   return (
     <Sidebar variant="inset">
@@ -101,13 +114,27 @@ export function AppSidebar({ session }: { session: Session | null }) {
                   sideOffset={4}
                 >
                   <DropdownMenuItem className="cursor-pointer">
-                    <Key className="mr-2 size-4" />
-                    Change Password
+                    <Link
+                      href="/forgot-password"
+                      className="flex items-center gap-2"
+                    >
+                      <Key className="size-4" />
+                      Change Password
+                    </Link>
                   </DropdownMenuItem>
-                  <form>
-                    <DropdownMenuItem className="cursor-pointer">
-                      <Undo className="mr-2 size-4" />
-                      Sign Out
+                  <form action={action}>
+                    <DropdownMenuItem asChild className="cursor-pointer">
+                      <button
+                        type="submit"
+                        className="w-full flex items-center gap-2"
+                      >
+                        {isPending ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                          <Undo className="size-4" />
+                        )}
+                        {isPending ? 'Processing' : 'Sign Out'}
+                      </button>
                     </DropdownMenuItem>
                   </form>
                 </DropdownMenuContent>
