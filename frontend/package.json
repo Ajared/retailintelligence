@@ -26,6 +26,7 @@
     "@radix-ui/react-tooltip": "^1.2.7",
     "@radix-ui/react-visually-hidden": "^1.2.3",
     "@t3-oss/env-nextjs": "^0.13.8",
+    "@uploadthing/react": "^7.3.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "input-otp": "^1.4.2",
@@ -39,6 +40,7 @@
     "recharts": "^2.15.3",
     "sonner": "^2.0.5",
     "tailwind-merge": "^3.3.0",
+    "uploadthing": "^7.7.2",
     "zod": "^3.25.57"
   },
   "devDependencies": {
