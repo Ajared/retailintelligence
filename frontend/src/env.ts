@@ -9,6 +9,7 @@ export const env = createEnv({
     API_URL: z.url(),
     AUTH_SECRET: z.string(),
     UPLOADTHING_TOKEN: z.string(),
+    UPLOADTHING_APP_ID: z.string(),
   },
   emptyStringAsUndefined: true,
   experimental__runtimeEnv: process.env,
