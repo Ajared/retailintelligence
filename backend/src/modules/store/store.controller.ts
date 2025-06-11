@@ -9,9 +9,11 @@ import {
   Query,
   Patch,
   Req,
+  Res,
 } from '@nestjs/common';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 import { StoreService } from './store.service';
+import { QueryValidator } from '~/helpers/query.helper';
 import { StoreDto, StoreQueryValidator } from './dto/store.dto';
 
 @Controller('stores')
@@ -20,26 +22,47 @@ export class StoreController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async createStore(@Body() storeDto: StoreDto, @Req() req: Request) {
-    const enumeratorId = req.user?.sub ?? '';
-    return this.storeService.createStore(enumeratorId, storeDto);
+  async createStore(
+    @Body() storeDto: Omit<StoreDto, 'enumeratorId'>,
+    @Req() req: Request & { user: { sub: string } },
+  ) {
+    return this.storeService.createStore(req.user.sub, storeDto);
   }
 
   @Get(':id')
   @HttpCode(HttpStatus.OK)
-  async getStoreById(@Param('id') id: string) {
-    return this.storeService.getStoreById(id);
+  async getStoreById(
+    @Param('id') id: string,
+    @Req() req: Request & { user: { sub: string } },
+  ) {
+    return this.storeService.getStoreById(id, req.user.sub);
   }
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  async listStores(@Query() queryOptions: StoreQueryValidator) {
-    return this.storeService.listStores(queryOptions);
+  async listStores(
+    @Req() req: Request & { user: { sub: string } },
+    @Query() queryOptions: StoreQueryValidator,
+  ) {
+    return this.storeService.listStores(req.user.sub, queryOptions);
+  }
+
+  @Get('export')
+  async exportStores(
+    @Res() response: Response,
+    @Req() req: Request & { user: { sub: string } },
+    @Query() queryOptions: QueryValidator,
+  ) {
+    await this.storeService.exportStores(response, queryOptions, req.user.sub);
   }
 
   @Patch(':id')
   @HttpCode(HttpStatus.OK)
-  async updateStore(@Param('id') id: string, @Body() storeDto: StoreDto) {
-    return this.storeService.updateStore(id, storeDto);
+  async updateStore(
+    @Param('id') id: string,
+    @Body() storeDto: Partial<StoreDto>,
+    @Req() req: Request & { user: { sub: string } },
+  ) {
+    return this.storeService.updateStore(id, req.user.sub, storeDto);
   }
 }
