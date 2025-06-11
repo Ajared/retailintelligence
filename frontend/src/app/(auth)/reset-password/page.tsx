@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
+import Loader from '~/components/loader';
 import { ResetPasswordForm } from './form';
 
 export default async function ResetPasswordPage() {
@@ -8,7 +9,7 @@ export default async function ResetPasswordPage() {
       <Link href="/" className="mb-8 text-center cursor-pointer">
         <h1 className="text-3xl font-bold">Retail Intelligence</h1>
       </Link>
-      <Suspense fallback={<div>Loading...</div>}>
+      <Suspense fallback={<Loader />}>
         <ResetPasswordForm />
       </Suspense>
     </div>
