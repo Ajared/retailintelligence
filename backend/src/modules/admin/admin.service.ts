@@ -1,68 +1,40 @@
-import { Response } from 'express';
+import {
+  StoreQueryOptions,
+  ListStoreRecordOptions,
+} from '../store/types/list-store.type';
 import { Workbook } from 'exceljs';
+import { Response } from 'express';
 import { stringify } from 'csv-stringify';
-import { StoreDto } from './dto/store.dto';
+import { StoreDto } from '../store/dto/store.dto';
 import * as SYS_MSG from '~/helpers/system-messages';
-import { StoreModelAction } from './store.model-action';
-import { StoreInterface } from './types/store.interface';
+import { EntityPropertyNotFoundError } from 'typeorm';
 import { AbstractResponseDto } from '~/types/response.dto';
+import { StoreModelAction } from '../store/store.model-action';
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { NullishValueError, trySafe } from '~/helpers/try-safe';
+import { StoreInterface } from '../store/types/store.interface';
 import { CustomHttpException } from '~/helpers/custom.exception';
-import CreateStoreRecordOptions from './types/create-store.type';
-import UpdateStoreRecordOptions from './types/update-store.type';
 import { ExportType, QueryOptions } from '~/helpers/query.helper';
-import {
-  ListStoreRecordOptions,
-  StoreQueryOptions,
-} from './types/list-store.type';
-import { EntityPropertyNotFoundError } from 'typeorm';
+import UpdateStoreRecordOptions from '../store/types/update-store.type';
 
 @Injectable()
-export class StoreService {
+export class AdminService {
   constructor(private readonly storeModelAction: StoreModelAction) {}
-  private readonly logger = new Logger('StoreService');
 
-  async createStore(
-    enumeratorId: string,
-    storeDto: Omit<StoreDto, 'enumeratorId'>,
-  ): Promise<AbstractResponseDto<StoreInterface>> {
-    const createStorePayload: CreateStoreRecordOptions = {
-      createPayload: { ...storeDto, enumeratorId },
-      transactionOptions: { useTransaction: false },
-    };
-
-    const [error, data] = await trySafe(() =>
-      this.storeModelAction.create(createStorePayload),
-    );
-
-    if (error) {
-      throw new CustomHttpException(
-        SYS_MSG.RESOURCE_CREATION_FAILED('Store'),
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-
-    return {
-      data,
-      message: SYS_MSG.RESOURCE_CREATED_SUCCESSFULLY('Store'),
-    };
-  }
+  private readonly logger = new Logger('AdminService');
 
   async getStoreById(
     id: string,
-    userId: string,
+    queryOptions?: Record<string, unknown>,
+    relations?: Record<string, unknown>,
   ): Promise<AbstractResponseDto<StoreInterface>> {
     const [error, data] = await trySafe(() =>
-      this.storeModelAction.get(
-        { id },
-        { userId },
-        {
-          state: true,
-          enumerator: true,
-          localGovernment: true,
-        },
-      ),
+      this.storeModelAction.get({ id }, queryOptions, {
+        ...relations,
+        state: true,
+        enumerator: true,
+        localGovernment: true,
+      }),
     );
 
     if (error) {
@@ -85,7 +57,6 @@ export class StoreService {
   }
 
   async listStores(
-    userId: string,
     queryOptions: StoreQueryOptions,
   ): Promise<AbstractResponseDto<StoreInterface[]>> {
     const { page, limit, ...filterOptions } = queryOptions;
@@ -103,7 +74,7 @@ export class StoreService {
 
     const listStoreRecordOptions: ListStoreRecordOptions = {
       paginationPayload,
-      filterRecordOptions: { ...filterRecordOptions, enumeratorId: userId },
+      filterRecordOptions,
       relations: {
         state: true,
         enumerator: true,
@@ -137,11 +108,10 @@ export class StoreService {
 
   async updateStore(
     id: string,
-    userId: string,
-    storeDto: Partial<StoreDto>,
+    storeDto: StoreDto,
   ): Promise<AbstractResponseDto<StoreInterface>> {
     const updateStorePayload: UpdateStoreRecordOptions = {
-      identifierOptions: { id, enumeratorId: userId },
+      identifierOptions: { id },
       updatePayload: storeDto,
       transactionOptions: { useTransaction: false },
     };
@@ -211,7 +181,9 @@ export class StoreService {
         if (!response.headersSent) {
           response.flushHeaders();
         }
-        response.status(HttpStatus.OK).send('No store data found to export.');
+        response
+          .status(HttpStatus.NOT_FOUND)
+          .send(SYS_MSG.RESOURCE_EXPORT_FAILED('Stores'));
         return;
       }
 

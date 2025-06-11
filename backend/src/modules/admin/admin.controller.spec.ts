@@ -2,12 +2,11 @@ import { CanActivate } from '@nestjs/common';
 import { AdminController } from './admin.controller';
 import { Test, TestingModule } from '@nestjs/testing';
 import { RoleGuard } from '~/guards/role.guard';
-import { StoreService } from '../store/store.service';
 import { UserService } from '../user/user.service';
 import { ExportType } from '~/helpers/query.helper';
 import { Response, Request } from 'express';
 import { AuthGuard } from '~/guards/auth.guard';
-import { StoreQueryOptions } from '../store/types/list-store.type';
+import { AdminService } from './admin.service';
 
 const mockRoleGuard: CanActivate = {
   canActivate: jest.fn(() => true),
@@ -17,25 +16,32 @@ const mockAuthGuard: CanActivate = {
   canActivate: jest.fn(() => true),
 };
 
-const mockStoreService = {
+const mockUserService = {
+  deactivateUser: jest.fn().mockResolvedValue(undefined),
+  reactivateUser: jest.fn().mockResolvedValue(undefined),
+  listUsers: jest.fn().mockResolvedValue({ data: [], total: 0 }),
+};
+
+const mockAdminService = {
   listStores: jest.fn().mockResolvedValue({ data: [], total: 0 }),
   exportStores: jest.fn(),
   getStoreById: jest.fn().mockResolvedValue({ id: '1', name: 'Test Store' }),
 };
 
-const mockUserService = {
-  deactivateUser: jest.fn().mockResolvedValue(undefined),
-  reactivateUser: jest.fn().mockResolvedValue(undefined),
-};
-
 const mockResponse = {
   setHeader: jest.fn(),
   send: jest.fn(),
+  write: jest.fn(),
+  end: jest.fn(),
+  status: jest.fn().mockReturnThis(),
+  json: jest.fn(),
+  flushHeaders: jest.fn(),
+  writableEnded: false,
+  headersSent: false,
 } as unknown as Response;
 
 describe('AdminController', () => {
   let controller: AdminController;
-  let storeService: StoreService;
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -48,8 +54,8 @@ describe('AdminController', () => {
           useValue: mockUserService,
         },
         {
-          provide: StoreService,
-          useValue: mockStoreService,
+          provide: AdminService,
+          useValue: mockAdminService,
         },
       ],
     })
@@ -60,7 +66,6 @@ describe('AdminController', () => {
       .compile();
 
     controller = module.get<AdminController>(AdminController);
-    storeService = module.get<StoreService>(StoreService);
   });
 
   it('should be defined', () => {
@@ -133,42 +138,89 @@ describe('AdminController', () => {
     });
   });
 
-  describe('getStores', () => {
-    it('should call storeService.listStores with pagination options', async () => {
-      const queryOptions: StoreQueryOptions = { page: '1', limit: '10' };
+  describe('getUsers', () => {
+    it('should call userService.listUsers with query parameters', async () => {
+      const query = { page: '1', limit: '10' };
       const expectedResult = { data: [], total: 0 };
-      mockStoreService.listStores.mockResolvedValueOnce(expectedResult);
+      mockUserService.listUsers.mockResolvedValueOnce(expectedResult);
+
+      const result = await controller.getUsers(query);
+
+      expect(mockUserService.listUsers).toHaveBeenCalledWith(query);
+      expect(result).toEqual(expectedResult);
+    });
+
+    it('should handle errors from userService.listUsers', async () => {
+      const query = { page: '1', limit: '10' };
+      const error = new Error('Failed to fetch users');
+      mockUserService.listUsers.mockRejectedValueOnce(error);
+
+      await expect(controller.getUsers(query)).rejects.toThrow(error);
+    });
+  });
+
+  describe('getStores', () => {
+    it('should call adminService.listStores with query options', async () => {
+      const queryOptions = { page: '1', limit: '10' };
+      const expectedResult = { data: [], total: 0 };
+      mockAdminService.listStores.mockResolvedValueOnce(expectedResult);
 
       const result = await controller.getStores(queryOptions);
 
-      expect(storeService.listStores).toHaveBeenCalledWith(queryOptions);
+      expect(mockAdminService.listStores).toHaveBeenCalledWith(queryOptions);
       expect(result).toEqual(expectedResult);
+    });
+
+    it('should handle errors from adminService.listStores', async () => {
+      const queryOptions = { page: '1', limit: '10' };
+      const error = new Error('Failed to fetch stores');
+      mockAdminService.listStores.mockRejectedValueOnce(error);
+
+      await expect(controller.getStores(queryOptions)).rejects.toThrow(error);
     });
   });
 
   describe('exportStores', () => {
-    it('should call storeService.exportStores with correct arguments', async () => {
+    it('should call adminService.exportStores with correct arguments', async () => {
       const queryOptions = { exportType: ExportType.CSV };
 
       await controller.exportStores(mockResponse, queryOptions);
 
-      expect(storeService.exportStores).toHaveBeenCalledWith(
+      expect(mockAdminService.exportStores).toHaveBeenCalledWith(
         mockResponse,
         queryOptions,
       );
     });
+
+    it('should handle errors from adminService.exportStores', async () => {
+      const queryOptions = { exportType: ExportType.CSV };
+      const error = new Error('Export failed');
+      mockAdminService.exportStores.mockRejectedValueOnce(error);
+
+      await expect(
+        controller.exportStores(mockResponse, queryOptions),
+      ).rejects.toThrow(error);
+    });
   });
 
   describe('getStoreById', () => {
-    it('should call storeService.getStoreById with the correct id', async () => {
+    it('should call adminService.getStoreById with the correct id', async () => {
       const storeId = 'test-id-123';
       const expectedStore = { id: storeId, name: 'Test Store' };
-      mockStoreService.getStoreById.mockResolvedValueOnce(expectedStore);
+      mockAdminService.getStoreById.mockResolvedValueOnce(expectedStore);
 
       const result = await controller.getStoreById(storeId);
 
-      expect(storeService.getStoreById).toHaveBeenCalledWith(storeId);
+      expect(mockAdminService.getStoreById).toHaveBeenCalledWith(storeId);
       expect(result).toEqual(expectedStore);
+    });
+
+    it('should handle errors from adminService.getStoreById', async () => {
+      const storeId = 'test-id-123';
+      const error = new Error('Failed to fetch store');
+      mockAdminService.getStoreById.mockRejectedValueOnce(error);
+
+      await expect(controller.getStoreById(storeId)).rejects.toThrow(error);
     });
   });
 });
