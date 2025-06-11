@@ -53,7 +53,7 @@ export const getStoreById = async (
 ): Promise<Response<StoreInterface>> => {
   try {
     const response = await customFetch.get<StoreInterface>(
-      `/stores/${storeId}`,
+      `/admin/stores/${storeId}`,
     );
 
     if (!('data' in response)) {
