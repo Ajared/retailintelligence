@@ -1,21 +1,20 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { StoreService } from './store.service';
-import { StoreModelAction } from './store.model-action';
-import { StoreDto } from './dto/store.dto';
+import { AdminService } from './admin.service';
+import { StoreModelAction } from '../store/store.model-action';
+import { ExportType, PaginationMeta } from '~/helpers/query.helper';
 import { Response } from 'express';
 import { NullishValueError } from '~/helpers/try-safe';
 import { CustomHttpException } from '~/helpers/custom.exception';
 import { HttpStatus } from '@nestjs/common';
-import { EntityMetadata, EntityPropertyNotFoundError } from 'typeorm';
-import { Store } from './entities/store.entity';
-import { StoreQueryOptions } from './types/list-store.type';
+import { EntityPropertyNotFoundError, EntityMetadata } from 'typeorm';
+import { Store } from '../store/entities/store.entity';
+import { StoreQueryOptions } from '../store/types/list-store.type';
 import { UserRole, UserStatus } from '../user/constants/user.constant';
 import { AuthProvider } from '../auth/constants/auth.constant';
 import * as SYS_MSG from '~/helpers/system-messages';
-import { ExportType } from '~/helpers/query.helper';
 
-describe('StoreService', () => {
-  let service: StoreService;
+describe('AdminService', () => {
+  let service: AdminService;
   let storeModelAction: StoreModelAction;
 
   const mockResponse = {
@@ -82,7 +81,7 @@ describe('StoreService', () => {
     updatedAt: new Date(),
   };
 
-  const mockPaginationMeta = {
+  const mockPaginationMeta: PaginationMeta = {
     total: 1,
     page: 1,
     limit: 10,
@@ -94,14 +93,13 @@ describe('StoreService', () => {
   beforeEach(async () => {
     const mockStoreModelAction = {
       get: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
       list: jest.fn(),
+      update: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        StoreService,
+        AdminService,
         {
           provide: StoreModelAction,
           useValue: mockStoreModelAction,
@@ -109,7 +107,7 @@ describe('StoreService', () => {
       ],
     }).compile();
 
-    service = module.get<StoreService>(StoreService);
+    service = module.get<AdminService>(AdminService);
     storeModelAction = module.get<StoreModelAction>(StoreModelAction);
   });
 
@@ -117,73 +115,15 @@ describe('StoreService', () => {
     expect(service).toBeDefined();
   });
 
-  describe('createStore', () => {
-    it('should create a store successfully', async () => {
-      const storeDto: Omit<StoreDto, 'enumeratorId'> = {
-        name: 'Test Store',
-        address: '123 Main St',
-        storeType: 'Retail',
-        latitude: 123.456,
-        longitude: 78.901,
-        localGovernmentId: '1',
-        stateId: '1',
-      };
-      const enumeratorId = '1';
-
-      jest.spyOn(storeModelAction, 'create').mockResolvedValue(mockStore);
-
-      const result = await service.createStore(enumeratorId, storeDto);
-
-      expect(storeModelAction.create).toHaveBeenCalledWith({
-        createPayload: { ...storeDto, enumeratorId },
-        transactionOptions: { useTransaction: false },
-      });
-      expect(result).toEqual({
-        data: mockStore,
-        message: SYS_MSG.RESOURCE_CREATED_SUCCESSFULLY('Store'),
-      });
-    });
-
-    it('should throw CustomHttpException when store creation fails', async () => {
-      const storeDto: Omit<StoreDto, 'enumeratorId'> = {
-        name: 'Test Store',
-        address: '123 Main St',
-        storeType: 'Retail',
-        latitude: 123.456,
-        longitude: 78.901,
-        localGovernmentId: '1',
-        stateId: '1',
-      };
-      const enumeratorId = '1';
-
-      jest
-        .spyOn(storeModelAction, 'create')
-        .mockRejectedValue(new Error('Creation failed'));
-
-      await expect(service.createStore(enumeratorId, storeDto)).rejects.toThrow(
-        CustomHttpException,
-      );
-      await expect(
-        service.createStore(enumeratorId, storeDto),
-      ).rejects.toMatchObject({
-        status: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: SYS_MSG.RESOURCE_CREATION_FAILED('Store'),
-      });
-    });
-  });
-
   describe('getStoreById', () => {
     it('should return store data when store exists', async () => {
-      const storeId = '1';
-      const userId = '1';
-
       jest.spyOn(storeModelAction, 'get').mockResolvedValue(mockStore);
 
-      const result = await service.getStoreById(storeId, userId);
+      const result = await service.getStoreById('1');
 
       expect(storeModelAction.get).toHaveBeenCalledWith(
-        { id: storeId },
-        { userId },
+        { id: '1' },
+        undefined,
         {
           state: true,
           enumerator: true,
@@ -197,60 +137,47 @@ describe('StoreService', () => {
     });
 
     it('should throw CustomHttpException when store is not found', async () => {
-      const storeId = '1';
-      const userId = '1';
-
       jest
         .spyOn(storeModelAction, 'get')
         .mockRejectedValue(new NullishValueError());
 
-      await expect(service.getStoreById(storeId, userId)).rejects.toThrow(
+      await expect(service.getStoreById('1')).rejects.toThrow(
         CustomHttpException,
       );
-      await expect(service.getStoreById(storeId, userId)).rejects.toMatchObject(
-        {
-          status: HttpStatus.NOT_FOUND,
-          message: SYS_MSG.RESOURCE_NOT_FOUND('Store'),
-        },
-      );
+      await expect(service.getStoreById('1')).rejects.toMatchObject({
+        status: HttpStatus.NOT_FOUND,
+        message: SYS_MSG.RESOURCE_NOT_FOUND('Store'),
+      });
     });
 
     it('should throw CustomHttpException when store fetch fails', async () => {
-      const storeId = '1';
-      const userId = '1';
-
       jest
         .spyOn(storeModelAction, 'get')
         .mockRejectedValue(new Error('Database error'));
 
-      await expect(service.getStoreById(storeId, userId)).rejects.toThrow(
+      await expect(service.getStoreById('1')).rejects.toThrow(
         CustomHttpException,
       );
-      await expect(service.getStoreById(storeId, userId)).rejects.toMatchObject(
-        {
-          status: HttpStatus.INTERNAL_SERVER_ERROR,
-          message: SYS_MSG.RESOURCE_FETCH_FAILED('Store'),
-        },
-      );
+      await expect(service.getStoreById('1')).rejects.toMatchObject({
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: SYS_MSG.RESOURCE_FETCH_FAILED('Store'),
+      });
     });
   });
 
   describe('listStores', () => {
     it('should return list of stores with pagination', async () => {
-      const userId = '1';
-      const queryOptions: StoreQueryOptions = { page: '1', limit: '10' };
-
       const mockStores = {
         payload: [mockStore],
         paginationMeta: mockPaginationMeta,
       };
       jest.spyOn(storeModelAction, 'list').mockResolvedValue(mockStores);
 
-      const result = await service.listStores(userId, queryOptions);
+      const result = await service.listStores({ page: '1', limit: '10' });
 
       expect(storeModelAction.list).toHaveBeenCalledWith({
         paginationPayload: { page: 1, limit: 10 },
-        filterRecordOptions: { enumeratorId: userId },
+        filterRecordOptions: {},
         relations: {
           state: true,
           enumerator: true,
@@ -265,110 +192,41 @@ describe('StoreService', () => {
     });
 
     it('should throw CustomHttpException when invalid filter parameter is provided', async () => {
-      const userId = '1';
-      const invalidQuery = {
-        page: '1',
-        limit: '10',
-        unknownField: 'value',
-      } as unknown as StoreQueryOptions;
-
+      const mockMetadata: Partial<EntityMetadata> = {
+        target: Store,
+      };
       jest
         .spyOn(storeModelAction, 'list')
         .mockRejectedValue(
           new EntityPropertyNotFoundError(
             'fieldName',
-            {} as unknown as EntityMetadata,
+            mockMetadata as EntityMetadata,
           ),
         );
 
-      await expect(service.listStores(userId, invalidQuery)).rejects.toThrow(
+      const invalidQuery = {
+        page: '1',
+        limit: '10',
+        unknownField: 'value',
+      } as unknown as StoreQueryOptions;
+      await expect(service.listStores(invalidQuery)).rejects.toThrow(
         CustomHttpException,
       );
-      await expect(
-        service.listStores(userId, invalidQuery),
-      ).rejects.toMatchObject({
+      await expect(service.listStores(invalidQuery)).rejects.toMatchObject({
         status: HttpStatus.BAD_REQUEST,
         message: SYS_MSG.INVALID_PARAMETER('Filter Query'),
       });
     });
 
     it('should throw CustomHttpException when store list fetch fails', async () => {
-      const userId = '1';
-      const queryOptions: StoreQueryOptions = { page: '1', limit: '10' };
-
       jest
         .spyOn(storeModelAction, 'list')
         .mockRejectedValue(new Error('Database error'));
 
-      await expect(service.listStores(userId, queryOptions)).rejects.toThrow(
-        CustomHttpException,
-      );
-      await expect(
-        service.listStores(userId, queryOptions),
-      ).rejects.toMatchObject({
+      await expect(service.listStores({})).rejects.toThrow(CustomHttpException);
+      await expect(service.listStores({})).rejects.toMatchObject({
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         message: SYS_MSG.RESOURCE_FETCH_FAILED('Stores'),
-      });
-    });
-  });
-
-  describe('updateStore', () => {
-    it('should update store successfully', async () => {
-      const storeId = '1';
-      const userId = '1';
-      const storeDto: Partial<StoreDto> = {
-        name: 'Updated Store',
-        address: '456 New St',
-        storeType: 'Retail',
-        latitude: 123.456,
-        longitude: 78.901,
-        localGovernmentId: '1',
-        stateId: '1',
-      };
-
-      jest.spyOn(storeModelAction, 'update').mockResolvedValue({
-        ...mockStore,
-        ...storeDto,
-      });
-
-      const result = await service.updateStore(storeId, userId, storeDto);
-
-      expect(storeModelAction.update).toHaveBeenCalledWith({
-        identifierOptions: { id: storeId, enumeratorId: userId },
-        updatePayload: storeDto,
-        transactionOptions: { useTransaction: false },
-      });
-      expect(result).toEqual({
-        data: { ...mockStore, ...storeDto },
-        message: SYS_MSG.RESOURCE_UPDATED_SUCCESSFULLY('Store'),
-      });
-    });
-
-    it('should throw CustomHttpException when store update fails', async () => {
-      const storeId = '1';
-      const userId = '1';
-      const storeDto: Partial<StoreDto> = {
-        name: 'Updated Store',
-        address: '456 New St',
-        storeType: 'Retail',
-        latitude: 123.456,
-        longitude: 78.901,
-        localGovernmentId: '1',
-        stateId: '1',
-      };
-
-      jest
-        .spyOn(storeModelAction, 'update')
-        .mockRejectedValue(new Error('Update failed'));
-
-      await expect(
-        service.updateStore(storeId, userId, storeDto),
-      ).rejects.toThrow(CustomHttpException);
-      await expect(
-        service.updateStore(storeId, userId, storeDto),
-      ).rejects.toMatchObject({
-        status: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: SYS_MSG.RESOURCE_UPDATE_FAILED('Store'),
       });
     });
   });
@@ -436,9 +294,9 @@ describe('StoreService', () => {
 
       await service.exportStores(mockResponse, { exportType: ExportType.JSON });
 
-      expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.OK);
+      expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
       expect(mockResponse.send).toHaveBeenCalledWith(
-        'No store data found to export.',
+        SYS_MSG.RESOURCE_EXPORT_FAILED('Stores'),
       );
     });
 

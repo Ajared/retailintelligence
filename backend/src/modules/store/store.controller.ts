@@ -20,26 +20,38 @@ export class StoreController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async createStore(@Body() storeDto: StoreDto, @Req() req: Request) {
-    const enumeratorId = req.user?.sub ?? '';
-    return this.storeService.createStore(enumeratorId, storeDto);
+  async createStore(
+    @Body() storeDto: Omit<StoreDto, 'enumeratorId'>,
+    @Req() req: Request & { user: { sub: string } },
+  ) {
+    return this.storeService.createStore(req.user.sub, storeDto);
   }
 
   @Get(':id')
   @HttpCode(HttpStatus.OK)
-  async getStoreById(@Param('id') id: string) {
-    return this.storeService.getStoreById(id);
+  async getStoreById(
+    @Param('id') id: string,
+    @Req() req: Request & { user: { sub: string } },
+  ) {
+    return this.storeService.getStoreById(id, req.user.sub);
   }
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  async listStores(@Query() queryOptions: StoreQueryValidator) {
-    return this.storeService.listStores(queryOptions);
+  async listStores(
+    @Req() req: Request & { user: { sub: string } },
+    @Query() queryOptions: StoreQueryValidator,
+  ) {
+    return this.storeService.listStores(req.user.sub, queryOptions);
   }
 
   @Patch(':id')
   @HttpCode(HttpStatus.OK)
-  async updateStore(@Param('id') id: string, @Body() storeDto: StoreDto) {
-    return this.storeService.updateStore(id, storeDto);
+  async updateStore(
+    @Param('id') id: string,
+    @Body() storeDto: Partial<StoreDto>,
+    @Req() req: Request & { user: { sub: string } },
+  ) {
+    return this.storeService.updateStore(id, req.user.sub, storeDto);
   }
 }
