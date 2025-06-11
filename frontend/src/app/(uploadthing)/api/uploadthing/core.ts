@@ -2,8 +2,6 @@ import { auth } from '~/app/(auth)/auth';
 import { UploadThingError } from 'uploadthing/server';
 import { createUploadthing, type FileRouter } from 'uploadthing/next';
 
-const session = await auth();
-
 const f = createUploadthing();
 export const uploadRouter = {
   imageUploader: f({
@@ -17,6 +15,7 @@ export const uploadRouter = {
     },
   })
     .middleware(async ({ req }) => {
+      const session = await auth();
       const user = session?.user;
 
       if (!user) throw new UploadThingError('Unauthorized');
@@ -27,11 +26,5 @@ export const uploadRouter = {
       return { uploadedBy: metadata.userId, fileUrl: file.ufsUrl };
     }),
 } satisfies FileRouter;
-
-// ...
-f({}).middleware(({ req }) => {
-  //           ^? req: NextRequest
-  return {};
-});
 
 export type UploadRouter = typeof uploadRouter;

@@ -8,14 +8,18 @@ import { getAllStoresForUser } from '../actions';
 export default async function StoresPage({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  const params = await Promise.resolve(searchParams);
+  const params = await searchParams;
   const page = Number(params.page) || 1;
   const limit = Number(params.limit) || 20;
   const sort = (params.sort as string) || 'ASC';
-  const stateId = params.stateId as string;
-  const localGovernmentId = params.localGovernmentId as string;
+  const stateId =
+    typeof params.stateId === 'string' ? params.stateId : undefined;
+  const localGovernmentId =
+    typeof params.localGovernmentId === 'string'
+      ? params.localGovernmentId
+      : undefined;
 
   const [storesResponse, locationsResponse] = await Promise.all([
     getAllStoresForUser(page, limit, sort, stateId, localGovernmentId),

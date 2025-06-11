@@ -164,9 +164,16 @@ export const addStore = async (
     if (!('data' in response)) {
       if (uploadedPhotoUrls.length > 0) {
         try {
-          await utapi.deleteFiles(
-            uploadedPhotoUrls.map((url) => url.split('/').pop()!),
-          );
+          const fileIds = uploadedPhotoUrls
+            .map((url) => {
+              const parts = url.split('/');
+              return parts[parts.length - 1];
+            })
+            .filter(Boolean);
+
+          if (fileIds.length > 0) {
+            await utapi.deleteFiles(fileIds);
+          }
         } catch (cleanupError) {
           console.error('Failed to cleanup uploaded photos:', cleanupError);
         }
