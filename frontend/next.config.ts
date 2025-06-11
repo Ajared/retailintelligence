@@ -10,13 +10,15 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '**',
-      },
-      {
-        protocol: 'http',
-        hostname: '**',
+        hostname: 'utfs.io',
+        pathname: '/f/**',
       },
     ],
+  },
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '25mb',
+    },
   },
 };
 
