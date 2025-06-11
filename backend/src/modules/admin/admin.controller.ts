@@ -3,7 +3,6 @@ import { Request, Response } from 'express';
 import { RoleGuard } from '~/guards/role.guard';
 import { UserService } from '../user/user.service';
 import { Roles } from '~/decorators/role.decorator';
-import { StoreService } from '../store/store.service';
 import { UserRole } from '~/modules/user/constants/user.constant';
 import {
   Body,
@@ -18,8 +17,9 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { StoreQueryValidator } from '../store/dto/store.dto';
+import { AdminService } from './admin.service';
 import { UserQueryValidator } from '../user/dto/user.dto';
+import { StoreQueryValidator } from '../store/dto/store.dto';
 
 @Controller('admin')
 @UseGuards(RoleGuard)
@@ -27,7 +27,7 @@ import { UserQueryValidator } from '../user/dto/user.dto';
 export class AdminController {
   constructor(
     private readonly userService: UserService,
-    private readonly storeService: StoreService,
+    private readonly adminService: AdminService,
   ) {}
 
   @HttpCode(HttpStatus.OK)
@@ -55,7 +55,7 @@ export class AdminController {
 
   @Get('stores')
   async getStores(@Query() queryOptions: StoreQueryValidator) {
-    return this.storeService.listStores(queryOptions);
+    return this.adminService.listStores(queryOptions);
   }
 
   @Get('stores/export')
@@ -63,11 +63,11 @@ export class AdminController {
     @Res() response: Response,
     @Query() queryOptions: QueryValidator,
   ) {
-    return this.storeService.exportStores(response, queryOptions);
+    await this.adminService.exportStores(response, queryOptions);
   }
 
   @Get('stores/:id')
   async getStoreById(@Param('id') id: string) {
-    return this.storeService.getStoreById(id);
+    return this.adminService.getStoreById(id);
   }
 }
