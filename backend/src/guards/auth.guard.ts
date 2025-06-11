@@ -1,21 +1,24 @@
 import {
-  CanActivate,
-  ExecutionContext,
   Injectable,
   HttpStatus,
+  CanActivate,
+  ExecutionContext,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { Reflector } from '@nestjs/core';
 import { trySafe } from '~/helpers/try-safe';
 import * as SYS_MSG from '~/helpers/system-messages';
+import { UserService } from '~/modules/user/user.service';
 import { TokenService } from '~/modules/token/token.service';
 import { CustomHttpException } from '~/helpers/custom.exception';
 import { IS_PUBLIC_KEY } from '~/decorators/skip-auth.decorator';
+import { UserStatus } from '~/modules/user/constants/user.constant';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
+    private userService: UserService,
     private tokenService: TokenService,
   ) {}
 
@@ -54,6 +57,24 @@ export class AuthGuard implements CanActivate {
             HttpStatus.FORBIDDEN,
             SYS_MSG.RESOURCE_CURRENTLY_UNAVAILABLE(resourceName),
           );
+    }
+
+    const [userError, user] = await trySafe(() =>
+      this.userService.getUserById(verifyResult.request.user?.sub as string),
+    );
+
+    if (userError) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_FETCH_FAILED('User'),
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    if (user.status !== UserStatus.ACTIVE) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_CURRENTLY_UNAVAILABLE(resourceName),
+        HttpStatus.FORBIDDEN,
+      );
     }
 
     Object.assign(request, verifyResult.request);
