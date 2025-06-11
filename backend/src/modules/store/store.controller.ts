@@ -9,9 +9,11 @@ import {
   Query,
   Patch,
   Req,
+  Res,
 } from '@nestjs/common';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 import { StoreService } from './store.service';
+import { QueryValidator } from '~/helpers/query.helper';
 import { StoreDto, StoreQueryValidator } from './dto/store.dto';
 
 @Controller('stores')
@@ -43,6 +45,15 @@ export class StoreController {
     @Query() queryOptions: StoreQueryValidator,
   ) {
     return this.storeService.listStores(req.user.sub, queryOptions);
+  }
+
+  @Get('export')
+  async exportStores(
+    @Res() response: Response,
+    @Req() req: Request & { user: { sub: string } },
+    @Query() queryOptions: QueryValidator,
+  ) {
+    await this.storeService.exportStores(response, queryOptions, req.user.sub);
   }
 
   @Patch(':id')

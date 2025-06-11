@@ -183,7 +183,7 @@ export class AdminService {
         }
         response
           .status(HttpStatus.NOT_FOUND)
-          .send(SYS_MSG.RESOURCE_EXPORT_FAILED('Stores'));
+          .send(SYS_MSG.RESOURCE_NOT_FOUND('Stores'));
         return;
       }
 
@@ -214,15 +214,6 @@ export class AdminService {
             }
             return;
         }
-
-        if (exportType === ExportType.JSON || exportType === ExportType.EXCEL) {
-          if (!response.writableEnded) {
-            response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
-              error: SYS_MSG.RESOURCE_EXPORT_FAILED('Stores'),
-              message: SYS_MSG.RESOURCE_EXPORT_FAILED('Stores'),
-            });
-          }
-        }
       } catch (streamError) {
         this.logger.error('Streaming/Writing error:', streamError);
         if (!response.writableEnded) {
@@ -238,9 +229,7 @@ export class AdminService {
     } catch (error) {
       if (!response.headersSent) {
         if (error instanceof CustomHttpException) {
-          response
-            .status(error.getStatus())
-            .json({ message: error.message, details: error.getResponse() });
+          response.status(error.getStatus()).json(error.getResponse());
         } else {
           response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
             message: SYS_MSG.RESOURCE_EXPORT_FAILED('Stores'),

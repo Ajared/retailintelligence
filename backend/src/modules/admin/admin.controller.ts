@@ -63,7 +63,7 @@ export class AdminController {
     @Res() response: Response,
     @Query() queryOptions: QueryValidator,
   ) {
-    return this.adminService.exportStores(response, queryOptions);
+    await this.adminService.exportStores(response, queryOptions);
   }
 
   @Get('stores/:id')

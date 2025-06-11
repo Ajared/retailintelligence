@@ -7,6 +7,7 @@ import { ExportType } from '~/helpers/query.helper';
 import { Response, Request } from 'express';
 import { AuthGuard } from '~/guards/auth.guard';
 import { AdminService } from './admin.service';
+import * as SYS_MSG from '~/helpers/system-messages';
 
 const mockRoleGuard: CanActivate = {
   canActivate: jest.fn(() => true),
@@ -24,7 +25,7 @@ const mockUserService = {
 
 const mockAdminService = {
   listStores: jest.fn().mockResolvedValue({ data: [], total: 0 }),
-  exportStores: jest.fn(),
+  exportStores: jest.fn().mockResolvedValue(undefined),
   getStoreById: jest.fn().mockResolvedValue({ id: '1', name: 'Test Store' }),
 };
 
@@ -194,7 +195,7 @@ describe('AdminController', () => {
 
     it('should handle errors from adminService.exportStores', async () => {
       const queryOptions = { exportType: ExportType.CSV };
-      const error = new Error('Export failed');
+      const error = new Error(SYS_MSG.RESOURCE_EXPORT_FAILED('Stores'));
       mockAdminService.exportStores.mockRejectedValueOnce(error);
 
       await expect(
