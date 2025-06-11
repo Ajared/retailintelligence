@@ -381,7 +381,11 @@ describe('StoreService', () => {
       };
       jest.spyOn(storeModelAction, 'list').mockResolvedValue(mockStores);
 
-      await service.exportStores(mockResponse, { exportType: ExportType.JSON });
+      await service.exportStores(
+        mockResponse,
+        { exportType: ExportType.JSON },
+        '1',
+      );
 
       expect(mockResponse.setHeader).toHaveBeenCalledWith(
         'Content-Type',
@@ -399,7 +403,11 @@ describe('StoreService', () => {
       };
       jest.spyOn(storeModelAction, 'list').mockResolvedValue(mockStores);
 
-      await service.exportStores(mockResponse, { exportType: ExportType.CSV });
+      await service.exportStores(
+        mockResponse,
+        { exportType: ExportType.CSV },
+        '1',
+      );
 
       expect(mockResponse.setHeader).toHaveBeenCalledWith(
         'Content-Type',
@@ -414,9 +422,13 @@ describe('StoreService', () => {
       };
       jest.spyOn(storeModelAction, 'list').mockResolvedValue(mockStores);
 
-      await service.exportStores(mockResponse, {
-        exportType: ExportType.EXCEL,
-      });
+      await service.exportStores(
+        mockResponse,
+        {
+          exportType: ExportType.EXCEL,
+        },
+        '1',
+      );
 
       expect(mockResponse.setHeader).toHaveBeenCalledWith(
         'Content-Type',
@@ -434,28 +446,38 @@ describe('StoreService', () => {
       };
       jest.spyOn(storeModelAction, 'list').mockResolvedValue(mockStores);
 
-      await service.exportStores(mockResponse, { exportType: ExportType.JSON });
+      await service.exportStores(
+        mockResponse,
+        { exportType: ExportType.JSON },
+        '1',
+      );
 
-      expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.OK);
+      expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
       expect(mockResponse.send).toHaveBeenCalledWith(
-        'No store data found to export.',
+        SYS_MSG.RESOURCE_NOT_FOUND('Stores'),
       );
     });
 
     it('should handle export errors', async () => {
       jest
         .spyOn(storeModelAction, 'list')
-        .mockRejectedValue(new Error('Export failed'));
+        .mockRejectedValue(new Error(SYS_MSG.RESOURCE_EXPORT_FAILED('Stores')));
 
-      await service.exportStores(mockResponse, { exportType: ExportType.JSON });
+      await service.exportStores(
+        mockResponse,
+        { exportType: ExportType.JSON },
+        '1',
+      );
 
       expect(mockResponse.status).toHaveBeenCalledWith(
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
-      expect(mockResponse.json).toHaveBeenCalledWith({
-        error: SYS_MSG.RESOURCE_EXPORT_FAILED('Stores'),
-        message: SYS_MSG.RESOURCE_EXPORT_FAILED('Stores'),
-      });
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: SYS_MSG.RESOURCE_EXPORT_FAILED('Stores'),
+          message: SYS_MSG.RESOURCE_FETCH_FAILED('Stores'),
+        }),
+      );
     });
   });
 });

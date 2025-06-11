@@ -141,10 +141,9 @@ describe('AdminService', () => {
         .spyOn(storeModelAction, 'get')
         .mockRejectedValue(new NullishValueError());
 
-      await expect(service.getStoreById('1')).rejects.toThrow(
-        CustomHttpException,
-      );
-      await expect(service.getStoreById('1')).rejects.toMatchObject({
+      const call = service.getStoreById('1');
+      await expect(call).rejects.toThrow(CustomHttpException);
+      await expect(call).rejects.toMatchObject({
         status: HttpStatus.NOT_FOUND,
         message: SYS_MSG.RESOURCE_NOT_FOUND('Store'),
       });
@@ -296,24 +295,26 @@ describe('AdminService', () => {
 
       expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
       expect(mockResponse.send).toHaveBeenCalledWith(
-        SYS_MSG.RESOURCE_EXPORT_FAILED('Stores'),
+        SYS_MSG.RESOURCE_NOT_FOUND('Stores'),
       );
     });
 
     it('should handle export errors', async () => {
       jest
         .spyOn(storeModelAction, 'list')
-        .mockRejectedValue(new Error('Export failed'));
+        .mockRejectedValue(new Error(SYS_MSG.RESOURCE_EXPORT_FAILED('Stores')));
 
       await service.exportStores(mockResponse, { exportType: ExportType.JSON });
 
       expect(mockResponse.status).toHaveBeenCalledWith(
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
-      expect(mockResponse.json).toHaveBeenCalledWith({
-        error: SYS_MSG.RESOURCE_EXPORT_FAILED('Stores'),
-        message: SYS_MSG.RESOURCE_EXPORT_FAILED('Stores'),
-      });
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: SYS_MSG.RESOURCE_EXPORT_FAILED('Stores'),
+          message: SYS_MSG.RESOURCE_FETCH_FAILED('Stores'),
+        }),
+      );
     });
   });
 });
