@@ -14,7 +14,7 @@ export const uploadRouter = {
       maxFileCount: 10,
     },
   })
-    .middleware(async ({ req }) => {
+    .middleware(async () => {
       const session = await auth();
       const user = session?.user;
 

@@ -2,7 +2,6 @@
 
 import { usePathname } from 'next/navigation';
 import { navigationItems } from './navigation';
-import { Separator } from '~/components/ui/separator';
 import { SidebarTrigger } from '~/components/ui/sidebar';
 import { ThemeToggle } from '~/components/ui/theme-toggle';
 
@@ -10,7 +9,7 @@ export function UserHeader() {
   const pathname = usePathname();
 
   let title: string;
-  if (pathname === '/user/stores/add') {
+  if (pathname.startsWith('/user/stores/add')) {
     title = 'Add Store';
   } else {
     const matched = navigationItems.find((item) =>

@@ -1,10 +1,11 @@
 import { cache } from 'react';
 import type { ReactNode } from 'react';
-const getSession = cache(() => auth());
 import { auth } from '~/app/(auth)/auth';
 import { UserHeader } from './_components/header';
 import { AppSidebar } from './_components/sidebar';
 import { SidebarProvider, SidebarInset } from '~/components/ui/sidebar';
+
+const getSession = cache(() => auth());
 
 export default async function UserLayout({
   children,

@@ -166,10 +166,16 @@ export const addStore = async (
         try {
           const fileIds = uploadedPhotoUrls
             .map((url) => {
-              const parts = url.split('/');
-              return parts[parts.length - 1];
+              try {
+                const urlObj = new URL(url);
+                const pathname = urlObj.pathname.replace(/\/$/, ''); // Remove trailing slash
+                const segments = pathname.split('/');
+                return segments[segments.length - 1];
+              } catch {
+                return null;
+              }
             })
-            .filter(Boolean);
+            .filter((id): id is string => id !== null);
 
           if (fileIds.length > 0) {
             await utapi.deleteFiles(fileIds);

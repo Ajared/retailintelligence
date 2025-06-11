@@ -44,6 +44,7 @@ import type { StateInterface } from '~/types/state';
 import { AddStoreFormData } from '../../schema';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import Image from 'next/image';
 
 function ImagePreview({
   file,
@@ -56,12 +57,10 @@ function ImagePreview({
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    let isMounted = true;
     const url = URL.createObjectURL(file);
     setPreview(url);
     setIsLoading(false);
     return () => {
-      isMounted = false;
       if (url) {
         URL.revokeObjectURL(url);
       }
@@ -76,11 +75,13 @@ function ImagePreview({
             <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
           </div>
         ) : preview ? (
-          <img
+          <Image
             src={preview}
             alt={file.name}
+            width={80}
+            height={80}
             className="w-full h-full object-cover"
-            loading="lazy"
+            unoptimized
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
