@@ -1,6 +1,8 @@
 import './globals.css';
+import { Suspense } from 'react';
 import Providers from './providers';
 import type { Metadata } from 'next';
+import Loader from '~/components/loader';
 import { Outfit } from 'next/font/google';
 import { Toaster } from '~/components/ui/sonner';
 
@@ -23,7 +25,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${outfit.variable} antialiased`}>
         <Providers>
-          {children}
+          <Suspense fallback={<Loader />}>{children}</Suspense>
           <Toaster />
         </Providers>
       </body>

@@ -1,8 +1,8 @@
-import { cache } from 'react';
-import type { ReactNode } from 'react';
+import Loader from '~/components/loader';
 import { auth } from '~/app/(auth)/auth';
 import { UserHeader } from './_components/header';
 import { AppSidebar } from './_components/sidebar';
+import { cache, Suspense, type ReactNode } from 'react';
 import { SidebarProvider, SidebarInset } from '~/components/ui/sidebar';
 
 const getSession = cache(() => auth());
@@ -20,7 +20,7 @@ export default async function UserLayout({
       <SidebarInset className="!m-0 !rounded-none md:!m-0 md:!rounded-none">
         <main className="h-full flex flex-col border-l border-l-border">
           <UserHeader />
-          {children}
+          <Suspense fallback={<Loader />}>{children}</Suspense>
         </main>
       </SidebarInset>
     </SidebarProvider>
