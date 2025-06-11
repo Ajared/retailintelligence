@@ -39,7 +39,6 @@ import {
   Plus,
   ChevronLeft,
 } from 'lucide-react';
-import type { LocalGovernmentInterface } from '~/types/local-government';
 import type { StoreInterface } from '~/types/store';
 import type { StateInterface } from '~/types/state';
 import { AddStoreFormData } from '../../schema';
@@ -210,8 +209,8 @@ export function AddStoreForm({ locations }: { locations: StateInterface[] }) {
             toast.error(`${file.name} is not an image file`);
             return false;
           }
-          if (file.size > 5 * 1024 * 1024) {
-            toast.error(`${file.name} is too large. Maximum size is 5MB`);
+          if (file.size > 4 * 1024 * 1024) {
+            toast.error(`${file.name} is too large. Maximum size is 4MB`);
             return false;
           }
           if (
@@ -241,11 +240,7 @@ export function AddStoreForm({ locations }: { locations: StateInterface[] }) {
 
   const removeImage = useCallback((index: number) => {
     setSelectedImages((prev) => {
-      const newImages = prev.filter((_, i) => i !== index);
-      if (prev[index]) {
-        URL.revokeObjectURL(URL.createObjectURL(prev[index]));
-      }
-      return newImages;
+      return prev.filter((_, i) => i !== index);
     });
   }, []);
 
@@ -290,14 +285,6 @@ export function AddStoreForm({ locations }: { locations: StateInterface[] }) {
         lgSelect.value = '';
       }
     }
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      selectedImages.forEach((file) => {
-        URL.revokeObjectURL(URL.createObjectURL(file));
-      });
-    };
   }, []);
 
   return (
@@ -550,8 +537,7 @@ export function AddStoreForm({ locations }: { locations: StateInterface[] }) {
             </Button>
 
             <p className="text-xs text-muted-foreground">
-              Supported formats: JPG, PNG, GIF, WebP. Maximum size: 5MB per
-              image. Maximum 10 images allowed.
+              JPG, PNG, GIF, WebP • Max 4MB each • Up to 10 images
             </p>
           </div>
 

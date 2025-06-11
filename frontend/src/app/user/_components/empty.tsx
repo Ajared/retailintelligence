@@ -11,6 +11,7 @@ export default function EmptyState() {
           src="/empty-box.png"
           alt="Empty state illustration showing no data available"
           fill
+          loading="lazy"
           sizes="(max-width: 640px) 240px, (max-width: 768px) 320px, 350px"
           className="object-contain"
         />

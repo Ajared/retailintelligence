@@ -1,6 +1,13 @@
 import { Home, Store } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
-export const navigationItems = [
+interface NavigationItem {
+  title: string;
+  icon: LucideIcon;
+  url: string;
+}
+
+export const navigationItems: NavigationItem[] = [
   {
     title: 'Home',
     icon: Home,
