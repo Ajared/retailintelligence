@@ -3,18 +3,28 @@ import { Reflector } from '@nestjs/core';
 import { AuthGuard } from './auth.guard';
 import * as SYS_MSG from '~/helpers/system-messages';
 import { Test, TestingModule } from '@nestjs/testing';
+import { UserService } from '~/modules/user/user.service';
 import { TokenService } from '~/modules/token/token.service';
 import { ExecutionContext, HttpStatus } from '@nestjs/common';
 import { CustomHttpException } from '~/helpers/custom.exception';
+import { UserStatus } from '~/modules/user/constants/user.constant';
 
 interface MockTokenService {
   extractTokenFromHeader: jest.Mock<string | undefined, [Request]>;
   verifyToken: jest.Mock<Promise<{ request: Request }>, [string, Request]>;
 }
 
+interface MockUserService {
+  getUserById: jest.Mock<Promise<{ status: UserStatus }>, [string]>;
+}
+
 const createMockTokenService = (): MockTokenService => ({
   extractTokenFromHeader: jest.fn(),
   verifyToken: jest.fn(),
+});
+
+const createMockUserService = (): MockUserService => ({
+  getUserById: jest.fn(),
 });
 
 const createMockExecutionContext = (
@@ -47,12 +57,14 @@ const createMockExecutionContext = (
 describe('AuthGuard', () => {
   let guard: AuthGuard;
   let mockTokenService: MockTokenService;
+  let mockUserService: MockUserService;
   let mockReflector: Reflector;
   let mockExecutionContext: ExecutionContext;
   let mockRequest: Partial<Request>;
 
   beforeEach(async () => {
     mockTokenService = createMockTokenService();
+    mockUserService = createMockUserService();
     mockReflector = new Reflector();
     mockRequest = {};
     mockExecutionContext = createMockExecutionContext(mockRequest);
@@ -63,6 +75,10 @@ describe('AuthGuard', () => {
         {
           provide: TokenService,
           useValue: mockTokenService,
+        },
+        {
+          provide: UserService,
+          useValue: mockUserService,
         },
         {
           provide: Reflector,
@@ -107,12 +123,16 @@ describe('AuthGuard', () => {
       });
     });
 
-    it('should return true if token is valid', async () => {
+    it('should return true if token is valid and user is active', async () => {
       jest.spyOn(mockReflector, 'getAllAndOverride').mockReturnValue(false);
       const mockToken = 'valid-token';
+      const mockUserId = 'user-123';
       mockTokenService.extractTokenFromHeader.mockReturnValue(mockToken);
       mockTokenService.verifyToken.mockResolvedValue({
-        request: mockRequest as Request,
+        request: { ...mockRequest, user: { sub: mockUserId } } as Request,
+      });
+      mockUserService.getUserById.mockResolvedValue({
+        status: UserStatus.ACTIVE,
       });
 
       const result = await guard.canActivate(mockExecutionContext);
@@ -122,6 +142,63 @@ describe('AuthGuard', () => {
         mockToken,
         mockRequest,
       );
+      expect(mockUserService.getUserById).toHaveBeenCalledWith(mockUserId);
+    });
+
+    it('should throw Forbidden CustomHttpException if user is not active', async () => {
+      jest.spyOn(mockReflector, 'getAllAndOverride').mockReturnValue(false);
+      const mockToken = 'valid-token';
+      const mockUserId = 'user-123';
+      mockTokenService.extractTokenFromHeader.mockReturnValue(mockToken);
+      mockTokenService.verifyToken.mockResolvedValue({
+        request: { ...mockRequest, user: { sub: mockUserId } } as Request,
+      });
+      mockUserService.getUserById.mockResolvedValue({
+        status: UserStatus.INACTIVE,
+      });
+
+      const expectedResourceName = `MockControllerName[mockHandlerName]`;
+
+      await expect(guard.canActivate(mockExecutionContext)).rejects.toThrow(
+        CustomHttpException,
+      );
+
+      try {
+        await guard.canActivate(mockExecutionContext);
+      } catch (error) {
+        const customError = error as CustomHttpException;
+        expect(customError.getResponse()).toMatchObject({
+          message: SYS_MSG.RESOURCE_CURRENTLY_UNAVAILABLE(expectedResourceName),
+        });
+        expect(customError.getStatus()).toBe(HttpStatus.FORBIDDEN);
+      }
+    });
+
+    it('should throw InternalServerError CustomHttpException if user fetch fails', async () => {
+      jest.spyOn(mockReflector, 'getAllAndOverride').mockReturnValue(false);
+      const mockToken = 'valid-token';
+      const mockUserId = 'user-123';
+      mockTokenService.extractTokenFromHeader.mockReturnValue(mockToken);
+      mockTokenService.verifyToken.mockResolvedValue({
+        request: { ...mockRequest, user: { sub: mockUserId } } as Request,
+      });
+      mockUserService.getUserById.mockRejectedValue(
+        new Error('User fetch failed'),
+      );
+
+      await expect(guard.canActivate(mockExecutionContext)).rejects.toThrow(
+        CustomHttpException,
+      );
+
+      try {
+        await guard.canActivate(mockExecutionContext);
+      } catch (error) {
+        const customError = error as CustomHttpException;
+        expect(customError.getResponse()).toMatchObject({
+          message: SYS_MSG.RESOURCE_FETCH_FAILED('User'),
+        });
+        expect(customError.getStatus()).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
+      }
     });
 
     it('should catch, wrap, and throw Forbidden CustomHttpException if token verification fails', async () => {

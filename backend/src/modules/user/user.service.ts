@@ -117,6 +117,7 @@ export class UserService {
       message: SYS_MSG.RESOURCE_FETCHED_SUCCESSFULLY('Users'),
     };
   }
+
   async updateUser(updatePayload: UpdateUserRecordOptions) {
     const [error, data] = await trySafe(() =>
       this.userModelAction.update(updatePayload),
