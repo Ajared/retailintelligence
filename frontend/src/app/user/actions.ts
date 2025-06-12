@@ -119,12 +119,7 @@ export const addStore = async (
         uploadedPhotoUrls = uploadResults
           .filter((result) => result.data !== null)
           .map((result) => result.data!.ufsUrl);
-
-        if (uploadedPhotoUrls.length !== validPhotoFiles.length) {
-          console.warn('Some photos failed to upload');
-        }
-      } catch (uploadError) {
-        console.error('Photo upload failed:', uploadError);
+      } catch {
         return {
           inputs: rawData,
           message: 'Failed to upload photos. Please try again.',
@@ -168,7 +163,7 @@ export const addStore = async (
             .map((url) => {
               try {
                 const urlObj = new URL(url);
-                const pathname = urlObj.pathname.replace(/\/$/, ''); // Remove trailing slash
+                const pathname = urlObj.pathname.replace(/\/$/, '');
                 const segments = pathname.split('/');
                 return segments[segments.length - 1];
               } catch {
@@ -180,8 +175,11 @@ export const addStore = async (
           if (fileIds.length > 0) {
             await utapi.deleteFiles(fileIds);
           }
-        } catch (cleanupError) {
-          console.error('Failed to cleanup uploaded photos:', cleanupError);
+        } catch {
+          return {
+            ...response,
+            inputs: rawData,
+          } as ErrorResponse & { inputs: AddStoreFormData };
         }
       }
 

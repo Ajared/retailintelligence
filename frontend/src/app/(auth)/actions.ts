@@ -74,7 +74,9 @@ export const registerUser = async (
 };
 
 export const loginUser = async (email: string, password: string) => {
-  const response = await customFetch.post<UserInterface>('/auth/login', {
+  const response = await customFetch.post<
+    UserInterface & { access_token: string }
+  >('/auth/login', {
     email,
     password,
   });
@@ -83,7 +85,7 @@ export const loginUser = async (email: string, password: string) => {
     return response as ErrorResponse;
   }
 
-  return response as SuccessResponse<UserInterface & { access_token: string }>;
+  return response;
 };
 
 export const loginAction = async (
