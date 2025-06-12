@@ -1,7 +1,9 @@
 'use server';
 
 import { z } from 'zod/v4';
+import { auth } from '../(auth)/auth';
 import { utapi } from '~/lib/uploadthing';
+import PostHogClient from '~/lib/posthog';
 import { StoreInterface } from '~/types/store';
 import { customFetch } from '~/lib/custom-fetch';
 import { collectErrorMessages } from '~/lib/utils';
@@ -15,6 +17,8 @@ export const getAllStoresForUser = async (
   stateId?: string,
   localGovernmentId?: string,
 ): Promise<Response<StoreInterface[]>> => {
+  const session = await auth();
+  const posthog = PostHogClient();
   try {
     const queryParams = new URLSearchParams({
       page: page.toString(),
@@ -31,9 +35,19 @@ export const getAllStoresForUser = async (
     );
 
     if (!('data' in response)) {
+      posthog.capture({
+        properties: response,
+        event: 'get_all_stores_error',
+        distinctId: session?.user?.id!,
+      });
       throw new Error(response.message);
     }
 
+    posthog.capture({
+      event: 'get_all_stores_success',
+      properties: response,
+      distinctId: session?.user?.id!,
+    });
     return response;
   } catch (error) {
     const errorMessage =
@@ -43,21 +57,35 @@ export const getAllStoresForUser = async (
       message: errorMessage,
       timestamp: new Date().toISOString(),
     } as ErrorResponse;
+  } finally {
+    await posthog.shutdown();
   }
 };
 
 export const getStoreById = async (
   storeId: string,
 ): Promise<Response<StoreInterface>> => {
+  const session = await auth();
+  const posthog = PostHogClient();
   try {
     const response = await customFetch.get<StoreInterface>(
       `/stores/${storeId}`,
     );
 
     if (!('data' in response)) {
+      posthog.capture({
+        properties: response,
+        event: 'get_store_by_id_error',
+        distinctId: session?.user?.id!,
+      });
       throw new Error(response.message);
     }
 
+    posthog.capture({
+      event: 'get_store_by_id_success',
+      properties: response,
+      distinctId: session?.user?.id!,
+    });
     return response;
   } catch (error) {
     const errorMessage =
@@ -67,6 +95,8 @@ export const getStoreById = async (
       message: errorMessage,
       timestamp: new Date().toISOString(),
     } as ErrorResponse;
+  } finally {
+    await posthog.shutdown();
   }
 };
 
@@ -74,6 +104,8 @@ export const addStore = async (
   _: Response<StoreInterface | null>,
   formData: FormData,
 ) => {
+  const session = await auth();
+  const posthog = PostHogClient();
   let rawData: AddStoreFormData | null = null;
 
   try {
@@ -121,15 +153,43 @@ export const addStore = async (
           .map((result) => result.data!.ufsUrl);
 
         if (uploadedPhotoUrls.length !== validPhotoFiles.length) {
-          console.warn('Some photos failed to upload');
+          posthog.capture({
+            event: 'upload_thing_warning',
+            properties: {
+              result: uploadResults,
+              fileUrls: uploadedPhotoUrls,
+              message: 'Some files failed to upload',
+            },
+            distinctId: session?.user?.id!,
+          });
         }
+
+        posthog.capture({
+          event: 'upload_thing_success',
+          properties: {
+            result: uploadResults,
+            fileUrls: uploadedPhotoUrls,
+            message: 'Photos uploaded successfully',
+          },
+          distinctId: session?.user?.id!,
+        });
       } catch (uploadError) {
-        console.error('Photo upload failed:', uploadError);
+        posthog.capture({
+          event: 'upload_thing_error',
+          properties: {
+            error: uploadError,
+            message:
+              uploadError instanceof Error
+                ? uploadError.message
+                : 'Something went wrong',
+          },
+          distinctId: session?.user?.id!,
+        });
         return {
           inputs: rawData,
+          error: 'Photo upload failed',
           message: 'Failed to upload photos. Please try again.',
           timestamp: new Date().toISOString(),
-          error: 'Photo upload failed',
         };
       }
     }
@@ -168,7 +228,7 @@ export const addStore = async (
             .map((url) => {
               try {
                 const urlObj = new URL(url);
-                const pathname = urlObj.pathname.replace(/\/$/, ''); // Remove trailing slash
+                const pathname = urlObj.pathname.replace(/\/$/, '');
                 const segments = pathname.split('/');
                 return segments[segments.length - 1];
               } catch {
@@ -180,19 +240,56 @@ export const addStore = async (
           if (fileIds.length > 0) {
             await utapi.deleteFiles(fileIds);
           }
+          posthog.capture({
+            event: 'upload_thing_file_cleanup_success',
+            properties: {
+              result: fileIds,
+              message: 'File cleanup successful',
+            },
+            distinctId: session?.user?.id!,
+          });
         } catch (cleanupError) {
-          console.error('Failed to cleanup uploaded photos:', cleanupError);
+          posthog.capture({
+            event: 'upload_thing_file_cleanup_error',
+            properties: {
+              error: cleanupError,
+              message:
+                cleanupError instanceof Error
+                  ? cleanupError.message
+                  : 'Something went wrong',
+            },
+            distinctId: session?.user?.id!,
+          });
         }
       }
 
+      posthog.capture({
+        event: 'create_store_error',
+        properties: response,
+        distinctId: session?.user?.id!,
+      });
       return {
         ...response,
         inputs: rawData,
       } as ErrorResponse & { inputs: AddStoreFormData };
     }
 
+    posthog.capture({
+      properties: response,
+      distinctId: session?.user?.id!,
+      event: 'create_store_success',
+    });
     return response;
   } catch (error) {
+    posthog.capture({
+      event: 'create_store_error',
+      properties: {
+        error: error,
+        message:
+          error instanceof Error ? error.message : 'Something went wrong',
+      },
+      distinctId: session?.user?.id!,
+    });
     const errorMessage =
       error instanceof Error ? error.message : 'Something went wrong';
     return {
@@ -201,5 +298,7 @@ export const addStore = async (
       message: errorMessage,
       timestamp: new Date().toISOString(),
     } as ErrorResponse & { inputs: AddStoreFormData };
+  } finally {
+    await posthog.shutdown();
   }
 };
