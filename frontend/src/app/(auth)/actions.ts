@@ -11,7 +11,6 @@ import {
   resetPasswordFormSchema,
 } from './schema';
 import { z } from 'zod/v4';
-import PostHogClient from '~/lib/posthog';
 import customFetch from '~/lib/custom-fetch';
 import { UserInterface } from '~/types/user';
 import { auth, signIn, signOut } from './auth';
@@ -23,7 +22,6 @@ export const registerUser = async (
   _: Response<UserInterface | null>,
   formData: FormData,
 ) => {
-  const posthog = PostHogClient();
   let rawData: RegisterFormData | null = null;
 
   try {
@@ -58,72 +56,34 @@ export const registerUser = async (
     );
 
     if (!('data' in response)) {
-      posthog.capture({
-        distinctId: email,
-        properties: response,
-        event: 'register_user_error',
-      });
       return {
         ...response,
         inputs: rawData,
       } as ErrorResponse & { inputs: RegisterFormData };
     }
 
-    posthog.capture({
-      properties: response,
-      distinctId: response.data?.id!,
-      event: 'register_user_success',
-    });
     return response;
   } catch (error) {
-    posthog.capture({
-      event: 'register_user_error',
-      properties: {
-        error: error,
-        message:
-          error instanceof Error ? error.message : 'Something went wrong',
-      },
-      distinctId: rawData?.email!,
-    });
     return {
       inputs: rawData,
       message: 'Something went wrong',
       timestamp: new Date().toISOString(),
       error: error instanceof Error ? error.message : 'Something went wrong',
     } as ErrorResponse & { inputs: RegisterFormData };
-  } finally {
-    await posthog.shutdown();
   }
 };
 
 export const loginUser = async (email: string, password: string) => {
-  const posthog = PostHogClient();
-  try {
-    const response = await customFetch.post<UserInterface>('/auth/login', {
-      email,
-      password,
-    });
+  const response = await customFetch.post<UserInterface>('/auth/login', {
+    email,
+    password,
+  });
 
-    if (!('data' in response)) {
-      posthog.capture({
-        event: 'login_user_error',
-        properties: response,
-        distinctId: email,
-      });
-      return response as ErrorResponse;
-    }
-
-    posthog.capture({
-      event: 'login_user_success',
-      properties: response,
-      distinctId: response.data?.id!,
-    });
-    return response as SuccessResponse<
-      UserInterface & { access_token: string }
-    >;
-  } finally {
-    await posthog.shutdown();
+  if (!('data' in response)) {
+    return response as ErrorResponse;
   }
+
+  return response as SuccessResponse<UserInterface & { access_token: string }>;
 };
 
 export const loginAction = async (
@@ -192,7 +152,6 @@ export const forgotPasswordAction = async (
   _: Response<{ email: string } | null>,
   formData: FormData,
 ) => {
-  const posthog = PostHogClient();
   let rawData: ForgotPasswordFormData | null = null;
 
   try {
@@ -223,41 +182,20 @@ export const forgotPasswordAction = async (
     );
 
     if (!('data' in response)) {
-      posthog.capture({
-        event: 'forgot_password_error',
-        properties: response,
-        distinctId: email,
-      });
       return {
         ...response,
         inputs: rawData,
       } as ErrorResponse & { inputs: ForgotPasswordFormData };
     }
 
-    posthog.capture({
-      event: 'forgot_password_success',
-      properties: response,
-      distinctId: email,
-    });
     return response;
   } catch (error) {
-    posthog.capture({
-      event: 'forgot_password_error',
-      properties: {
-        error: error,
-        message:
-          error instanceof Error ? error.message : 'Something went wrong',
-      },
-      distinctId: rawData?.email!,
-    });
     return {
       inputs: rawData,
       message: 'Something went wrong',
       timestamp: new Date().toISOString(),
       error: error instanceof Error ? error.message : 'Something went wrong',
     } as ErrorResponse & { inputs: ForgotPasswordFormData };
-  } finally {
-    await posthog.shutdown();
   }
 };
 
@@ -265,7 +203,6 @@ export const resetPasswordAction = async (
   _: Response<UserInterface | null>,
   formData: FormData,
 ) => {
-  const posthog = PostHogClient();
   let rawData: ResetPasswordFormData | null = null;
 
   try {
@@ -299,53 +236,22 @@ export const resetPasswordAction = async (
     );
 
     if (!('data' in response)) {
-      posthog.capture({
-        event: 'reset_password_error',
-        properties: response,
-        distinctId: email,
-      });
       return {
         ...response,
         inputs: rawData,
       } as ErrorResponse & { inputs: ResetPasswordFormData };
     }
 
-    posthog.capture({
-      event: 'reset_password_success',
-      properties: response,
-      distinctId: email,
-    });
     return response;
   } catch (error) {
-    posthog.capture({
-      event: 'reset_password_error',
-      properties: {
-        error: error,
-        message:
-          error instanceof Error ? error.message : 'Something went wrong',
-      },
-      distinctId: rawData?.email!,
-    });
     return {
       inputs: rawData,
       message: 'Something went wrong',
       timestamp: new Date().toISOString(),
       error: error instanceof Error ? error.message : 'Something went wrong',
     } as ErrorResponse & { inputs: ResetPasswordFormData };
-  } finally {
-    await posthog.shutdown();
   }
 };
 export const logoutAction = async () => {
-  const session = await auth();
-  const posthog = PostHogClient();
-  try {
-    posthog.capture({
-      event: 'logout_user',
-      distinctId: session?.user?.id!,
-    });
-    await signOut({ redirectTo: '/login' });
-  } finally {
-    await posthog.shutdown();
-  }
+  await signOut({ redirectTo: '/login' });
 };

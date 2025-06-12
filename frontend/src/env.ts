@@ -11,18 +11,7 @@ export const env = createEnv({
     UPLOADTHING_TOKEN: z.string(),
     UPLOADTHING_APP_ID: z.string(),
   },
-  client: {
-    NEXT_PUBLIC_NODE_ENV: z
-      .enum(['local', 'test', 'development', 'staging', 'production'])
-      .default('development'),
-    NEXT_PUBLIC_POSTHOG_KEY: z.string(),
-    NEXT_PUBLIC_POSTHOG_HOST: z.string(),
-  },
   emptyStringAsUndefined: true,
-  experimental__runtimeEnv: {
-    NEXT_PUBLIC_NODE_ENV: process.env.NODE_ENV,
-    NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
-    NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
-  },
+  experimental__runtimeEnv: process.env,
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,
 });

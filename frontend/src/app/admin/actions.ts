@@ -1,8 +1,6 @@
 'use server';
 
 import { z } from 'zod/v4';
-import { auth } from '../(auth)/auth';
-import PostHogClient from '~/lib/posthog';
 import { UserInterface } from '~/types/user';
 import customFetch from '~/lib/custom-fetch';
 import { StoreInterface } from '~/types/store';
@@ -18,8 +16,6 @@ export const getAllStores = async (
   localGovernmentId?: string,
   enumeratorId?: string,
 ): Promise<Response<StoreInterface[]>> => {
-  const session = await auth();
-  const posthog = PostHogClient();
   try {
     const queryParams = new URLSearchParams({
       page: page.toString(),
@@ -37,19 +33,9 @@ export const getAllStores = async (
     );
 
     if (!('data' in response)) {
-      posthog.capture({
-        event: 'get_all_stores_error',
-        properties: response,
-        distinctId: session?.user?.id!,
-      });
       throw new Error(response.message);
     }
 
-    posthog.capture({
-      event: 'get_all_stores_success',
-      properties: response,
-      distinctId: session?.user?.id!,
-    });
     return response;
   } catch (error) {
     const errorMessage =
@@ -59,35 +45,21 @@ export const getAllStores = async (
       message: errorMessage,
       timestamp: new Date().toISOString(),
     } as ErrorResponse;
-  } finally {
-    await posthog.shutdown();
   }
 };
 
 export const getStoreById = async (
   storeId: string,
 ): Promise<Response<StoreInterface>> => {
-  const session = await auth();
-  const posthog = PostHogClient();
   try {
     const response = await customFetch.get<StoreInterface>(
       `/admin/stores/${storeId}`,
     );
 
     if (!('data' in response)) {
-      posthog.capture({
-        event: 'get_store_by_id_error',
-        properties: response,
-        distinctId: session?.user?.id!,
-      });
       throw new Error(response.message);
     }
 
-    posthog.capture({
-      event: 'get_store_by_id_success',
-      properties: response,
-      distinctId: session?.user?.id!,
-    });
     return response;
   } catch (error) {
     const errorMessage =
@@ -97,8 +69,6 @@ export const getStoreById = async (
       message: errorMessage,
       timestamp: new Date().toISOString(),
     } as ErrorResponse;
-  } finally {
-    await posthog.shutdown();
   }
 };
 
@@ -109,8 +79,6 @@ export const getAllUsers = async (
   role?: string,
   status?: string,
 ): Promise<Response<UserInterface[]>> => {
-  const session = await auth();
-  const posthog = PostHogClient();
   try {
     const queryParams = new URLSearchParams({
       page: page.toString(),
@@ -126,19 +94,9 @@ export const getAllUsers = async (
     );
 
     if (!('data' in response)) {
-      posthog.capture({
-        event: 'get_all_users_error',
-        properties: response,
-        distinctId: session?.user?.id!,
-      });
       throw new Error(response.message);
     }
 
-    posthog.capture({
-      event: 'get_all_users_success',
-      properties: response,
-      distinctId: session?.user?.id!,
-    });
     return response;
   } catch (error) {
     const errorMessage =
@@ -148,16 +106,12 @@ export const getAllUsers = async (
       message: errorMessage,
       timestamp: new Date().toISOString(),
     } as ErrorResponse;
-  } finally {
-    await posthog.shutdown();
   }
 };
 
 export const deactivateUser = async (
   userId: string,
 ): Promise<Response<UserInterface>> => {
-  const session = await auth();
-  const posthog = PostHogClient();
   try {
     const response = await customFetch.post<UserInterface>(
       `/admin/users/deactivate`,
@@ -167,19 +121,9 @@ export const deactivateUser = async (
     );
 
     if (!('data' in response)) {
-      posthog.capture({
-        event: 'deactivate_user_error',
-        properties: response,
-        distinctId: session?.user?.id!,
-      });
       throw new Error(response.message);
     }
 
-    posthog.capture({
-      event: 'deactivate_user_success',
-      properties: response,
-      distinctId: session?.user?.id!,
-    });
     return response;
   } catch (error) {
     const errorMessage =
@@ -189,16 +133,12 @@ export const deactivateUser = async (
       message: errorMessage,
       timestamp: new Date().toISOString(),
     } as ErrorResponse;
-  } finally {
-    await posthog.shutdown();
   }
 };
 
 export const reactivateUser = async (
   userId: string,
 ): Promise<Response<UserInterface>> => {
-  const session = await auth();
-  const posthog = PostHogClient();
   try {
     const response = await customFetch.post<UserInterface>(
       `/admin/users/reactivate`,
@@ -208,19 +148,9 @@ export const reactivateUser = async (
     );
 
     if (!('data' in response)) {
-      posthog.capture({
-        event: 'reactivate_user_error',
-        properties: response,
-        distinctId: session?.user?.id!,
-      });
       throw new Error(response.message);
     }
 
-    posthog.capture({
-      event: 'reactivate_user_success',
-      properties: response,
-      distinctId: session?.user?.id!,
-    });
     return response;
   } catch (error) {
     const errorMessage =
@@ -230,8 +160,6 @@ export const reactivateUser = async (
       message: errorMessage,
       timestamp: new Date().toISOString(),
     } as ErrorResponse;
-  } finally {
-    await posthog.shutdown();
   }
 };
 
@@ -239,8 +167,6 @@ export const inviteUser = async (
   _: Response<{ email: string } | null>,
   formData: FormData,
 ) => {
-  const session = await auth();
-  const posthog = PostHogClient();
   let rawData: InviteUserFormData | null = null;
 
   try {
@@ -272,40 +198,19 @@ export const inviteUser = async (
     });
 
     if (!('data' in response)) {
-      posthog.capture({
-        event: 'invite_user_error',
-        properties: response,
-        distinctId: session?.user?.id!,
-      });
       return {
         ...response,
         inputs: rawData,
       } as ErrorResponse & { inputs: InviteUserFormData };
     }
 
-    posthog.capture({
-      event: 'invite_user_success',
-      properties: response,
-      distinctId: session?.user?.id!,
-    });
     return response;
   } catch (error) {
-    posthog.capture({
-      event: 'invite_user_error',
-      properties: {
-        error: error,
-        message:
-          error instanceof Error ? error.message : 'Something went wrong',
-      },
-      distinctId: session?.user?.id!,
-    });
     return {
       inputs: rawData,
       message: 'Something went wrong',
       timestamp: new Date().toISOString(),
       error: error instanceof Error ? error.message : 'Something went wrong',
     } as ErrorResponse & { inputs: InviteUserFormData };
-  } finally {
-    await posthog.shutdown();
   }
 };
