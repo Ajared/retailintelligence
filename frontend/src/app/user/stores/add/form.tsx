@@ -455,7 +455,6 @@ export function AddStoreForm({ locations }: { locations: StateInterface[] }) {
                 id="zip_code"
                 name="zip_code"
                 placeholder="10001"
-                required
                 inputMode="numeric"
                 pattern="[0-9]*"
                 autoComplete="postal-code"
