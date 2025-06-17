@@ -450,7 +450,7 @@ export function AddStoreForm({ locations }: { locations: StateInterface[] }) {
             </div>
 
             <div className="space-y-2 w-full">
-              <Label htmlFor="zip_code">Postal/Zip Code *</Label>
+              <Label htmlFor="zip_code">Postal/Zip Code</Label>
               <Input
                 id="zip_code"
                 name="zip_code"
