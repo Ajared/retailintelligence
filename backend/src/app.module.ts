@@ -16,12 +16,14 @@ import createDataSource from './database/data-source';
 import { UserModule } from './modules/user/user.module';
 import { MailModule } from './modules/mail/mail.module';
 import { AuthModule } from './modules/auth/auth.module';
-import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AdminModule } from './modules/admin/admin.module';
 import { StoreModule } from './modules/store/store.module';
 import { TokenModule } from './modules/token/token.module';
 import { ValidationPipe } from './helpers/validation.pipe';
 import { StateModule } from './modules/state/state.module';
+import { PhaseModule } from './modules/phase/phase.module';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { DistrictModule } from './modules/district/district.module';
 import { ResponseInterceptor } from './helpers/response.interceptor';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { ValidationExceptionFilter } from './helpers/validation-filter.exception';
@@ -166,6 +168,8 @@ import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConne
     StateModule,
     AdminModule,
     GuardModule,
+    PhaseModule,
+    DistrictModule,
   ],
   controllers: [AppController],
   providers: [
