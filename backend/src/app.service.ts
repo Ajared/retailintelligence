@@ -11,12 +11,19 @@ import {
   ListStateRecordOptions,
 } from './modules/state/types/list-state.type';
 import { EntityPropertyNotFoundError } from 'typeorm';
+import { PhaseModelAction } from './modules/phase/phase.model-action';
+import { PhaseInterface } from './modules/phase/types/phase.interface';
+import {
+  ListPhaseRecordOptions,
+  PhaseQueryOptions,
+} from './modules/phase/types/list-phase.type';
 
 @Injectable()
 export class AppService {
   constructor(
     private readonly configService: ConfigService,
     private readonly stateModelAction: StateModelAction,
+    private readonly phaseModelAction: PhaseModelAction,
   ) {}
 
   getHello(): string {
@@ -79,6 +86,55 @@ export class AppService {
       data: listStates.payload,
       meta: listStates.paginationMeta,
       message: SYS_MSG.RESOURCE_FETCHED_SUCCESSFULLY('Locations'),
+    };
+  }
+
+  async getPhases(
+    queryOptions: PhaseQueryOptions,
+  ): Promise<AbstractResponseDto<PhaseInterface[]>> {
+    const { page, limit, ...filterOptions } = queryOptions;
+
+    const filterRecordOptions = Object.fromEntries(
+      Object.entries(filterOptions).filter(
+        ([, value]) => value !== undefined && value !== '',
+      ),
+    );
+
+    const paginationPayload = {
+      page: page ? +page : 1,
+      limit: limit ? +limit : 10,
+    };
+
+    const listPhaseRecordOptions: ListPhaseRecordOptions = {
+      paginationPayload,
+      filterRecordOptions,
+      relations: {
+        districts: true,
+      },
+    };
+
+    const [listPhasesError, listPhases] = await trySafe(() =>
+      this.phaseModelAction.list(listPhaseRecordOptions),
+    );
+
+    if (listPhasesError) {
+      if (listPhasesError instanceof EntityPropertyNotFoundError) {
+        throw new CustomHttpException(
+          SYS_MSG.INVALID_PARAMETER('Filter Query'),
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_FETCH_FAILED('Phases'),
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    return {
+      data: listPhases.payload,
+      meta: listPhases.paginationMeta,
+      message: SYS_MSG.RESOURCE_FETCHED_SUCCESSFULLY('Phases'),
     };
   }
 }

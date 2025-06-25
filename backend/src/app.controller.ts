@@ -1,14 +1,15 @@
 import { AppService } from './app.service';
 import { Controller, Get, Query } from '@nestjs/common';
 import { SkipAuth } from './decorators/skip-auth.decorator';
-import { QueryValidator } from './helpers/query.helper';
+import { StateQueryValidator } from './modules/state/dto/state.dto';
+import { PhaseQueryValidator } from './modules/phase/dto/phase.dto';
 
 @Controller()
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
-  @SkipAuth()
   @Get()
+  @SkipAuth()
   getHello(): string {
     return this.appService.getHello();
   }
@@ -20,7 +21,12 @@ export class AppController {
   }
 
   @Get('locations')
-  async getLocations(@Query() queryOptions: QueryValidator) {
+  async getLocations(@Query() queryOptions: StateQueryValidator) {
     return this.appService.getLocations(queryOptions);
+  }
+
+  @Get('phases')
+  async getPhases(@Query() queryOptions: PhaseQueryValidator) {
+    return this.appService.getPhases(queryOptions);
   }
 }
