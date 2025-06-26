@@ -12,21 +12,28 @@ class Application {
   private readonly logger = new Logger('App');
 
   async runMigrations() {
+    const logger = new Logger('Migrations');
     try {
-      await this.dataSource.runMigrations();
-      this.logger.log('Database migrations finished successfully.');
+      const pendingMigrations = await this.dataSource.showMigrations();
+      if (pendingMigrations) {
+        await this.dataSource.runMigrations();
+        logger.log('Database migrations finished successfully.');
+      } else {
+        logger.log('No pending migrations to run.');
+      }
     } catch (error) {
-      this.logger.error('Error running database migrations:', error);
+      logger.error('Error running database migrations:', error);
       throw error;
     }
   }
 
   async seedDatabase() {
+    const logger = new Logger('Seeder');
     try {
       await runSeeders(this.dataSource, seederOptions);
-      this.logger.log('Database successfully seeded.');
+      logger.log('Database successfully seeded.');
     } catch (error) {
-      this.logger.error('Error seeding database:', error);
+      logger.error('Error seeding database:', error);
       throw error;
     }
   }

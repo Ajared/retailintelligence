@@ -4,16 +4,28 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AbstractResponseDto } from './types/response.dto';
-import { PaginationOptions } from './helpers/query.helper';
 import { CustomHttpException } from './helpers/custom.exception';
+import { StateQueryValidator } from './modules/state/dto/state.dto';
+import { PhaseQueryValidator } from './modules/phase/dto/phase.dto';
 import { StateModelAction } from './modules/state/state.model-action';
+import { PhaseModelAction } from './modules/phase/phase.model-action';
 import { StateInterface } from './modules/state/types/state.interface';
+import { PhaseInterface } from './modules/phase/types/phase.interface';
 
 const mockStateModelAction = {
   get: jest.fn(),
   create: jest.fn(),
   update: jest.fn(),
   delete: jest.fn(),
+  list: jest.fn(),
+};
+
+const mockPhaseModelAction = {
+  get: jest.fn(),
+  create: jest.fn(),
+  update: jest.fn(),
+  delete: jest.fn(),
+  list: jest.fn(),
 };
 
 describe('AppController', () => {
@@ -29,6 +41,10 @@ describe('AppController', () => {
         {
           provide: StateModelAction,
           useValue: mockStateModelAction,
+        },
+        {
+          provide: PhaseModelAction,
+          useValue: mockPhaseModelAction,
         },
       ],
     }).compile();
@@ -71,9 +87,10 @@ describe('AppController', () => {
   });
 
   describe('getLocations', () => {
-    const mockPaginationOptions: PaginationOptions = {
+    const mockQueryOptions: StateQueryValidator = {
       page: '1',
       limit: '10',
+      name: 'Test State',
     };
 
     const mockStateResponse: AbstractResponseDto<StateInterface[]> = {
@@ -101,23 +118,22 @@ describe('AppController', () => {
         .spyOn(appService, 'getLocations')
         .mockResolvedValue(mockStateResponse);
 
-      const result = await appController.getLocations(mockPaginationOptions);
+      const result = await appController.getLocations(mockQueryOptions);
 
       expect(result).toEqual(mockStateResponse);
-      expect(appService.getLocations).toHaveBeenCalledWith(
-        mockPaginationOptions,
-      );
+      expect(appService.getLocations).toHaveBeenCalledWith(mockQueryOptions);
     });
 
-    it('should handle empty pagination options', async () => {
+    it('should handle empty query options', async () => {
+      const emptyOptions: StateQueryValidator = {};
       jest
         .spyOn(appService, 'getLocations')
         .mockResolvedValue(mockStateResponse);
 
-      const result = await appController.getLocations({});
+      const result = await appController.getLocations(emptyOptions);
 
       expect(result).toEqual(mockStateResponse);
-      expect(appService.getLocations).toHaveBeenCalledWith({});
+      expect(appService.getLocations).toHaveBeenCalledWith(emptyOptions);
     });
 
     it('should handle service errors', async () => {
@@ -128,24 +144,99 @@ describe('AppController', () => {
       jest.spyOn(appService, 'getLocations').mockRejectedValue(error);
 
       await expect(
-        appController.getLocations(mockPaginationOptions),
+        appController.getLocations(mockQueryOptions),
       ).rejects.toThrow(CustomHttpException);
     });
 
-    it('should validate pagination parameters', async () => {
-      const invalidOptions: PaginationOptions = {
-        page: 'invalid',
-        limit: 'invalid',
+    it('should validate query parameters with name filter', async () => {
+      const optionsWithName: StateQueryValidator = {
+        page: '1',
+        limit: '5',
+        name: 'Anambra',
       };
 
       jest
         .spyOn(appService, 'getLocations')
         .mockResolvedValue(mockStateResponse);
 
-      const result = await appController.getLocations(invalidOptions);
+      const result = await appController.getLocations(optionsWithName);
 
       expect(result).toEqual(mockStateResponse);
-      expect(appService.getLocations).toHaveBeenCalledWith(invalidOptions);
+      expect(appService.getLocations).toHaveBeenCalledWith(optionsWithName);
+    });
+  });
+
+  describe('getPhases', () => {
+    const mockQueryOptions: PhaseQueryValidator = {
+      page: '1',
+      limit: '10',
+      name: 'Test Phase',
+    };
+
+    const mockPhaseResponse: AbstractResponseDto<PhaseInterface[]> = {
+      data: [
+        {
+          id: '1',
+          name: 'Test Phase',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ],
+      meta: {
+        total: 1,
+        page: 1,
+        limit: 10,
+        totalPages: 1,
+        hasNext: false,
+        hasPrevious: false,
+      },
+      message: 'Phases fetched successfully',
+    };
+
+    it('should return paginated phases successfully', async () => {
+      jest.spyOn(appService, 'getPhases').mockResolvedValue(mockPhaseResponse);
+
+      const result = await appController.getPhases(mockQueryOptions);
+
+      expect(result).toEqual(mockPhaseResponse);
+      expect(appService.getPhases).toHaveBeenCalledWith(mockQueryOptions);
+    });
+
+    it('should handle empty query options', async () => {
+      const emptyOptions: PhaseQueryValidator = {};
+      jest.spyOn(appService, 'getPhases').mockResolvedValue(mockPhaseResponse);
+
+      const result = await appController.getPhases(emptyOptions);
+
+      expect(result).toEqual(mockPhaseResponse);
+      expect(appService.getPhases).toHaveBeenCalledWith(emptyOptions);
+    });
+
+    it('should handle service errors', async () => {
+      const error = new CustomHttpException(
+        'Failed to fetch phases',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+      jest.spyOn(appService, 'getPhases').mockRejectedValue(error);
+
+      await expect(appController.getPhases(mockQueryOptions)).rejects.toThrow(
+        CustomHttpException,
+      );
+    });
+
+    it('should validate query parameters with name filter', async () => {
+      const optionsWithName: PhaseQueryValidator = {
+        page: '1',
+        limit: '5',
+        name: 'Phase 1',
+      };
+
+      jest.spyOn(appService, 'getPhases').mockResolvedValue(mockPhaseResponse);
+
+      const result = await appController.getPhases(optionsWithName);
+
+      expect(result).toEqual(mockPhaseResponse);
+      expect(appService.getPhases).toHaveBeenCalledWith(optionsWithName);
     });
   });
 });

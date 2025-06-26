@@ -1,7 +1,9 @@
 import { User } from '~/modules/user/entities/user.entity';
+import { State } from '~/modules/state/entities/state.entity';
+import { Phase } from '~/modules/phase/entities/phase.entity';
 import { Column, Entity, ManyToOne, JoinColumn } from 'typeorm';
 import { AbstractBaseEntity } from '~/database/base/base.entity';
-import { State } from '~/modules/state/entities/state.entity';
+import { District } from '~/modules/district/entities/district.entity';
 import { LocalGovernment } from '~/modules/local-government/entities/local-government.entity';
 
 @Entity({ name: 'stores' })
@@ -47,4 +49,18 @@ export class Store extends AbstractBaseEntity {
 
   @Column()
   enumeratorId: string;
+
+  @JoinColumn({ name: 'phase_id' })
+  @ManyToOne(() => Phase, (phase) => phase.stores, { nullable: true })
+  phase?: Phase;
+
+  @Column({ nullable: true })
+  phaseId?: string;
+
+  @JoinColumn({ name: 'district_id' })
+  @ManyToOne(() => District, (district) => district.stores, { nullable: true })
+  district?: District;
+
+  @Column({ nullable: true })
+  districtId?: string;
 }
