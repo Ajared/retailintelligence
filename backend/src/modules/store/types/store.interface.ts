@@ -11,4 +11,6 @@ export interface StoreInterface extends AbstractBaseInterface {
   latitude: number;
   longitude: number;
   enumeratorId: string;
+  phaseId?: string;
+  districtId?: string;
 }
