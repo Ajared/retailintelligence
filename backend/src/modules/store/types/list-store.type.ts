@@ -6,6 +6,8 @@ interface StoreFilterOptions extends FilterOptions {
   stateId?: string;
   enumeratorId?: string;
   localGovernmentId?: string;
+  phaseId?: string;
+  districtId?: string;
 }
 
 interface StoreQueryOptions extends StoreFilterOptions, PaginationOptions {}
