@@ -128,6 +128,8 @@ describe('AdminService', () => {
           state: true,
           enumerator: true,
           localGovernment: true,
+          phase: true,
+          district: true,
         },
       );
       expect(result).toEqual({
@@ -181,6 +183,8 @@ describe('AdminService', () => {
           state: true,
           enumerator: true,
           localGovernment: true,
+          phase: true,
+          district: true,
         },
       });
       expect(result).toEqual({

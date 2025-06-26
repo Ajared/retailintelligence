@@ -188,6 +188,8 @@ describe('StoreService', () => {
           state: true,
           enumerator: true,
           localGovernment: true,
+          phase: true,
+          district: true,
         },
       );
       expect(result).toEqual({
@@ -255,6 +257,8 @@ describe('StoreService', () => {
           state: true,
           enumerator: true,
           localGovernment: true,
+          phase: true,
+          district: true,
         },
       });
       expect(result).toEqual({

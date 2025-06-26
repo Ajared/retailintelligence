@@ -61,6 +61,8 @@ export class StoreService {
           state: true,
           enumerator: true,
           localGovernment: true,
+          phase: true,
+          district: true,
         },
       ),
     );
@@ -108,6 +110,8 @@ export class StoreService {
         state: true,
         enumerator: true,
         localGovernment: true,
+        phase: true,
+        district: true,
       },
     };
 
@@ -193,6 +197,8 @@ export class StoreService {
           state: true,
           enumerator: true,
           localGovernment: true,
+          phase: true,
+          district: true,
         },
       };
 

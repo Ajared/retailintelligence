@@ -40,6 +40,14 @@ export class StoreDto {
   @IsString()
   @IsOptional()
   enumeratorId: string;
+
+  @IsString()
+  @IsOptional()
+  phaseId?: string;
+
+  @IsString()
+  @IsOptional()
+  districtId?: string;
 }
 
 export class StoreQueryValidator extends QueryValidator {
@@ -58,4 +66,12 @@ export class StoreQueryValidator extends QueryValidator {
   @IsOptional()
   @IsString()
   enumeratorId?: string;
+
+  @IsOptional()
+  @IsString()
+  phaseId?: string;
+
+  @IsOptional()
+  @IsString()
+  districtId?: string;
 }

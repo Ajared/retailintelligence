@@ -34,6 +34,8 @@ export class AdminService {
         state: true,
         enumerator: true,
         localGovernment: true,
+        phase: true,
+        district: true,
       }),
     );
 
@@ -79,6 +81,8 @@ export class AdminService {
         state: true,
         enumerator: true,
         localGovernment: true,
+        phase: true,
+        district: true,
       },
     };
 
@@ -159,6 +163,8 @@ export class AdminService {
           state: true,
           enumerator: true,
           localGovernment: true,
+          phase: true,
+          district: true,
         },
       };
 
