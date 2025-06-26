@@ -22,6 +22,7 @@ class Application {
         logger.log('No pending migrations to run.');
       }
     } catch (error) {
+      await this.dataSource.undoLastMigration();
       logger.error('Error running database migrations:', error);
       throw error;
     }
