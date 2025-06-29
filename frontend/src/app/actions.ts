@@ -1,7 +1,7 @@
 import customFetch from '~/lib/custom-fetch';
 import { StateInterface } from '~/types/state';
+import { PhaseInterface } from '~/types/phase';
 import { ErrorResponse, Response } from '~/types/actions';
-import { Phase } from '~/types/phase';
 
 export const getAllLocations = async (
   page: number = 1,
@@ -33,9 +33,9 @@ export const getPhases = async (
   page: number = 1,
   limit: number = 100,
   sort: string = 'ASC',
-): Promise<Response<Phase[]>> => {
+): Promise<Response<PhaseInterface[]>> => {
   try {
-    const response = await customFetch.get<Phase[]>(
+    const response = await customFetch.get<PhaseInterface[]>(
       `/phases?page=${page}&limit=${limit}&sort=${sort}`,
     );
     if (!('data' in response)) {

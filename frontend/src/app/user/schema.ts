@@ -10,6 +10,8 @@ export const addStoreFormSchema = z.object({
   photos: z.array(z.string()).optional(),
   latitude: z.number(),
   longitude: z.number(),
+  phase_id: z.string().optional(),
+  district_id: z.string().optional(),
 });
 
 export type AddStoreFormData = z.infer<typeof addStoreFormSchema>;
