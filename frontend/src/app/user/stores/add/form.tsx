@@ -45,6 +45,7 @@ import { AddStoreFormData } from '../../schema';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import Image from 'next/image';
+import type { PhaseInterface } from '~/types/phase';
 
 function ImagePreview({
   file,
@@ -109,11 +110,19 @@ function ImagePreview({
   );
 }
 
-export function AddStoreForm({ locations }: { locations: StateInterface[] }) {
+export function AddStoreForm({
+  phases,
+  locations,
+}: {
+  phases: PhaseInterface[];
+  locations: StateInterface[];
+}) {
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [selectedStateId, setSelectedStateId] = useState<string>('');
+  const [selectedPhaseId, setSelectedPhaseId] = useState<string>('');
+  const [selectedDistrictId, setSelectedDistrictId] = useState<string>('');
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [locationData, setLocationData] = useState<{
     latitude: number;
@@ -141,13 +150,28 @@ export function AddStoreForm({ locations }: { locations: StateInterface[] }) {
 
   const [state, action, isPending] = useActionState(addStore, initialState);
 
+  const selectedState = useMemo(() => {
+    return locations.find((state) => state.id === selectedStateId);
+  }, [selectedStateId, locations]);
+
+  const showPhaseAndDistrict = useMemo(() => {
+    if (!selectedState) return false;
+    return (
+      selectedState.name === 'FCT Abuja' ||
+      selectedState.id === phases[0]?.state_id
+    );
+  }, [selectedState, phases]);
+
   const filteredLocalGovernments = useMemo(() => {
     if (!selectedStateId) return [];
-    const selectedState = locations.find(
-      (state) => state.id === selectedStateId,
-    );
     return selectedState?.local_governments || [];
-  }, [selectedStateId, locations]);
+  }, [selectedStateId, selectedState]);
+
+  const filteredDistricts = useMemo(() => {
+    if (!showPhaseAndDistrict || !selectedPhaseId) return [];
+    const phase = phases.find((p) => p.id === selectedPhaseId);
+    return phase?.districts || [];
+  }, [showPhaseAndDistrict, selectedPhaseId, phases]);
 
   const handleGetLocation = useCallback(() => {
     if (!navigator.geolocation) {
@@ -275,17 +299,38 @@ export function AddStoreForm({ locations }: { locations: StateInterface[] }) {
     [action, selectedImages, locationData],
   );
 
-  const handleStateChange = useCallback((value: string) => {
-    setSelectedStateId(value);
-    const form = formRef.current;
-    if (form) {
-      const lgSelect = form.querySelector(
-        'input[name="local_government_id"]',
-      ) as HTMLInputElement;
-      if (lgSelect) {
-        lgSelect.value = '';
+  const handleStateChange = useCallback(
+    (value: string) => {
+      setSelectedStateId(value);
+      const form = formRef.current;
+      if (form) {
+        const lgSelect = form.querySelector(
+          'input[name="local_government_id"]',
+        ) as HTMLInputElement;
+        if (lgSelect) {
+          lgSelect.value = '';
+        }
       }
-    }
+
+      const state = locations.find((s) => s.id === value);
+      if (
+        !state ||
+        (state.name !== 'FCT Abuja' && state.id !== phases[0]?.state_id)
+      ) {
+        setSelectedPhaseId('');
+        setSelectedDistrictId('');
+      }
+    },
+    [locations, phases],
+  );
+
+  const handlePhaseChange = useCallback((value: string) => {
+    setSelectedPhaseId(value);
+    setSelectedDistrictId('');
+  }, []);
+
+  const handleDistrictChange = useCallback((value: string) => {
+    setSelectedDistrictId(value);
   }, []);
 
   return (
@@ -403,6 +448,59 @@ export function AddStoreForm({ locations }: { locations: StateInterface[] }) {
               </Select>
             </div>
           </div>
+
+          {showPhaseAndDistrict && (
+            <div className="flex flex-row gap-4 w-full">
+              <div className="space-y-2 w-full">
+                <Label htmlFor="phase_id">Phase *</Label>
+                <Select
+                  name="phase_id"
+                  required
+                  value={selectedPhaseId}
+                  onValueChange={handlePhaseChange}
+                >
+                  <SelectTrigger id="phase_id" className="w-full">
+                    <SelectValue placeholder="Select a phase" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {phases.map((phase) => (
+                      <SelectItem key={phase.id} value={phase.id!}>
+                        {phase.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2 w-full">
+                <Label htmlFor="district_id">District *</Label>
+                <Select
+                  name="district_id"
+                  required
+                  value={selectedDistrictId}
+                  onValueChange={handleDistrictChange}
+                  disabled={!selectedPhaseId}
+                >
+                  <SelectTrigger id="district_id" className="w-full">
+                    <SelectValue
+                      placeholder={
+                        selectedPhaseId
+                          ? 'Select a district'
+                          : 'Select a phase first'
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredDistricts.map((district) => (
+                      <SelectItem key={district.id!} value={district.id!}>
+                        {district.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
 
           <div className="flex flex-row gap-4 w-full">
             <div className="space-y-2 w-full">

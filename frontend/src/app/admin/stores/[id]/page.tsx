@@ -48,6 +48,18 @@ export default async function StoreDetailsPage({
             </div>
             <div>{store.local_government?.name}</div>
           </div>
+          {store.phase && (
+            <div>
+              <div className="text-muted-foreground text-sm">Phase</div>
+              <div>{store.phase?.name}</div>
+            </div>
+          )}
+          {store.district && (
+            <div>
+              <div className="text-muted-foreground text-sm">District</div>
+              <div>{store.district?.name}</div>
+            </div>
+          )}
           <div>
             <div className="text-muted-foreground text-sm">Landmarks</div>
             <div>{store.landmarks || '-'}</div>
