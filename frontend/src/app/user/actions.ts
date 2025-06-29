@@ -81,6 +81,8 @@ export const addStore = async (
       name: formData.get('name') as string,
       state_id: formData.get('state_id') as string,
       local_government_id: formData.get('local_government_id') as string,
+      phase_id: formData.get('phase_id') as string,
+      district_id: formData.get('district_id') as string,
       address: formData.get('address') as string,
       store_type: formData.get('store_type') as string,
       latitude: Number(formData.get('latitude')),
@@ -154,6 +156,8 @@ export const addStore = async (
       longitude: rawData.longitude,
       landmarks: rawData.landmarks,
       photos: uploadedPhotoUrls,
+      ...(rawData.phase_id && { phaseId: rawData.phase_id }),
+      ...(rawData.district_id && { districtId: rawData.district_id }),
     });
 
     if (!('data' in response)) {
