@@ -1,6 +1,6 @@
 import type { AbstractBaseInterface } from './base';
 
-export interface District extends AbstractBaseInterface {
+export interface DistrictInterface extends AbstractBaseInterface {
   name: string;
   phase_id: string;
 }

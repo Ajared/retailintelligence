@@ -1,8 +1,8 @@
+import type { DistrictInterface } from './district';
 import type { AbstractBaseInterface } from './base';
-import type { District } from './district';
 
-export interface Phase extends AbstractBaseInterface {
+export interface PhaseInterface extends AbstractBaseInterface {
   name: string;
   state_id: string;
-  districts: District[];
+  districts: DistrictInterface[];
 }
