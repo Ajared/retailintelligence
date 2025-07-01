@@ -70,6 +70,5 @@ export const {
     },
   },
   trustHost: true,
-  session: { maxAge: 60 * 60 * 24 },
   debug: env.NODE_ENV === 'development',
 });

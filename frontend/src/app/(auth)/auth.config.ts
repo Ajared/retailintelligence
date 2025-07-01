@@ -7,4 +7,5 @@ export const authConfig: NextAuthConfig = {
   },
   providers: [],
   callbacks: {},
+  session: { maxAge: 60 * 60 * 24 * 30 },
 };
