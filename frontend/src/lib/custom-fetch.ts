@@ -1,6 +1,5 @@
 import { env } from '~/env';
 import { auth } from '~/app/(auth)/auth';
-import { logoutAction } from '~/app/(auth)/actions';
 import { Response, ErrorResponse } from '~/types/actions';
 
 interface FetchOptions extends RequestInit {
@@ -42,13 +41,6 @@ async function customFetcher<T>(
         error: data.error,
         timestamp: new Date().toISOString(),
       };
-
-      if (
-        response.status === 401 &&
-        data.error === 'Authorization token is expired'
-      ) {
-        await logoutAction();
-      }
 
       return errorResponse as Response<T>;
     }
