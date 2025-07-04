@@ -7,10 +7,10 @@ import { LocalGovernmentInterface } from './local-government';
 
 export interface StoreInterface extends AbstractBaseInterface {
   name: string;
-  state_id: string;
-  state: StateInterface;
-  local_government_id: string;
-  local_government: LocalGovernmentInterface;
+  state_id?: string;
+  state?: StateInterface;
+  local_government_id?: string;
+  local_government?: LocalGovernmentInterface;
   phase_id?: string;
   phase?: PhaseInterface;
   district_id?: string;
