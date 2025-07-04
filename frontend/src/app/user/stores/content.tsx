@@ -293,7 +293,7 @@ export default function Content() {
                   <div className="font-medium truncate" title={store.address}>
                     {store.address}
                   </div>
-                  <div className="text-xs text-muted-foreground truncate">{`${store.state.name}, ${store.local_government.name}`}</div>
+                  <div className="text-xs text-muted-foreground truncate">{`${store?.state?.name}, ${store?.local_government?.name}`}</div>
                 </div>
                 <div className="truncate">{store.landmarks}</div>
                 <div className="truncate">{store.enumerator?.email}</div>
@@ -343,7 +343,7 @@ export default function Content() {
                   >
                     {store.address}
                   </div>
-                  <div className="text-xs text-muted-foreground truncate">{`${store.state.name}, ${store.local_government.name}`}</div>
+                  <div className="text-xs text-muted-foreground truncate">{`${store?.state?.name}, ${store?.local_government?.name}`}</div>
                 </div>
                 <div className="flex justify-end">
                   <DropdownMenu>
