@@ -7,12 +7,12 @@ export class StoreDto {
   name: string;
 
   @IsString()
-  @IsNotEmpty()
-  localGovernmentId: string;
+  @IsOptional()
+  localGovernmentId?: string;
 
   @IsString()
-  @IsNotEmpty()
-  stateId: string;
+  @IsOptional()
+  stateId?: string;
 
   @IsString()
   @IsNotEmpty()
@@ -51,27 +51,27 @@ export class StoreDto {
 }
 
 export class StoreQueryValidator extends QueryValidator {
-  @IsOptional()
   @IsString()
+  @IsOptional()
   name?: string;
 
-  @IsOptional()
   @IsString()
+  @IsOptional()
   localGovernmentId?: string;
 
-  @IsOptional()
   @IsString()
+  @IsOptional()
   stateId?: string;
 
-  @IsOptional()
   @IsString()
+  @IsOptional()
   enumeratorId?: string;
 
-  @IsOptional()
   @IsString()
+  @IsOptional()
   phaseId?: string;
 
-  @IsOptional()
   @IsString()
+  @IsOptional()
   districtId?: string;
 }

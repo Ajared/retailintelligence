@@ -6,10 +6,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Logger, Module } from '@nestjs/common';
 import { AuthGuard } from './guards/auth.guard';
 import { AppController } from './app.controller';
-import { ThrottlerModule } from '@nestjs/throttler';
+// import { ThrottlerModule } from '@nestjs/throttler';
 import { GuardModule } from './guards/guard.module';
-import * as SYS_MSG from '~/helpers/system-messages';
-import { LimiterGuard } from './guards/limiter.guard';
+// import * as SYS_MSG from '~/helpers/system-messages';
+// import { LimiterGuard } from './guards/limiter.guard';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { validateEnv } from './helpers/env.validator';
 import createDataSource from './database/data-source';
@@ -37,10 +37,10 @@ import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConne
       isGlobal: true,
       validate: validateEnv,
     }),
-    ThrottlerModule.forRoot({
-      throttlers: [{ ttl: 60000, limit: 10 }],
-      errorMessage: SYS_MSG.RATE_LIMIT_EXCEEDED,
-    }),
+    // ThrottlerModule.forRoot({
+    //   throttlers: [{ ttl: 60000, limit: 10 }],
+    //   errorMessage: SYS_MSG.RATE_LIMIT_EXCEEDED,
+    // }),
     JwtModule.registerAsync({
       global: true,
       imports: [ConfigModule],
@@ -180,10 +180,10 @@ import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConne
       provide: APP_GUARD,
       useClass: AuthGuard,
     },
-    {
-      provide: APP_GUARD,
-      useClass: LimiterGuard,
-    },
+    // {
+    //   provide: APP_GUARD,
+    //   useClass: LimiterGuard,
+    // },
     {
       provide: APP_INTERCEPTOR,
       useClass: ResponseInterceptor,

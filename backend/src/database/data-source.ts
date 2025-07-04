@@ -1,7 +1,7 @@
 import { DataSource } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
-import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import { DataSourceLogger } from './data-source.logger';
+import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 
 export const createDataSource = (configService: ConfigService) => {
   const entities = configService.get<string>('DB_ENTITIES')!;

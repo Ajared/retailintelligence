@@ -12,18 +12,20 @@ export class Store extends AbstractBaseEntity {
   name: string;
 
   @JoinColumn({ name: 'local_government_id' })
-  @ManyToOne(() => LocalGovernment, (localGov) => localGov.stores)
-  localGovernment: LocalGovernment;
+  @ManyToOne(() => LocalGovernment, (localGov) => localGov.stores, {
+    nullable: true,
+  })
+  localGovernment?: LocalGovernment;
 
-  @Column()
-  localGovernmentId: string;
+  @Column({ nullable: true })
+  localGovernmentId?: string;
 
   @JoinColumn({ name: 'state_id' })
-  @ManyToOne(() => State, (state) => state.stores)
-  state: State;
+  @ManyToOne(() => State, (state) => state.stores, { nullable: true })
+  state?: State;
 
-  @Column()
-  stateId: string;
+  @Column({ nullable: true })
+  stateId?: string;
 
   @Column()
   address: string;
