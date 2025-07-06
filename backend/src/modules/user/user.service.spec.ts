@@ -6,6 +6,7 @@ import {
   ListUserRecordOptions,
   UserQueryOptions,
 } from './types/list-user.type';
+import { StateService } from '../state/state.service';
 
 interface MockUserModelAction {
   list: jest.Mock<
@@ -31,6 +32,12 @@ describe('UserService', () => {
         {
           provide: UserModelAction,
           useValue: mockModelAction,
+        },
+        {
+          provide: StateService,
+          useValue: {
+            getStateById: jest.fn(),
+          },
         },
       ],
     }).compile();

@@ -42,3 +42,21 @@ export class UserQueryValidator extends QueryValidator {
   @IsEnum(AuthProvider)
   authProvider?: AuthProvider;
 }
+
+export class AssignLocationDto {
+  @IsString()
+  @IsNotEmpty()
+  stateId: string;
+
+  @IsString()
+  @IsNotEmpty()
+  localGovernmentId: string;
+
+  @IsString()
+  @IsOptional()
+  phaseId?: string;
+
+  @IsString()
+  @IsOptional()
+  districtId?: string;
+}

@@ -1,5 +1,8 @@
+import { AssignLocationDto } from './dto/user.dto';
 import * as SYS_MSG from '~/helpers/system-messages';
+import { StateService } from '../state/state.service';
 import { UserModelAction } from './user.model-action';
+import { EntityPropertyNotFoundError } from 'typeorm';
 import { HttpStatus, Injectable } from '@nestjs/common';
 import UpdateUserRecordOptions from './types/update-user.type';
 import CreateUserRecordOptions from './types/create-user.type';
@@ -7,14 +10,120 @@ import { NullishValueError, trySafe } from '~/helpers/try-safe';
 import { CustomHttpException } from '~/helpers/custom.exception';
 import { UserRole, UserStatus } from './constants/user.constant';
 import {
-  ListUserRecordOptions,
   UserQueryOptions,
+  ListUserRecordOptions,
 } from './types/list-user.type';
-import { EntityPropertyNotFoundError } from 'typeorm';
 
 @Injectable()
 export class UserService {
-  constructor(private userModelAction: UserModelAction) {}
+  constructor(
+    private stateService: StateService,
+    private userModelAction: UserModelAction,
+  ) {}
+
+  async assignLocationToUser(
+    userId: string,
+    assignLocationDto: AssignLocationDto,
+  ) {
+    const { stateId, localGovernmentId, phaseId, districtId } =
+      assignLocationDto;
+
+    const [userError, user] = await trySafe(() => this.getUserById(userId));
+
+    if (userError || !user) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_NOT_FOUND('User'),
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const [stateError, stateData] = await trySafe(() =>
+      this.stateService.getStateById(
+        stateId,
+        {},
+        {
+          localGovernments: true,
+          phases: {
+            districts: true,
+          },
+        },
+      ),
+    );
+
+    if (stateError || !stateData) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_NOT_FOUND('State'),
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const state = stateData.data;
+
+    const localGovernment = state?.localGovernments?.find(
+      (lg) => lg.id === localGovernmentId,
+    );
+
+    if (!localGovernment) {
+      throw new CustomHttpException(
+        'Local government does not belong to the selected state',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (phaseId) {
+      if (!districtId) {
+        throw new CustomHttpException(
+          'District is required when a phase is selected',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const phase = state?.phases?.find((p) => p.id === phaseId);
+
+      if (!phase) {
+        throw new CustomHttpException(
+          'Phase does not belong to the selected state',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const district = phase?.districts?.find((d) => d.id === districtId);
+
+      if (!district) {
+        throw new CustomHttpException(
+          'District does not belong to the selected phase',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+    }
+
+    const payload: UpdateUserRecordOptions = {
+      identifierOptions: { id: userId },
+      updatePayload: {
+        assignedStateId: stateId,
+        assignedLocalGovernmentId: localGovernmentId,
+        assignedPhaseId: phaseId,
+        assignedDistrictId: districtId,
+      },
+      transactionOptions: {
+        useTransaction: false,
+      },
+    };
+
+    const [updateError, data] = await trySafe(() => this.updateUser(payload));
+
+    if (updateError) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_OPERATION_FAILED('Location Assignment'),
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    return {
+      message: SYS_MSG.RESOURCE_OPERATION_SUCCESSFUL('Location Assignment'),
+      data,
+    };
+  }
 
   async createUser(createUserPayload: CreateUserRecordOptions) {
     const [error, data] = await trySafe(() =>

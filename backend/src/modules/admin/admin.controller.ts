@@ -18,8 +18,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AdminService } from './admin.service';
-import { UserQueryValidator } from '../user/dto/user.dto';
 import { StoreQueryValidator } from '../store/dto/store.dto';
+import { AssignLocationDto, UserQueryValidator } from '../user/dto/user.dto';
 
 @Controller('admin')
 @UseGuards(RoleGuard)
@@ -31,21 +31,30 @@ export class AdminController {
   ) {}
 
   @HttpCode(HttpStatus.OK)
-  @Post('users/deactivate')
-  async deactivateUser(
-    @Body() body: { userId: string },
-    @Req() req: Request & { user: { sub: string } },
+  @Post('users/:userId/assign-location')
+  async assignLocation(
+    @Param('userId') userId: string,
+    @Body() assignLocationDto: AssignLocationDto,
   ) {
-    return this.userService.deactivateUser(body.userId, req.user.sub);
+    return this.userService.assignLocationToUser(userId, assignLocationDto);
   }
 
   @HttpCode(HttpStatus.OK)
-  @Post('users/reactivate')
-  async reactivateUser(
-    @Body() body: { userId: string },
+  @Post('users/:userId/deactivate')
+  async deactivateUser(
+    @Param('userId') userId: string,
     @Req() req: Request & { user: { sub: string } },
   ) {
-    return this.userService.reactivateUser(body.userId, req.user.sub);
+    return this.userService.deactivateUser(userId, req.user.sub);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('users/:userId/reactivate')
+  async reactivateUser(
+    @Param('userId') userId: string,
+    @Req() req: Request & { user: { sub: string } },
+  ) {
+    return this.userService.reactivateUser(userId, req.user.sub);
   }
 
   @Get('users')

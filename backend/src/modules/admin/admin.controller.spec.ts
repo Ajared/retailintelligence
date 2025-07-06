@@ -21,6 +21,7 @@ const mockUserService = {
   deactivateUser: jest.fn().mockResolvedValue(undefined),
   reactivateUser: jest.fn().mockResolvedValue(undefined),
   listUsers: jest.fn().mockResolvedValue({ data: [], total: 0 }),
+  assignLocationToUser: jest.fn().mockResolvedValue(undefined),
 };
 
 const mockAdminService = {
@@ -73,9 +74,52 @@ describe('AdminController', () => {
     expect(controller).toBeDefined();
   });
 
+  describe('assignLocation', () => {
+    it('should call userService.assignLocationToUser with correct arguments and return the expected result', async () => {
+      const userId = 'user-123';
+      const assignLocationDto = {
+        stateId: 'state-1',
+        localGovernmentId: 'lg-1',
+        phaseId: 'phase-1',
+        districtId: 'district-1',
+      };
+      const expectedResult = {
+        message: 'Location Assignment operation successful',
+        data: { userId: 'user-123', ...assignLocationDto },
+      };
+      mockUserService.assignLocationToUser.mockResolvedValueOnce(
+        expectedResult,
+      );
+
+      const result = await controller.assignLocation(userId, assignLocationDto);
+
+      expect(mockUserService.assignLocationToUser).toHaveBeenCalledWith(
+        userId,
+        assignLocationDto,
+      );
+      expect(result).toEqual(expectedResult);
+    });
+
+    it('should handle errors from userService.assignLocationToUser', async () => {
+      const userId = 'user-123';
+      const assignLocationDto = {
+        stateId: 'state-1',
+        localGovernmentId: 'lg-1',
+        phaseId: 'phase-1',
+        districtId: 'district-1',
+      };
+      const error = new Error('Location assignment failed');
+      mockUserService.assignLocationToUser.mockRejectedValueOnce(error);
+
+      await expect(
+        controller.assignLocation(userId, assignLocationDto),
+      ).rejects.toThrow(error);
+    });
+  });
+
   describe('deactivateUser', () => {
     it('should call userService.deactivateUser with correct id and return the expected result', async () => {
-      const body = { userId: 'user-123' };
+      const userId = 'user-123';
       const req = { user: { sub: 'admin-123' } } as Request & {
         user: { sub: string };
       };
@@ -85,7 +129,7 @@ describe('AdminController', () => {
       };
       mockUserService.deactivateUser.mockResolvedValueOnce(expectedResult);
 
-      const result = await controller.deactivateUser(body, req);
+      const result = await controller.deactivateUser(userId, req);
 
       expect(mockUserService.deactivateUser).toHaveBeenCalledWith(
         'user-123',
@@ -95,20 +139,22 @@ describe('AdminController', () => {
     });
 
     it('should handle errors from userService.deactivateUser', async () => {
-      const body = { userId: 'user-123' };
+      const userId = 'user-123';
       const req = { user: { sub: 'admin-123' } } as Request & {
         user: { sub: string };
       };
       const error = new Error('Deactivation failed');
       mockUserService.deactivateUser.mockRejectedValueOnce(error);
 
-      await expect(controller.deactivateUser(body, req)).rejects.toThrow(error);
+      await expect(controller.deactivateUser(userId, req)).rejects.toThrow(
+        error,
+      );
     });
   });
 
   describe('reactivateUser', () => {
     it('should call userService.reactivateUser with correct id and return the expected result', async () => {
-      const body = { userId: 'user-123' };
+      const userId = 'user-123';
       const req = { user: { sub: 'admin-123' } } as Request & {
         user: { sub: string };
       };
@@ -118,7 +164,7 @@ describe('AdminController', () => {
       };
       mockUserService.reactivateUser.mockResolvedValueOnce(expectedResult);
 
-      const result = await controller.reactivateUser(body, req);
+      const result = await controller.reactivateUser(userId, req);
 
       expect(mockUserService.reactivateUser).toHaveBeenCalledWith(
         'user-123',
@@ -128,14 +174,16 @@ describe('AdminController', () => {
     });
 
     it('should handle errors from userService.reactivateUser', async () => {
-      const body = { userId: 'user-123' };
+      const userId = 'user-123';
       const req = { user: { sub: 'admin-123' } } as Request & {
         user: { sub: string };
       };
       const error = new Error('Reactivation failed');
       mockUserService.reactivateUser.mockRejectedValueOnce(error);
 
-      await expect(controller.reactivateUser(body, req)).rejects.toThrow(error);
+      await expect(controller.reactivateUser(userId, req)).rejects.toThrow(
+        error,
+      );
     });
   });
 
