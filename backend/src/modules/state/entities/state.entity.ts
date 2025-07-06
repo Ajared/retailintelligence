@@ -1,4 +1,5 @@
 import { Entity, OneToMany, Column } from 'typeorm';
+import { User } from '~/modules/user/entities/user.entity';
 import { Store } from '~/modules/store/entities/store.entity';
 import { Phase } from '~/modules/phase/entities/phase.entity';
 import { AbstractBaseEntity } from '~/database/base/base.entity';
@@ -17,4 +18,7 @@ export class State extends AbstractBaseEntity {
 
   @OneToMany(() => Phase, (phase) => phase.state, { nullable: true })
   phases?: Phase[];
+
+  @OneToMany(() => User, (user) => user.assignedState, { nullable: true })
+  users?: User[];
 }
