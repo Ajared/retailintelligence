@@ -39,6 +39,18 @@ export class User extends AbstractBaseEntity {
   @Column({ nullable: true })
   resetPasswordExpires?: Date;
 
+  @Column({ nullable: true })
+  assignedStateId?: string;
+
+  @Column({ nullable: true })
+  assignedLocalGovernmentId?: string;
+
+  @Column({ nullable: true })
+  assignedPhaseId?: string;
+
+  @Column({ nullable: true })
+  assignedDistrictId?: string;
+
   @OneToMany(() => Store, (store) => store.enumerator)
   stores: Store[];
 }
