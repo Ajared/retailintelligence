@@ -59,13 +59,22 @@ export class UserService {
 
     const state = stateData.data;
 
-    const localGovernment = state?.localGovernments?.find(
-      (lg) => lg.id === localGovernmentId,
-    );
+    if (localGovernmentId) {
+      const localGovernment = state?.localGovernments?.find(
+        (lg) => lg.id === localGovernmentId,
+      );
 
-    if (!localGovernment) {
+      if (!localGovernment) {
+        throw new CustomHttpException(
+          'Local government does not belong to the selected state',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+    }
+
+    if (districtId && !phaseId) {
       throw new CustomHttpException(
-        'Local government does not belong to the selected state',
+        'Phase is required when a district is selected',
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -100,10 +109,12 @@ export class UserService {
     const payload: UpdateUserRecordOptions = {
       identifierOptions: { id: userId },
       updatePayload: {
-        assignedStateId: stateId,
-        assignedLocalGovernmentId: localGovernmentId,
-        assignedPhaseId: phaseId,
-        assignedDistrictId: districtId,
+        ...(stateId && { assignedStateId: stateId }),
+        ...(localGovernmentId && {
+          assignedLocalGovernmentId: localGovernmentId,
+        }),
+        ...(phaseId && { assignedPhaseId: phaseId }),
+        ...(districtId && { assignedDistrictId: districtId }),
       },
       transactionOptions: {
         useTransaction: false,
