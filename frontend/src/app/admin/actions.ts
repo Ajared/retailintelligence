@@ -114,10 +114,7 @@ export const deactivateUser = async (
 ): Promise<Response<UserInterface>> => {
   try {
     const response = await customFetch.post<UserInterface>(
-      `/admin/users/deactivate`,
-      {
-        userId,
-      },
+      `/admin/users/${userId}/deactivate`,
     );
 
     if (!('data' in response)) {
@@ -141,10 +138,7 @@ export const reactivateUser = async (
 ): Promise<Response<UserInterface>> => {
   try {
     const response = await customFetch.post<UserInterface>(
-      `/admin/users/reactivate`,
-      {
-        userId,
-      },
+      `/admin/users/${userId}/reactivate`,
     );
 
     if (!('data' in response)) {
@@ -212,5 +206,41 @@ export const inviteUser = async (
       timestamp: new Date().toISOString(),
       error: error instanceof Error ? error.message : 'Something went wrong',
     } as ErrorResponse & { inputs: InviteUserFormData };
+  }
+};
+
+
+export const assignLocation = async (params: {
+  stateId: string;
+  localGovernmentId: string;
+  phaseId: string | undefined;
+  districtId: string | undefined;
+  enumeratorId: string;
+}) => {
+  try {
+    const { stateId, localGovernmentId, phaseId, districtId, enumeratorId } = params;
+    const response = await customFetch.post<StoreInterface>(
+      `/admin/users/${enumeratorId}/assign-location`,
+      {
+        stateId,
+        localGovernmentId,
+        phaseId,
+        districtId,
+      },
+    );
+
+    if (!('data' in response)) {
+      throw new Error(response.message);
+    }
+
+    return response;
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : 'Something went wrong';
+    return {
+      error: errorMessage,
+      message: errorMessage,
+      timestamp: new Date().toISOString(),
+    } as ErrorResponse;
   }
 };
