@@ -46,6 +46,7 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import Image from 'next/image';
 import type { PhaseInterface } from '~/types/phase';
+import { UserInterface } from '~/types/user';
 
 function ImagePreview({
   file,
@@ -113,16 +114,18 @@ function ImagePreview({
 export function AddStoreForm({
   phases,
   locations,
+  user,
 }: {
   phases: PhaseInterface[];
   locations: StateInterface[];
+  user?: UserInterface;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
-  const [selectedStateId, setSelectedStateId] = useState<string>('');
-  const [selectedPhaseId, setSelectedPhaseId] = useState<string>('');
-  const [selectedDistrictId, setSelectedDistrictId] = useState<string>('');
+  const [selectedStateId, setSelectedStateId] = useState<string | undefined>(user?.assigned_state_id || '');
+  const [selectedPhaseId, setSelectedPhaseId] = useState<string | undefined>(user?.assigned_phase_id || '');
+  const [selectedDistrictId, setSelectedDistrictId] = useState<string | undefined>(user?.assigned_district_id || '');
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [locationData, setLocationData] = useState<{
     latitude: number;
@@ -405,8 +408,9 @@ export function AddStoreForm({
               <Select
                 name="state_id"
                 required
-                defaultValue={getInputValue('state_id')}
+                defaultValue={user?.assigned_state_id || getInputValue('state_id')}
                 onValueChange={handleStateChange}
+                disabled={!!user?.assigned_state_id}
               >
                 <SelectTrigger id="state_id" className="w-full">
                   <SelectValue placeholder="Select a state" />
@@ -426,8 +430,9 @@ export function AddStoreForm({
               <Select
                 name="local_government_id"
                 required
-                defaultValue={getInputValue('local_government_id')}
-                disabled={!selectedStateId}
+                value={user?.assigned_local_government_id || selectedDistrictId || getInputValue('local_government_id')}
+                onValueChange={setSelectedDistrictId}
+                disabled={!selectedStateId || !!user?.assigned_local_government_id}
               >
                 <SelectTrigger id="local_government_id" className="w-full">
                   <SelectValue
@@ -435,6 +440,11 @@ export function AddStoreForm({
                       selectedStateId
                         ? 'Select a local government'
                         : 'Select a state first'
+                    }
+                    children={
+                      user?.assigned_local_government_id
+                        ? filteredLocalGovernments.find(lg => lg.id === user.assigned_local_government_id)?.name
+                        : undefined
                     }
                   />
                 </SelectTrigger>
@@ -449,15 +459,16 @@ export function AddStoreForm({
             </div>
           </div>
 
-          {showPhaseAndDistrict && (
+          {showPhaseAndDistrict || user?.assigned_phase_id ? (
             <div className="flex flex-row gap-4 w-full">
               <div className="space-y-2 w-full">
                 <Label htmlFor="phase_id">Phase *</Label>
                 <Select
                   name="phase_id"
                   required
-                  value={selectedPhaseId}
+                  value={user?.assigned_phase_id || selectedPhaseId}
                   onValueChange={handlePhaseChange}
+                  disabled={!!user?.assigned_phase_id}
                 >
                   <SelectTrigger id="phase_id" className="w-full">
                     <SelectValue placeholder="Select a phase" />
@@ -477,9 +488,9 @@ export function AddStoreForm({
                 <Select
                   name="district_id"
                   required
-                  value={selectedDistrictId}
+                  value={user?.assigned_district_id || selectedDistrictId}
                   onValueChange={handleDistrictChange}
-                  disabled={!selectedPhaseId}
+                  disabled={!selectedPhaseId || !!user?.assigned_district_id}
                 >
                   <SelectTrigger id="district_id" className="w-full">
                     <SelectValue
@@ -487,6 +498,11 @@ export function AddStoreForm({
                         selectedPhaseId
                           ? 'Select a district'
                           : 'Select a phase first'
+                      }
+                      children={
+                        user?.assigned_district_id
+                          ? filteredDistricts.find(d => d.id === user.assigned_district_id)?.name
+                          : undefined
                       }
                     />
                   </SelectTrigger>
@@ -500,7 +516,7 @@ export function AddStoreForm({
                 </Select>
               </div>
             </div>
-          )}
+          ) : null}
 
           <div className="flex flex-row gap-4 w-full">
             <div className="space-y-2 w-full">
