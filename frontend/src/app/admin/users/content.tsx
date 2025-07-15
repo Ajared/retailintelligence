@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { Input } from '~/components/ui/input';
 import { Button } from '~/components/ui/button';
 import {
@@ -65,8 +65,13 @@ import { Alert, AlertDescription } from '~/components/ui/alert';
 import { CheckCircle2, Loader2 } from 'lucide-react';
 import { Response } from '~/types/actions';
 import { InviteUserFormData } from '../schema';
+import { assignLocation } from '../actions';
+import { assignLocationFormSchema, AssignLocationFormData } from '../schema';
+import { UserInterface } from '~/types/user';
+import { StateInterface } from '~/types/state';
+import { PhaseInterface } from '~/types/phase';
 
-export default function Content() {
+export default function Content({ phases, locations }: { phases: PhaseInterface[], locations: StateInterface[] }) {
   const isMobile = useIsMobile();
   const {
     users,
@@ -145,6 +150,73 @@ export default function Content() {
       </TableCell>
     </TableRow>
   );
+
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [assignUser, setAssignUser] = useState(null as UserInterface | null);
+  const [assignState, setAssignState] = useState<AssignLocationFormData | null>(null);
+  const [assignError, setAssignError] = useState<string | null>(null);
+  const [assignSuccess, setAssignSuccess] = useState<string | null>(null);
+  const [assignPending, setAssignPending] = useState(false);
+
+  const openAssignDialog = (user: UserInterface) => {
+    setAssignUser(user);
+    setAssignDialogOpen(true);
+    setAssignState(null);
+    setAssignError(null);
+    setAssignSuccess(null);
+  };
+  const closeAssignDialog = () => {
+    setAssignDialogOpen(false);
+    setAssignUser(null);
+    setAssignState(null);
+    setAssignError(null);
+    setAssignSuccess(null);
+    setAssignPending(false);
+  };
+
+  const handleAssignLocation = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setAssignError(null);
+    setAssignSuccess(null);
+    setAssignPending(true);
+    const formData = new FormData(e.currentTarget);
+    const rawData = {
+      stateId: (formData.get('stateId') as string) || '',
+      localGovernmentId: (formData.get('localGovernmentId') as string) || '',
+      phaseId: (formData.get('phaseId') as string) || '',
+      districtId: (formData.get('districtId') as string) || '',
+      enumeratorId: assignUser?.id || '',
+    };
+    const validated = assignLocationFormSchema.safeParse(rawData);
+    if (!validated.success) {
+      setAssignError('Please fill all required fields.');
+      setAssignPending(false);
+      return;
+    }
+    
+    const { stateId, localGovernmentId, phaseId, districtId, enumeratorId } = validated.data;
+    const result = await assignLocation({
+      stateId: stateId || '',
+      localGovernmentId: localGovernmentId || '',
+      phaseId: phaseId || '',
+      districtId: districtId || '',
+      enumeratorId: enumeratorId || '',
+    });
+    if ('error' in result) {
+      setAssignError(result.message);
+    } else {
+      setAssignSuccess('Location assigned successfully!');
+      setTimeout(() => {
+        closeAssignDialog();
+      }, 1200);
+    }
+    setAssignPending(false);
+  };
+
+  const selectedState = locations.find(s => s.id === assignState?.stateId);
+  const localGovernments = selectedState?.local_governments || [];
+  const selectedPhase = phases.find(p => p.id === assignState?.phaseId);
+  const districts = selectedPhase?.districts || [];
 
   return (
     <div className="space-y-6 p-4 md:p-6">
@@ -387,14 +459,22 @@ export default function Content() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             {user.status === 'active' ? (
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  handleStatusChange(user, 'deactivate')
-                                }
-                                className="cursor-pointer"
-                              >
-                                Deactivate User
-                              </DropdownMenuItem>
+                              <>
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    handleStatusChange(user, 'deactivate')
+                                  }
+                                  className="cursor-pointer"
+                                >
+                                  Deactivate User
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => openAssignDialog(user)}
+                                  className="cursor-pointer"
+                                >
+                                  Assign Location
+                                </DropdownMenuItem>
+                              </>
                             ) : (
                               <DropdownMenuItem
                                 onClick={() =>
@@ -465,12 +545,20 @@ export default function Content() {
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       {user.status === 'active' ? (
-                        <DropdownMenuItem
-                          onClick={() => handleStatusChange(user, 'deactivate')}
-                          className="cursor-pointer"
-                        >
-                          Deactivate User
-                        </DropdownMenuItem>
+                        <>
+                          <DropdownMenuItem
+                            onClick={() => handleStatusChange(user, 'deactivate')}
+                            className="cursor-pointer"
+                          >
+                            Deactivate User
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => openAssignDialog(user)}
+                            className="cursor-pointer"
+                          >
+                            Assign Location
+                          </DropdownMenuItem>
+                        </>
                       ) : (
                         <DropdownMenuItem
                           onClick={() => handleStatusChange(user, 'activate')}
@@ -584,6 +672,154 @@ export default function Content() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Assign Location</DialogTitle>
+            <DialogDescription>
+              Assign a location to <span className="font-medium">{assignUser?.email}</span>
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleAssignLocation} className="space-y-4">
+            <div className="flex gap-4 w-full">
+              <div className="space-y-2 w-full">
+                <Label htmlFor="stateId">State</Label>
+                <Select
+                  name="stateId"
+                  onValueChange={v =>
+                    setAssignState(s => ({
+                      stateId: v,
+                      localGovernmentId: '',
+                      phaseId: '',
+                      districtId: '',
+                      enumeratorId: assignUser?.id || '',
+                    }))
+                  }
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select a state" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {locations.map(state => (
+                      <SelectItem key={state.id} value={state.id || ''}>
+                        {state.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2 w-full">
+                <Label htmlFor="localGovernmentId">Local Government</Label>
+                <Select
+                  name="localGovernmentId"
+                  disabled={!assignState?.stateId}
+                  onValueChange={v =>
+                    setAssignState(s => ({
+                      stateId: s?.stateId || '',
+                      localGovernmentId: v,
+                      phaseId: s?.phaseId || '',
+                      districtId: s?.districtId || '',
+                      enumeratorId: assignUser?.id || '',
+                    }))
+                  }
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select a local government" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {localGovernments.map(lg => (
+                      <SelectItem key={lg.id} value={lg.id || ''}>
+                        {lg.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            {(() => {
+              const selectedState = locations.find(
+                l => l.id === assignState?.stateId
+              );
+              const selectedLG =
+                selectedState?.local_governments?.find(
+                  lg => lg.id === assignState?.localGovernmentId
+                );
+              if (
+                selectedState?.name === 'FCT Abuja' &&
+                selectedLG?.name === 'Municipal Area Council'
+              ) {
+                return (
+                  <div className="flex gap-4 w-full">
+                    <div className="space-y-2 w-full">
+                      <Label htmlFor="phaseId">Phase</Label>
+                      <Select
+                        name="phaseId"
+                        onValueChange={v =>
+                          setAssignState(s => ({
+                            stateId: s?.stateId || '',
+                            localGovernmentId: s?.localGovernmentId || '',
+                            phaseId: v,
+                            districtId: '',
+                            enumeratorId: assignUser?.id || '',
+                          }))
+                        }
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select a phase" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {phases.map(phase => (
+                            <SelectItem key={phase.id} value={phase.id || ''}>
+                              {phase.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2 w-full">
+                      <Label htmlFor="districtId">District</Label>
+                      <Select
+                        name="districtId"
+                        disabled={!assignState?.phaseId}
+                        onValueChange={v =>
+                          setAssignState(s => ({
+                            stateId: s?.stateId || '',
+                            localGovernmentId: s?.localGovernmentId || '',
+                            phaseId: s?.phaseId || '',
+                            districtId: v,
+                            enumeratorId: assignUser?.id || '',
+                          }))
+                        }
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select a district" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {districts.map(d => (
+                            <SelectItem key={d.id} value={d.id || ''}>
+                              {d.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            })()}
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button type="button" variant="outline" onClick={closeAssignDialog}>Cancel</Button>
+              </DialogClose>
+              <Button type="submit" disabled={assignPending}>{assignPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}Assign</Button>
+            </DialogFooter>
+            {assignError && <Alert variant="destructive"><AlertDescription>{assignError}</AlertDescription></Alert>}
+            {assignSuccess && <Alert variant="default"><CheckCircle2 className="h-4 w-4" /><AlertDescription>{assignSuccess}</AlertDescription></Alert>}
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -24,4 +24,8 @@ export interface UserInterface extends AbstractBaseInterface {
   auth_provider: AuthProvider;
   reset_password_token?: string;
   reset_password_expires?: Date;
+  assigned_state_id?: string;
+  assigned_local_government_id?: string;
+  assigned_phase_id?: string;
+  assigned_district_id?: string;
 }

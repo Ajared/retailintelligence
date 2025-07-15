@@ -1,6 +1,7 @@
 import Content from './content';
 import { Suspense } from 'react';
 import { getAllUsers } from '../actions';
+import { getAllLocations, getPhases } from '~/app/actions';
 import EmptyState from '../_components/empty';
 import { UsersProvider } from './context';
 
@@ -18,6 +19,11 @@ export default async function UsersPage({
 
   const usersResponse = await getAllUsers(page, limit, sort, role, status);
 
+  const phasesRes = await getPhases();
+  const locationsRes = await getAllLocations();
+  const phases = 'data' in phasesRes ? phasesRes.data : [];
+  const locations = 'data' in locationsRes ? locationsRes.data : [];
+
   if ('error' in usersResponse) {
     return <EmptyState />;
   }
@@ -30,7 +36,7 @@ export default async function UsersPage({
         currentStatus={status}
         metadata={usersResponse.meta}
       >
-        <Content />
+        <Content phases={phases} locations={locations} />
       </UsersProvider>
     </Suspense>
   );
