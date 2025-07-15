@@ -6,10 +6,11 @@ import {
   JoinColumn,
   Index,
 } from 'typeorm';
+import { User } from '~/modules/user/entities/user.entity';
 import { Store } from '~/modules/store/entities/store.entity';
+import { State } from '~/modules/state/entities/state.entity';
 import { AbstractBaseEntity } from '~/database/base/base.entity';
 import { District } from '~/modules/district/entities/district.entity';
-import { State } from '~/modules/state/entities/state.entity';
 
 @Entity({ name: 'phases' })
 export class Phase extends AbstractBaseEntity {
@@ -29,4 +30,7 @@ export class Phase extends AbstractBaseEntity {
 
   @OneToMany(() => District, (district) => district.phase)
   districts: District[];
+
+  @OneToMany(() => User, (user) => user.assignedPhase, { nullable: true })
+  users?: User[];
 }

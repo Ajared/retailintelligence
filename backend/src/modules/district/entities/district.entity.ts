@@ -6,6 +6,7 @@ import {
   JoinColumn,
   Index,
 } from 'typeorm';
+import { User } from '~/modules/user/entities/user.entity';
 import { Phase } from '~/modules/phase/entities/phase.entity';
 import { Store } from '~/modules/store/entities/store.entity';
 import { AbstractBaseEntity } from '~/database/base/base.entity';
@@ -25,4 +26,7 @@ export class District extends AbstractBaseEntity {
 
   @OneToMany(() => Store, (store) => store.district)
   stores: Store[];
+
+  @OneToMany(() => User, (user) => user.assignedDistrict, { nullable: true })
+  users?: User[];
 }
