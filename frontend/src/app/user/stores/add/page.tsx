@@ -12,7 +12,11 @@ export default async function AddStorePage() {
 
   return (
     <div className="p-4">
-      <AddStoreForm phases={phases} locations={locations} user={session?.user} />
+      <AddStoreForm
+        phases={phases}
+        locations={locations}
+        user={session?.user}
+      />
     </div>
   );
 }

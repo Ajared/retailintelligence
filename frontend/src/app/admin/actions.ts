@@ -209,7 +209,6 @@ export const inviteUser = async (
   }
 };
 
-
 export const assignLocation = async (params: {
   stateId: string;
   localGovernmentId: string;
@@ -218,7 +217,8 @@ export const assignLocation = async (params: {
   enumeratorId: string;
 }) => {
   try {
-    const { stateId, localGovernmentId, phaseId, districtId, enumeratorId } = params;
+    const { stateId, localGovernmentId, phaseId, districtId, enumeratorId } =
+      params;
     const response = await customFetch.post<StoreInterface>(
       `/admin/users/${enumeratorId}/assign-location`,
       {

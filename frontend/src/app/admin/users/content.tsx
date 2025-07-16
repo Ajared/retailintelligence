@@ -71,7 +71,13 @@ import { UserInterface } from '~/types/user';
 import { StateInterface } from '~/types/state';
 import { PhaseInterface } from '~/types/phase';
 
-export default function Content({ phases, locations }: { phases: PhaseInterface[], locations: StateInterface[] }) {
+export default function Content({
+  phases,
+  locations,
+}: {
+  phases: PhaseInterface[];
+  locations: StateInterface[];
+}) {
   const isMobile = useIsMobile();
   const {
     users,
@@ -153,7 +159,9 @@ export default function Content({ phases, locations }: { phases: PhaseInterface[
 
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [assignUser, setAssignUser] = useState(null as UserInterface | null);
-  const [assignState, setAssignState] = useState<AssignLocationFormData | null>(null);
+  const [assignState, setAssignState] = useState<AssignLocationFormData | null>(
+    null,
+  );
   const [assignError, setAssignError] = useState<string | null>(null);
   const [assignSuccess, setAssignSuccess] = useState<string | null>(null);
   const [assignPending, setAssignPending] = useState(false);
@@ -193,8 +201,9 @@ export default function Content({ phases, locations }: { phases: PhaseInterface[
       setAssignPending(false);
       return;
     }
-    
-    const { stateId, localGovernmentId, phaseId, districtId, enumeratorId } = validated.data;
+
+    const { stateId, localGovernmentId, phaseId, districtId, enumeratorId } =
+      validated.data;
     const result = await assignLocation({
       stateId: stateId || '',
       localGovernmentId: localGovernmentId || '',
@@ -213,9 +222,9 @@ export default function Content({ phases, locations }: { phases: PhaseInterface[
     setAssignPending(false);
   };
 
-  const selectedState = locations.find(s => s.id === assignState?.stateId);
+  const selectedState = locations.find((s) => s.id === assignState?.stateId);
   const localGovernments = selectedState?.local_governments || [];
-  const selectedPhase = phases.find(p => p.id === assignState?.phaseId);
+  const selectedPhase = phases.find((p) => p.id === assignState?.phaseId);
   const districts = selectedPhase?.districts || [];
 
   return (
@@ -547,7 +556,9 @@ export default function Content({ phases, locations }: { phases: PhaseInterface[
                       {user.status === 'active' ? (
                         <>
                           <DropdownMenuItem
-                            onClick={() => handleStatusChange(user, 'deactivate')}
+                            onClick={() =>
+                              handleStatusChange(user, 'deactivate')
+                            }
                             className="cursor-pointer"
                           >
                             Deactivate User
@@ -678,7 +689,8 @@ export default function Content({ phases, locations }: { phases: PhaseInterface[
           <DialogHeader>
             <DialogTitle>Assign Location</DialogTitle>
             <DialogDescription>
-              Assign a location to <span className="font-medium">{assignUser?.email}</span>
+              Assign a location to{' '}
+              <span className="font-medium">{assignUser?.email}</span>
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleAssignLocation} className="space-y-4">
@@ -687,8 +699,8 @@ export default function Content({ phases, locations }: { phases: PhaseInterface[
                 <Label htmlFor="stateId">State</Label>
                 <Select
                   name="stateId"
-                  onValueChange={v =>
-                    setAssignState(s => ({
+                  onValueChange={(v) =>
+                    setAssignState(() => ({
                       stateId: v,
                       localGovernmentId: '',
                       phaseId: '',
@@ -701,7 +713,7 @@ export default function Content({ phases, locations }: { phases: PhaseInterface[
                     <SelectValue placeholder="Select a state" />
                   </SelectTrigger>
                   <SelectContent>
-                    {locations.map(state => (
+                    {locations.map((state) => (
                       <SelectItem key={state.id} value={state.id || ''}>
                         {state.name}
                       </SelectItem>
@@ -714,12 +726,12 @@ export default function Content({ phases, locations }: { phases: PhaseInterface[
                 <Select
                   name="localGovernmentId"
                   disabled={!assignState?.stateId}
-                  onValueChange={v =>
-                    setAssignState(s => ({
-                      stateId: s?.stateId || '',
+                  onValueChange={(v) =>
+                    setAssignState((prev) => ({
+                      stateId: prev?.stateId || '',
                       localGovernmentId: v,
-                      phaseId: s?.phaseId || '',
-                      districtId: s?.districtId || '',
+                      phaseId: prev?.phaseId || '',
+                      districtId: prev?.districtId || '',
                       enumeratorId: assignUser?.id || '',
                     }))
                   }
@@ -728,7 +740,7 @@ export default function Content({ phases, locations }: { phases: PhaseInterface[
                     <SelectValue placeholder="Select a local government" />
                   </SelectTrigger>
                   <SelectContent>
-                    {localGovernments.map(lg => (
+                    {localGovernments.map((lg) => (
                       <SelectItem key={lg.id} value={lg.id || ''}>
                         {lg.name}
                       </SelectItem>
@@ -739,12 +751,11 @@ export default function Content({ phases, locations }: { phases: PhaseInterface[
             </div>
             {(() => {
               const selectedState = locations.find(
-                l => l.id === assignState?.stateId
+                (l) => l.id === assignState?.stateId,
               );
-              const selectedLG =
-                selectedState?.local_governments?.find(
-                  lg => lg.id === assignState?.localGovernmentId
-                );
+              const selectedLG = selectedState?.local_governments?.find(
+                (lg) => lg.id === assignState?.localGovernmentId,
+              );
               if (
                 selectedState?.name === 'FCT Abuja' &&
                 selectedLG?.name === 'Municipal Area Council'
@@ -755,10 +766,10 @@ export default function Content({ phases, locations }: { phases: PhaseInterface[
                       <Label htmlFor="phaseId">Phase</Label>
                       <Select
                         name="phaseId"
-                        onValueChange={v =>
-                          setAssignState(s => ({
-                            stateId: s?.stateId || '',
-                            localGovernmentId: s?.localGovernmentId || '',
+                        onValueChange={(v) =>
+                          setAssignState((prev) => ({
+                            stateId: prev?.stateId || '',
+                            localGovernmentId: prev?.localGovernmentId || '',
                             phaseId: v,
                             districtId: '',
                             enumeratorId: assignUser?.id || '',
@@ -769,7 +780,7 @@ export default function Content({ phases, locations }: { phases: PhaseInterface[
                           <SelectValue placeholder="Select a phase" />
                         </SelectTrigger>
                         <SelectContent>
-                          {phases.map(phase => (
+                          {phases.map((phase) => (
                             <SelectItem key={phase.id} value={phase.id || ''}>
                               {phase.name}
                             </SelectItem>
@@ -782,11 +793,11 @@ export default function Content({ phases, locations }: { phases: PhaseInterface[
                       <Select
                         name="districtId"
                         disabled={!assignState?.phaseId}
-                        onValueChange={v =>
-                          setAssignState(s => ({
-                            stateId: s?.stateId || '',
-                            localGovernmentId: s?.localGovernmentId || '',
-                            phaseId: s?.phaseId || '',
+                        onValueChange={(v) =>
+                          setAssignState((prev) => ({
+                            stateId: prev?.stateId || '',
+                            localGovernmentId: prev?.localGovernmentId || '',
+                            phaseId: prev?.phaseId || '',
                             districtId: v,
                             enumeratorId: assignUser?.id || '',
                           }))
@@ -796,7 +807,7 @@ export default function Content({ phases, locations }: { phases: PhaseInterface[
                           <SelectValue placeholder="Select a district" />
                         </SelectTrigger>
                         <SelectContent>
-                          {districts.map(d => (
+                          {districts.map((d) => (
                             <SelectItem key={d.id} value={d.id || ''}>
                               {d.name}
                             </SelectItem>
@@ -811,12 +822,32 @@ export default function Content({ phases, locations }: { phases: PhaseInterface[
             })()}
             <DialogFooter>
               <DialogClose asChild>
-                <Button type="button" variant="outline" onClick={closeAssignDialog}>Cancel</Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={closeAssignDialog}
+                >
+                  Cancel
+                </Button>
               </DialogClose>
-              <Button type="submit" disabled={assignPending}>{assignPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}Assign</Button>
+              <Button type="submit" disabled={assignPending}>
+                {assignPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : null}
+                Assign
+              </Button>
             </DialogFooter>
-            {assignError && <Alert variant="destructive"><AlertDescription>{assignError}</AlertDescription></Alert>}
-            {assignSuccess && <Alert variant="default"><CheckCircle2 className="h-4 w-4" /><AlertDescription>{assignSuccess}</AlertDescription></Alert>}
+            {assignError && (
+              <Alert variant="destructive">
+                <AlertDescription>{assignError}</AlertDescription>
+              </Alert>
+            )}
+            {assignSuccess && (
+              <Alert variant="default">
+                <CheckCircle2 className="h-4 w-4" />
+                <AlertDescription>{assignSuccess}</AlertDescription>
+              </Alert>
+            )}
           </form>
         </DialogContent>
       </Dialog>

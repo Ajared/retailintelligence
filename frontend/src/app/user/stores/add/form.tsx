@@ -123,9 +123,15 @@ export function AddStoreForm({
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
-  const [selectedStateId, setSelectedStateId] = useState<string | undefined>(user?.assigned_state_id || '');
-  const [selectedPhaseId, setSelectedPhaseId] = useState<string | undefined>(user?.assigned_phase_id || '');
-  const [selectedDistrictId, setSelectedDistrictId] = useState<string | undefined>(user?.assigned_district_id || '');
+  const [selectedStateId, setSelectedStateId] = useState<string | undefined>(
+    user?.assigned_state_id || '',
+  );
+  const [selectedPhaseId, setSelectedPhaseId] = useState<string | undefined>(
+    user?.assigned_phase_id || '',
+  );
+  const [selectedDistrictId, setSelectedDistrictId] = useState<
+    string | undefined
+  >(user?.assigned_district_id || '');
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [locationData, setLocationData] = useState<{
     latitude: number;
@@ -408,7 +414,9 @@ export function AddStoreForm({
               <Select
                 name="state_id"
                 required
-                defaultValue={user?.assigned_state_id || getInputValue('state_id')}
+                defaultValue={
+                  user?.assigned_state_id || getInputValue('state_id')
+                }
                 onValueChange={handleStateChange}
                 disabled={!!user?.assigned_state_id}
               >
@@ -430,9 +438,15 @@ export function AddStoreForm({
               <Select
                 name="local_government_id"
                 required
-                value={user?.assigned_local_government_id || selectedDistrictId || getInputValue('local_government_id')}
+                value={
+                  user?.assigned_local_government_id ||
+                  selectedDistrictId ||
+                  getInputValue('local_government_id')
+                }
                 onValueChange={setSelectedDistrictId}
-                disabled={!selectedStateId || !!user?.assigned_local_government_id}
+                disabled={
+                  !selectedStateId || !!user?.assigned_local_government_id
+                }
               >
                 <SelectTrigger id="local_government_id" className="w-full">
                   <SelectValue
@@ -441,12 +455,13 @@ export function AddStoreForm({
                         ? 'Select a local government'
                         : 'Select a state first'
                     }
-                    children={
-                      user?.assigned_local_government_id
-                        ? filteredLocalGovernments.find(lg => lg.id === user.assigned_local_government_id)?.name
-                        : undefined
-                    }
-                  />
+                  >
+                    {user?.assigned_local_government_id
+                      ? filteredLocalGovernments.find(
+                          (lg) => lg.id === user.assigned_local_government_id,
+                        )?.name
+                      : undefined}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {filteredLocalGovernments.map((lg) => (
@@ -499,12 +514,13 @@ export function AddStoreForm({
                           ? 'Select a district'
                           : 'Select a phase first'
                       }
-                      children={
-                        user?.assigned_district_id
-                          ? filteredDistricts.find(d => d.id === user.assigned_district_id)?.name
-                          : undefined
-                      }
-                    />
+                    >
+                      {user?.assigned_district_id
+                        ? filteredDistricts.find(
+                            (d) => d.id === user.assigned_district_id,
+                          )?.name
+                        : undefined}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {filteredDistricts.map((district) => (
