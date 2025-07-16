@@ -13,6 +13,7 @@ export class MakeStateidLocalgovernmentidNullable1751666322277
         isNullable: true,
       }),
     );
+
     await queryRunner.changeColumn(
       'stores',
       'state_id',
@@ -25,6 +26,22 @@ export class MakeStateidLocalgovernmentidNullable1751666322277
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(`
+      UPDATE stores 
+      SET local_government_id = (
+        SELECT id FROM local_governments LIMIT 1
+      ) 
+      WHERE local_government_id IS NULL
+    `);
+
+    await queryRunner.query(`
+      UPDATE stores 
+      SET state_id = (
+        SELECT id FROM states LIMIT 1
+      ) 
+      WHERE state_id IS NULL
+    `);
+
     await queryRunner.changeColumn(
       'stores',
       'local_government_id',
@@ -34,6 +51,7 @@ export class MakeStateidLocalgovernmentidNullable1751666322277
         isNullable: false,
       }),
     );
+
     await queryRunner.changeColumn(
       'stores',
       'state_id',
