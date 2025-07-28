@@ -99,14 +99,25 @@ export class FixMigrationConflicts1752616701095 implements MigrationInterface {
         );
 
         if (hasColumn && hasReferencedTable) {
-          await queryRunner.query(`
+          const constraintExists = await queryRunner.query(`
+            SELECT COUNT(*) as count 
+            FROM information_schema.table_constraints 
+            WHERE constraint_name = '${fk.constraintName}' 
+            AND table_name = '${fk.table}'
+          `);
+          
+          if (constraintExists[0].count === '0') {
+            await queryRunner.query(`
                         ALTER TABLE "${fk.table}" 
                         ADD CONSTRAINT "${fk.constraintName}" 
                         FOREIGN KEY ("${fk.column}") 
                         REFERENCES "${fk.referencedTable}"("${fk.referencedColumn}") 
                         ON DELETE SET NULL
                     `);
-          console.log(`Added foreign key constraint ${fk.constraintName}`);
+            console.log(`Added foreign key constraint ${fk.constraintName}`);
+          } else {
+            console.log(`Foreign key constraint ${fk.constraintName} already exists, skipping`);
+          }
         }
       } catch (error) {
         console.log(
@@ -150,7 +161,7 @@ export class FixMigrationConflicts1752616701095 implements MigrationInterface {
         const hasColumn = await queryRunner.hasColumn('users', column);
         if (hasColumn) {
           await queryRunner.query(
-            `ALTER TABLE "users" DROP COLUMN "${column}"`,
+            `ALTER TABLE "users" DROP COLUMN IF EXISTS "${column}"`,
           );
         }
       } catch (error) {
