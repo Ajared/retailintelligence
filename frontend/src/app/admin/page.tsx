@@ -1,8 +1,19 @@
+import { cache } from 'react';
 import Content from './content';
+import { auth } from '../(auth)/auth';
+import { redirect } from 'next/navigation';
 import EmptyState from './_components/empty';
 import { getDashboardData } from '../actions';
 
+const getSession = cache(() => auth());
+
 export default async function AdminPage() {
+  const session = await getSession();
+
+  if (!session) {
+    redirect('/login');
+  }
+
   const storesResponse = await getDashboardData(1, 50, 'ASC');
 
   if ('error' in storesResponse) {
@@ -11,7 +22,7 @@ export default async function AdminPage() {
 
   return (
     <div className="h-full w-full">
-      <Content stores={storesResponse.data} />
+      <Content stores={storesResponse.data} session={session} />
     </div>
   );
 }

@@ -1,4 +1,8 @@
+'use client';
+
+import Link from 'next/link';
 import 'leaflet/dist/leaflet.css';
+import { Session } from 'next-auth';
 import 'leaflet-defaulticon-compatibility';
 import { LatLngExpression } from 'leaflet';
 import { StoreInterface } from '~/types/store';
@@ -12,11 +16,18 @@ const MapPlaceHolder = () => {
     </div>
   );
 };
-export default function Map({ stores }: { stores: StoreInterface[] }) {
-  const defaultZoom = 13;
+
+export default function Map({
+  stores,
+  session,
+}: {
+  stores: StoreInterface[];
+  session: Session;
+}) {
+  const defaultZoom = 14;
   const defaultCenter: LatLngExpression = {
-    lat: 9.061668914676945,
-    lng: -352.5247478485108,
+    lat: 7.470426284840235,
+    lng: 9.070715904235842,
   };
 
   return (
@@ -32,11 +43,25 @@ export default function Map({ stores }: { stores: StoreInterface[] }) {
       />
       {stores.map((store) => (
         <Marker key={store.id} position={[store.latitude, store.longitude]}>
-          <Popup>
-            {store.name}
-            <br />
-            {store.store_type}
-          </Popup>
+          {session.user.role === 'admin' ||
+          session.user.role === 'super_admin' ? (
+            <Popup>
+              <Link
+                href={`/admin/stores/${store.id}`}
+                className="cursor-pointer"
+              >
+                {store.name}
+                <br />
+                {store.store_type}
+              </Link>
+            </Popup>
+          ) : (
+            <Popup>
+              {store.name}
+              <br />
+              {store.store_type}
+            </Popup>
+          )}
         </Marker>
       ))}
     </MapContainer>

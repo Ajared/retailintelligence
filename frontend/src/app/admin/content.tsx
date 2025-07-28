@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import { Session } from 'next-auth';
 import { Store } from 'lucide-react';
 import { StoreInterface } from '~/types/store';
 import { Button } from '~/components/ui/button';
@@ -10,7 +11,13 @@ const Map = dynamic(() => import('~/components/map'), {
   ssr: false,
 });
 
-export default function Content({ stores }: { stores: StoreInterface[] }) {
+export default function Content({
+  stores,
+  session,
+}: {
+  stores: StoreInterface[];
+  session: Session;
+}) {
   return (
     <div className="space-y-6 p-4 md:p-6">
       <div className="flex w-full items-center justify-between">
@@ -23,7 +30,7 @@ export default function Content({ stores }: { stores: StoreInterface[] }) {
         </Button>
       </div>
       <div style={{ aspectRatio: '16/9' }}>
-        <Map stores={stores} />
+        <Map stores={stores} session={session} />
       </div>
     </div>
   );
