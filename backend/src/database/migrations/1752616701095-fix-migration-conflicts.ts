@@ -105,7 +105,7 @@ export class FixMigrationConflicts1752616701095 implements MigrationInterface {
             WHERE constraint_name = '${fk.constraintName}' 
             AND table_name = '${fk.table}'
           `);
-          
+
           if (constraintExists[0].count === '0') {
             await queryRunner.query(`
                         ALTER TABLE "${fk.table}" 
@@ -116,7 +116,9 @@ export class FixMigrationConflicts1752616701095 implements MigrationInterface {
                     `);
             console.log(`Added foreign key constraint ${fk.constraintName}`);
           } else {
-            console.log(`Foreign key constraint ${fk.constraintName} already exists, skipping`);
+            console.log(
+              `Foreign key constraint ${fk.constraintName} already exists, skipping`,
+            );
           }
         }
       } catch (error) {
