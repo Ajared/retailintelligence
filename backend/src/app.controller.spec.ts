@@ -7,11 +7,13 @@ import { AbstractResponseDto } from './types/response.dto';
 import { CustomHttpException } from './helpers/custom.exception';
 import { StateQueryValidator } from './modules/state/dto/state.dto';
 import { PhaseQueryValidator } from './modules/phase/dto/phase.dto';
+import { StoreQueryValidator } from './modules/store/dto/store.dto';
 import { StateModelAction } from './modules/state/state.model-action';
 import { PhaseModelAction } from './modules/phase/phase.model-action';
 import { StoreModelAction } from './modules/store/store.model-action';
 import { StateInterface } from './modules/state/types/state.interface';
 import { PhaseInterface } from './modules/phase/types/phase.interface';
+import { StoreInterface } from './modules/store/types/store.interface';
 
 const mockStateModelAction = {
   get: jest.fn(),
@@ -250,6 +252,217 @@ describe('AppController', () => {
 
       expect(result).toEqual(mockPhaseResponse);
       expect(appService.getPhases).toHaveBeenCalledWith(optionsWithName);
+    });
+  });
+
+  describe('getDashboardData', () => {
+    const mockQueryOptions: StoreQueryValidator = {
+      page: '1',
+      limit: '10',
+      name: 'Test Store',
+      phaseId: 'phase-1',
+      districtId: 'district-1',
+    };
+
+    const mockStoreResponse: AbstractResponseDto<StoreInterface[]> = {
+      data: [
+        {
+          id: '1',
+          name: 'Test Store',
+          address: '123 Test Street',
+          storeType: 'Retail',
+          latitude: 9.082,
+          longitude: 8.6753,
+          enumeratorId: 'enumerator-1',
+          phaseId: 'phase-1',
+          districtId: 'district-1',
+          stateId: 'state-1',
+          localGovernmentId: 'lg-1',
+          landmarks: 'Near Test Landmark',
+          photos: ['photo1.jpg', 'photo2.jpg'],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ],
+      meta: {
+        total: 1,
+        page: 1,
+        limit: 10,
+        totalPages: 1,
+        hasNext: false,
+        hasPrevious: false,
+      },
+      message: 'Stores fetched successfully',
+    };
+
+    it('should return paginated dashboard data successfully', async () => {
+      jest
+        .spyOn(appService, 'getDashboardData')
+        .mockResolvedValue(mockStoreResponse);
+
+      const result = await appController.getDashboardData(mockQueryOptions);
+
+      expect(result).toEqual(mockStoreResponse);
+      expect(appService.getDashboardData).toHaveBeenCalledWith(
+        mockQueryOptions,
+      );
+    });
+
+    it('should handle empty query options', async () => {
+      const emptyOptions: StoreQueryValidator = {};
+      jest
+        .spyOn(appService, 'getDashboardData')
+        .mockResolvedValue(mockStoreResponse);
+
+      const result = await appController.getDashboardData(emptyOptions);
+
+      expect(result).toEqual(mockStoreResponse);
+      expect(appService.getDashboardData).toHaveBeenCalledWith(emptyOptions);
+    });
+
+    it('should handle service errors', async () => {
+      const error = new CustomHttpException(
+        'Failed to fetch dashboard data',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+      jest.spyOn(appService, 'getDashboardData').mockRejectedValue(error);
+
+      await expect(
+        appController.getDashboardData(mockQueryOptions),
+      ).rejects.toThrow(CustomHttpException);
+    });
+
+    it('should validate query parameters with name filter', async () => {
+      const optionsWithName: StoreQueryValidator = {
+        page: '1',
+        limit: '5',
+        name: 'Supermarket',
+      };
+
+      jest
+        .spyOn(appService, 'getDashboardData')
+        .mockResolvedValue(mockStoreResponse);
+
+      const result = await appController.getDashboardData(optionsWithName);
+
+      expect(result).toEqual(mockStoreResponse);
+      expect(appService.getDashboardData).toHaveBeenCalledWith(optionsWithName);
+    });
+
+    it('should validate query parameters with phase filter', async () => {
+      const optionsWithPhase: StoreQueryValidator = {
+        page: '1',
+        limit: '10',
+        phaseId: 'phase-2',
+      };
+
+      jest
+        .spyOn(appService, 'getDashboardData')
+        .mockResolvedValue(mockStoreResponse);
+
+      const result = await appController.getDashboardData(optionsWithPhase);
+
+      expect(result).toEqual(mockStoreResponse);
+      expect(appService.getDashboardData).toHaveBeenCalledWith(
+        optionsWithPhase,
+      );
+    });
+
+    it('should validate query parameters with district filter', async () => {
+      const optionsWithDistrict: StoreQueryValidator = {
+        page: '1',
+        limit: '10',
+        districtId: 'district-3',
+      };
+
+      jest
+        .spyOn(appService, 'getDashboardData')
+        .mockResolvedValue(mockStoreResponse);
+
+      const result = await appController.getDashboardData(optionsWithDistrict);
+
+      expect(result).toEqual(mockStoreResponse);
+      expect(appService.getDashboardData).toHaveBeenCalledWith(
+        optionsWithDistrict,
+      );
+    });
+
+    it('should validate query parameters with enumerator filter', async () => {
+      const optionsWithEnumerator: StoreQueryValidator = {
+        page: '1',
+        limit: '10',
+        enumeratorId: 'enumerator-2',
+      };
+
+      jest
+        .spyOn(appService, 'getDashboardData')
+        .mockResolvedValue(mockStoreResponse);
+
+      const result = await appController.getDashboardData(
+        optionsWithEnumerator,
+      );
+
+      expect(result).toEqual(mockStoreResponse);
+      expect(appService.getDashboardData).toHaveBeenCalledWith(
+        optionsWithEnumerator,
+      );
+    });
+
+    it('should validate query parameters with local government filter', async () => {
+      const optionsWithLocalGov: StoreQueryValidator = {
+        page: '1',
+        limit: '10',
+        localGovernmentId: 'lg-2',
+      };
+
+      jest
+        .spyOn(appService, 'getDashboardData')
+        .mockResolvedValue(mockStoreResponse);
+
+      const result = await appController.getDashboardData(optionsWithLocalGov);
+
+      expect(result).toEqual(mockStoreResponse);
+      expect(appService.getDashboardData).toHaveBeenCalledWith(
+        optionsWithLocalGov,
+      );
+    });
+
+    it('should handle multiple filter parameters', async () => {
+      const multipleFilters: StoreQueryValidator = {
+        page: '2',
+        limit: '15',
+        name: 'Mall',
+        phaseId: 'phase-1',
+        districtId: 'district-2',
+        enumeratorId: 'enumerator-3',
+      };
+
+      jest
+        .spyOn(appService, 'getDashboardData')
+        .mockResolvedValue(mockStoreResponse);
+
+      const result = await appController.getDashboardData(multipleFilters);
+
+      expect(result).toEqual(mockStoreResponse);
+      expect(appService.getDashboardData).toHaveBeenCalledWith(multipleFilters);
+    });
+
+    it('should handle pagination parameters correctly', async () => {
+      const paginationOptions: StoreQueryValidator = {
+        page: '3',
+        limit: '20',
+      };
+
+      jest
+        .spyOn(appService, 'getDashboardData')
+        .mockResolvedValue(mockStoreResponse);
+
+      const result = await appController.getDashboardData(paginationOptions);
+
+      expect(result).toEqual(mockStoreResponse);
+      expect(appService.getDashboardData).toHaveBeenCalledWith(
+        paginationOptions,
+      );
     });
   });
 });
