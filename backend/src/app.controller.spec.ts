@@ -9,6 +9,7 @@ import { StateQueryValidator } from './modules/state/dto/state.dto';
 import { PhaseQueryValidator } from './modules/phase/dto/phase.dto';
 import { StateModelAction } from './modules/state/state.model-action';
 import { PhaseModelAction } from './modules/phase/phase.model-action';
+import { StoreModelAction } from './modules/store/store.model-action';
 import { StateInterface } from './modules/state/types/state.interface';
 import { PhaseInterface } from './modules/phase/types/phase.interface';
 
@@ -21,6 +22,14 @@ const mockStateModelAction = {
 };
 
 const mockPhaseModelAction = {
+  get: jest.fn(),
+  create: jest.fn(),
+  update: jest.fn(),
+  delete: jest.fn(),
+  list: jest.fn(),
+};
+
+const mockStoreModelAction = {
   get: jest.fn(),
   create: jest.fn(),
   update: jest.fn(),
@@ -45,6 +54,10 @@ describe('AppController', () => {
         {
           provide: PhaseModelAction,
           useValue: mockPhaseModelAction,
+        },
+        {
+          provide: StoreModelAction,
+          useValue: mockStoreModelAction,
         },
       ],
     }).compile();

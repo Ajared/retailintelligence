@@ -17,6 +17,12 @@ import {
   ListPhaseRecordOptions,
   PhaseQueryOptions,
 } from './modules/phase/types/list-phase.type';
+import { StoreModelAction } from './modules/store/store.model-action';
+import { StoreInterface } from './modules/store/types/store.interface';
+import {
+  ListStoreRecordOptions,
+  StoreQueryOptions,
+} from './modules/store/types/list-store.type';
 
 @Injectable()
 export class AppService {
@@ -24,6 +30,7 @@ export class AppService {
     private readonly configService: ConfigService,
     private readonly stateModelAction: StateModelAction,
     private readonly phaseModelAction: PhaseModelAction,
+    private readonly storeModelAction: StoreModelAction,
   ) {}
 
   getHello(): string {
@@ -135,6 +142,69 @@ export class AppService {
       data: listPhases.payload,
       meta: listPhases.paginationMeta,
       message: SYS_MSG.RESOURCE_FETCHED_SUCCESSFULLY('Phases'),
+    };
+  }
+
+  async getDashboardData(
+    queryOptions: StoreQueryOptions,
+  ): Promise<AbstractResponseDto<StoreInterface[]>> {
+    const { page, limit, ...filterOptions } = queryOptions;
+
+    const filterRecordOptions = Object.fromEntries(
+      Object.entries(filterOptions).filter(
+        ([, value]) => value !== undefined && value !== '',
+      ),
+    );
+
+    const paginationPayload = {
+      page: page ? +page : 1,
+      limit: limit ? +limit : 10,
+    };
+
+    const [stateError, state] = await trySafe(() =>
+      this.stateModelAction.get({ name: 'FCT Abuja' }),
+    );
+
+    if (stateError) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_FETCH_FAILED('State'),
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    const listStoreRecordOptions: ListStoreRecordOptions = {
+      paginationPayload,
+      filterRecordOptions: { ...filterRecordOptions, stateId: state.id },
+      relations: {
+        state: true,
+        enumerator: true,
+        localGovernment: true,
+        phase: true,
+        district: true,
+      },
+    };
+
+    const [error, data] = await trySafe(() =>
+      this.storeModelAction.list(listStoreRecordOptions),
+    );
+
+    if (error) {
+      if (error instanceof EntityPropertyNotFoundError) {
+        throw new CustomHttpException(
+          SYS_MSG.INVALID_PARAMETER('Filter Query'),
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_FETCH_FAILED('Stores'),
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    return {
+      data: data.payload,
+      meta: data.paginationMeta,
+      message: SYS_MSG.RESOURCE_FETCHED_SUCCESSFULLY('Stores'),
     };
   }
 }
