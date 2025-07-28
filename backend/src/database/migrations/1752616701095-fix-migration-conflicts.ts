@@ -1,14 +1,19 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
+import { Logger } from '@nestjs/common';
 
 export class FixMigrationConflicts1752616701095 implements MigrationInterface {
+  private readonly logger = new Logger('FixMigrationConflicts');
+
   public async up(queryRunner: QueryRunner): Promise<void> {
     try {
       await queryRunner.query(`
                 ALTER TABLE "stores" 
                 ALTER COLUMN "local_government_id" DROP NOT NULL
             `);
-    } catch (error) {
-      console.log('local_government_id is already nullable or does not exist');
+    } catch {
+      this.logger.log(
+        'local_government_id is already nullable or does not exist',
+      );
     }
 
     try {
@@ -16,8 +21,8 @@ export class FixMigrationConflicts1752616701095 implements MigrationInterface {
                 ALTER TABLE "stores" 
                 ALTER COLUMN "state_id" DROP NOT NULL
             `);
-    } catch (error) {
-      console.log('state_id is already nullable or does not exist');
+    } catch {
+      this.logger.log('state_id is already nullable or does not exist');
     }
 
     const tables = [
@@ -31,7 +36,7 @@ export class FixMigrationConflicts1752616701095 implements MigrationInterface {
     for (const table of tables) {
       const exists = await queryRunner.hasTable(table);
       if (!exists) {
-        console.log(`Warning: Table ${table} does not exist`);
+        this.logger.warn(`Warning: Table ${table} does not exist`);
       }
     }
 
@@ -50,9 +55,9 @@ export class FixMigrationConflicts1752616701095 implements MigrationInterface {
                         ALTER TABLE "users" 
                         ADD COLUMN "${column.name}" ${column.type} NULL
                     `);
-          console.log(`Added column ${column.name} to users table`);
+          this.logger.log(`Added column ${column.name} to users table`);
         } catch (error) {
-          console.log(
+          this.logger.error(
             `Failed to add column ${column.name}:`,
             error instanceof Error ? error.message : 'Unknown error',
           );
@@ -106,7 +111,9 @@ export class FixMigrationConflicts1752616701095 implements MigrationInterface {
             AND table_name = '${fk.table}'
           `);
 
-          if (constraintExists[0].count === '0') {
+          if (
+            (constraintExists as Array<{ count: string }>)[0]?.count === '0'
+          ) {
             await queryRunner.query(`
                         ALTER TABLE "${fk.table}" 
                         ADD CONSTRAINT "${fk.constraintName}" 
@@ -114,15 +121,17 @@ export class FixMigrationConflicts1752616701095 implements MigrationInterface {
                         REFERENCES "${fk.referencedTable}"("${fk.referencedColumn}") 
                         ON DELETE SET NULL
                     `);
-            console.log(`Added foreign key constraint ${fk.constraintName}`);
+            this.logger.log(
+              `Added foreign key constraint ${fk.constraintName}`,
+            );
           } else {
-            console.log(
+            this.logger.log(
               `Foreign key constraint ${fk.constraintName} already exists, skipping`,
             );
           }
         }
       } catch (error) {
-        console.log(
+        this.logger.error(
           `Foreign key ${fk.constraintName} already exists or failed to create:`,
           error instanceof Error ? error.message : 'Unknown error',
         );
@@ -144,7 +153,7 @@ export class FixMigrationConflicts1752616701095 implements MigrationInterface {
           `ALTER TABLE "users" DROP CONSTRAINT IF EXISTS "${fk}"`,
         );
       } catch (error) {
-        console.log(
+        this.logger.error(
           `Failed to drop constraint ${fk}:`,
           error instanceof Error ? error.message : 'Unknown error',
         );
@@ -167,7 +176,7 @@ export class FixMigrationConflicts1752616701095 implements MigrationInterface {
           );
         }
       } catch (error) {
-        console.log(
+        this.logger.error(
           `Failed to drop column ${column}:`,
           error instanceof Error ? error.message : 'Unknown error',
         );
