@@ -11,8 +11,8 @@ export default async function Home() {
   }
 
   if (session.user.role === 'user') {
-    redirect('/user/stores');
+    redirect('/user');
   }
 
-  redirect('/admin/users');
+  redirect('/admin');
 }

@@ -50,9 +50,9 @@ export default async function RegisterPage({
 
   if (session?.user?.role) {
     if (session.user.role !== 'user') {
-      redirect('/admin/users');
+      redirect('/admin');
     } else {
-      redirect('/user/stores');
+      redirect('/user');
     }
   }
 
