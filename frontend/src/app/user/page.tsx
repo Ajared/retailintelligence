@@ -7,22 +7,38 @@ import { redirect } from 'next/navigation';
 
 const getSession = cache(() => auth());
 
-export default async function UserPage() {
+export default async function UserPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ lat?: string; lng?: string }>;
+}) {
   const session = await getSession();
 
   if (!session) {
     redirect('/login');
   }
 
-  const storesResponse = await getDashboardData(1, 50, 'ASC');
+  const storesResponse = await getDashboardData(1, 300, 'ASC');
 
   if ('error' in storesResponse) {
     return <EmptyState />;
   }
 
+  const params = await searchParams;
+  const latNum = parseFloat(params?.lat ?? '');
+  const lngNum = parseFloat(params?.lng ?? '');
+  const hasValidCenter = Number.isFinite(latNum) && Number.isFinite(lngNum);
+  const center = hasValidCenter ? { lat: latNum, lng: lngNum } : undefined;
+  const zoom = hasValidCenter ? 18 : undefined;
+
   return (
     <div className="h-full w-full">
-      <Content stores={storesResponse.data} session={session} />
+      <Content
+        zoom={zoom}
+        center={center}
+        session={session}
+        stores={storesResponse.data}
+      />
     </div>
   );
 }

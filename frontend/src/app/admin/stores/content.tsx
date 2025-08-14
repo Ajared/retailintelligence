@@ -374,6 +374,16 @@ export default function Content() {
                           View More
                         </Link>
                       </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="text-xs cursor-pointer"
+                        asChild
+                      >
+                        <Link
+                          href={`/admin?lat=${store.latitude}&lng=${store.longitude}`}
+                        >
+                          View on Map
+                        </Link>
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>

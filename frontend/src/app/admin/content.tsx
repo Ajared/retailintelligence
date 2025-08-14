@@ -4,6 +4,7 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { Session } from 'next-auth';
 import { Store } from 'lucide-react';
+import { LatLngExpression } from 'leaflet';
 import { StoreInterface } from '~/types/store';
 import { Button } from '~/components/ui/button';
 
@@ -14,9 +15,13 @@ const Map = dynamic(() => import('~/components/map'), {
 export default function Content({
   stores,
   session,
+  center,
+  zoom,
 }: {
   stores: StoreInterface[];
   session: Session;
+  center?: LatLngExpression;
+  zoom?: number;
 }) {
   return (
     <div className="space-y-6 p-4 md:p-6">
@@ -30,7 +35,7 @@ export default function Content({
         </Button>
       </div>
       <div style={{ aspectRatio: '16/9' }}>
-        <Map stores={stores} session={session} />
+        <Map stores={stores} session={session} center={center} zoom={zoom} />
       </div>
     </div>
   );

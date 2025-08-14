@@ -20,20 +20,24 @@ const MapPlaceHolder = () => {
 export default function Map({
   stores,
   session,
+  center,
+  zoom,
 }: {
   stores: StoreInterface[];
   session: Session;
+  center?: LatLngExpression;
+  zoom?: number;
 }) {
-  const defaultZoom = 14;
-  const defaultCenter: LatLngExpression = {
-    lat: 7.470426284840235,
-    lng: 9.070715904235842,
+  const mapZoom = zoom ?? 14;
+  const mapCenter = center ?? {
+    lat: 9.076674116909404,
+    lng: 7.462291717529298,
   };
 
   return (
     <MapContainer
-      zoom={defaultZoom}
-      center={defaultCenter}
+      zoom={mapZoom}
+      center={mapCenter}
       style={{ width: '100%', height: '100%', zIndex: 0 }}
       placeholder={<MapPlaceHolder />}
     >
