@@ -30,8 +30,8 @@ export default function Map({
 }) {
   const mapZoom = zoom ?? 14;
   const mapCenter = center ?? {
-    lat: 9.076674116909404,
-    lng: 7.462291717529298,
+    lat: 9.074426322081734,
+    lng: 7.477762699127198,
   };
 
   return (
