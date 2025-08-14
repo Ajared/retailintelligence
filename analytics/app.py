@@ -1,15 +1,17 @@
 import streamlit as st
 import pandas as pd
 import psycopg2
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import os
+import re
 import hmac
 import uuid
 from datetime import datetime
 import warnings
+from pandas.api.types import is_datetime64_any_dtype, is_datetime64tz_dtype
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -31,6 +33,14 @@ def _make_arrow_compatible(df: pd.DataFrame) -> pd.DataFrame:
 
     for column_name in result.columns:
         series = result[column_name]
+
+        # If datetime with timezone, drop tz to make Arrow-friendly
+        if is_datetime64tz_dtype(series):
+            try:
+                result[column_name] = series.dt.tz_localize(None)
+            except Exception:
+                pass
+            continue
 
         # Only coerce object-typed columns
         if series.dtype == object:
@@ -55,9 +65,7 @@ def _make_arrow_compatible(df: pd.DataFrame) -> pd.DataFrame:
             ).all():
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore", UserWarning)
-                    coerced = pd.to_datetime(
-                        series, errors="coerce", utc=False, format="ISO8601"
-                    )
+                    coerced = pd.to_datetime(series, errors="coerce", utc=False)
                 try:
                     # If timezone-aware, convert to naive
                     if getattr(coerced.dt, "tz", None) is not None:
@@ -70,9 +78,7 @@ def _make_arrow_compatible(df: pd.DataFrame) -> pd.DataFrame:
             # Mixed but largely datetime-parsable values
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", UserWarning)
-                coerced_guess = pd.to_datetime(
-                    series, errors="coerce", utc=False, format="ISO8601"
-                )
+                coerced_guess = pd.to_datetime(series, errors="coerce", utc=False)
             if coerced_guess.notna().sum() >= max(1, int(0.8 * len(non_null_series))):
                 try:
                     if getattr(coerced_guess.dt, "tz", None) is not None:
@@ -83,6 +89,15 @@ def _make_arrow_compatible(df: pd.DataFrame) -> pd.DataFrame:
 
     # General dtype cleanup (nullable ints, booleans, strings)
     result = result.convert_dtypes()
+
+    # After convert_dtypes, ensure any datetime64[ns, tz] became naive
+    for column_name in result.columns:
+        series = result[column_name]
+        if is_datetime64tz_dtype(series):
+            try:
+                result[column_name] = series.dt.tz_localize(None)
+            except Exception:
+                pass
 
     # Ensure no lingering UUID objects in any object/string columns
     for column_name in result.columns:
@@ -100,10 +115,45 @@ def _make_arrow_compatible(df: pd.DataFrame) -> pd.DataFrame:
     return result
 
 
+def _validate_read_only_sql(query: str):
+    """Validate custom SQL as read-only and safe-ish.
+
+    Returns (is_valid: bool, message: str, sanitized_query: str)
+    - Allows only single-statement queries starting with SELECT or WITH
+    - Allows a trailing semicolon but disallows additional statements
+    - Disallows SELECT INTO (which writes a table)
+    """
+    if query is None:
+        return False, "Query is empty.", ""
+
+    original = str(query)
+    # Trim and remove trailing semicolons
+    sanitized = original.strip()
+    sanitized = re.sub(r";\s*$", "", sanitized)
+
+    # Quick multi-statement check (very basic, ignores semicolons inside strings)
+    if ";" in sanitized:
+        return False, "Multiple SQL statements are not allowed.", ""
+
+    # Normalize for checks
+    lowered = sanitized.lstrip().lower()
+
+    # Only allow SELECT or WITH
+    if not (lowered.startswith("select") or lowered.startswith("with")):
+        return False, "Only read-only SELECT or WITH queries are permitted.", ""
+
+    # Disallow SELECT INTO (table creation)
+    if lowered.startswith("select") and re.search(r"\binto\b", lowered):
+        return False, "SELECT INTO is not allowed.", ""
+
+    return True, "", sanitized
+
+
 class PostgreSQLAnalyzer:
     def __init__(self):
         self.engine = None
         self.connection = None
+        self.last_error = None
 
     def connect(self):
         """Connect to PostgreSQL database using environment variables"""
@@ -118,20 +168,55 @@ class PostgreSQLAnalyzer:
             # Build connection string from environment variables (do not hardcode secrets)
             # Ensure you have a .env file with DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD (not committed to git)
             connection_string = f"postgresql://{db_config['user']}:{db_config['password']}@{db_config['host']}:{db_config['port']}/{db_config['database']}"
-            self.engine = create_engine(connection_string)
+            self.engine = create_engine(connection_string, isolation_level="AUTOCOMMIT")
             self.connection = self.engine.connect()
+            # Enforce read-only at the session level for safety
+            try:
+                self.connection.execute(text("SET default_transaction_read_only = on"))
+            except Exception:
+                # If this fails, continue; we'll still validate queries in code
+                pass
             return True
         except Exception as e:
             st.error(f"Error connecting to database: {e}")
             return False
 
-    def execute_query(self, query):
-        """Execute SQL query and return pandas DataFrame"""
+    def _reset_failed_transaction(self):
         try:
-            df = pd.read_sql_query(query, self.connection)
+            # Attempt to rollback in case a previous error left the session aborted
+            self.connection.rollback()
+        except Exception:
+            try:
+                self.connection.execute(text("ROLLBACK"))
+            except Exception:
+                pass
+
+    def execute_query(self, query, suppress_error: bool = False):
+        """Execute SQL query and return pandas DataFrame.
+
+        If suppress_error is True, errors are stored in self.last_error and not displayed.
+        """
+        self.last_error = None
+        try:
+            is_valid, message, sanitized = _validate_read_only_sql(query)
+            if not is_valid:
+                if not suppress_error:
+                    st.error(message)
+                else:
+                    self.last_error = message
+                return None
+
+            # Ensure clean state before running a new query
+            self._reset_failed_transaction()
+
+            df = pd.read_sql_query(sanitized, self.connection)
             return df
         except Exception as e:
-            st.error(f"Error executing query: {e}")
+            # Reset and record error to allow subsequent queries
+            self._reset_failed_transaction()
+            self.last_error = str(e)
+            if not suppress_error:
+                st.error(f"Error executing query: {e}")
             return None
 
     def get_tables(self):
@@ -142,7 +227,7 @@ class PostgreSQLAnalyzer:
         WHERE table_schema = 'public'
         ORDER BY table_name;
         """
-        return self.execute_query(query)
+        return self.execute_query(query, suppress_error=True)
 
     def get_table_info(self, table_name):
         """Get basic information about a table"""
@@ -152,17 +237,17 @@ class PostgreSQLAnalyzer:
         WHERE table_name = '{table_name}'
         ORDER BY ordinal_position;
         """
-        return self.execute_query(query)
+        return self.execute_query(query, suppress_error=True)
 
     def get_table_sample(self, table_name, limit=100):
         """Get a sample of data from a table"""
         query = f"SELECT * FROM {table_name} LIMIT {limit};"
-        return self.execute_query(query)
+        return self.execute_query(query, suppress_error=True)
 
     def get_row_count(self, table_name):
         """Get row count for a table"""
         query = f"SELECT COUNT(*) as row_count FROM {table_name};"
-        return self.execute_query(query)
+        return self.execute_query(query, suppress_error=True)
 
     def close_connection(self):
         """Close database connection"""
@@ -365,11 +450,14 @@ def main():
                                 value_counts = series_for_counts.value_counts().head(10)
                                 x_values = value_counts.index.tolist()
                                 y_values = value_counts.values.tolist()
+                                counts_df = pd.DataFrame(
+                                    {selected_categorical: x_values, "Count": y_values}
+                                )
                                 fig_bar = px.bar(
-                                    x=x_values,
-                                    y=y_values,
+                                    counts_df,
+                                    x=selected_categorical,
+                                    y="Count",
                                     title=f"Top 10 Values in {selected_categorical}",
-                                    labels={"x": selected_categorical, "y": "Count"},
                                 )
                                 st.plotly_chart(fig_bar, use_container_width=True)
 
@@ -385,23 +473,42 @@ def main():
         # Custom SQL query section
         st.header("Custom SQL Query")
 
-        query = st.text_area("Enter your SQL query:", height=150)
-        if st.button("Execute Query"):
-            if query:
-                result = st.session_state.analyzer.execute_query(query)
-                if result is not None:
-                    st.dataframe(_make_arrow_compatible(result))
+        query = st.text_area("Enter your SQL query:", height=150, key="custom_sql_area")
+        execute_clicked = st.button("Execute Query", key="execute_query_button")
 
-                    # Download option
-                    csv = result.to_csv(index=False)
-                    st.download_button(
-                        label="Download Results as CSV",
-                        data=csv,
-                        file_name="query_results.csv",
-                        mime="text/csv",
-                    )
+        error_placeholder = st.empty()
+
+        if execute_clicked:
+            if not query or not query.strip():
+                error_placeholder.warning("Please enter a SQL query.")
             else:
-                st.warning("Please enter a SQL query.")
+                is_valid, message, sanitized = _validate_read_only_sql(query)
+                if not is_valid:
+                    error_placeholder.error(message)
+                else:
+                    with st.spinner("Running query..."):
+                        result = st.session_state.analyzer.execute_query(
+                            sanitized, suppress_error=True
+                        )
+                    if result is not None:
+                        st.dataframe(_make_arrow_compatible(result))
+
+                        # Download option
+                        csv = result.to_csv(index=False)
+                        st.download_button(
+                            label="Download Results as CSV",
+                            data=csv,
+                            file_name="query_results.csv",
+                            mime="text/csv",
+                        )
+                    else:
+                        error_message = (
+                            st.session_state.analyzer.last_error
+                            or "An error occurred while executing the query."
+                        )
+                        error_placeholder.error(
+                            f"Error executing query: {error_message}"
+                        )
 
 
 if __name__ == "__main__":
