@@ -7,9 +7,97 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import os
 import hmac
+import uuid
+from datetime import datetime
+import warnings
 from dotenv import load_dotenv
 
 load_dotenv()
+
+
+def _make_arrow_compatible(df: pd.DataFrame) -> pd.DataFrame:
+    """Return a copy of df with Arrow-friendly dtypes.
+
+    - Convert UUID objects to strings
+    - Convert object-dtype datetime-like values to pandas datetime64[ns]
+      and drop timezone info for consistency
+    - Normalize mixed-type object columns where most values parse as datetimes
+    - Apply convert_dtypes for cleaner integer/boolean/string dtypes
+    """
+    if df is None:
+        return df
+
+    result = df.copy()
+
+    for column_name in result.columns:
+        series = result[column_name]
+
+        # Only coerce object-typed columns
+        if series.dtype == object:
+            non_null_series = series.dropna()
+            if non_null_series.empty:
+                continue
+
+            sample_value = non_null_series.iloc[0]
+
+            # UUIDs → strings
+            if isinstance(sample_value, uuid.UUID) or (
+                non_null_series.map(lambda v: isinstance(v, uuid.UUID)).all()
+            ):
+                result[column_name] = series.map(
+                    lambda v: str(v) if isinstance(v, uuid.UUID) else v
+                )
+                continue
+
+            # Datetime-like objects held in object dtype → proper datetime64
+            if non_null_series.map(
+                lambda v: isinstance(v, (pd.Timestamp, datetime))
+            ).all():
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", UserWarning)
+                    coerced = pd.to_datetime(
+                        series, errors="coerce", utc=False, format="ISO8601"
+                    )
+                try:
+                    # If timezone-aware, convert to naive
+                    if getattr(coerced.dt, "tz", None) is not None:
+                        coerced = coerced.dt.tz_localize(None)
+                except Exception:
+                    pass
+                result[column_name] = coerced
+                continue
+
+            # Mixed but largely datetime-parsable values
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", UserWarning)
+                coerced_guess = pd.to_datetime(
+                    series, errors="coerce", utc=False, format="ISO8601"
+                )
+            if coerced_guess.notna().sum() >= max(1, int(0.8 * len(non_null_series))):
+                try:
+                    if getattr(coerced_guess.dt, "tz", None) is not None:
+                        coerced_guess = coerced_guess.dt.tz_localize(None)
+                except Exception:
+                    pass
+                result[column_name] = coerced_guess
+
+    # General dtype cleanup (nullable ints, booleans, strings)
+    result = result.convert_dtypes()
+
+    # Ensure no lingering UUID objects in any object/string columns
+    for column_name in result.columns:
+        series = result[column_name]
+        if series.dtype == object:
+            non_null_series = series.dropna()
+            if (
+                not non_null_series.empty
+                and non_null_series.map(lambda v: isinstance(v, uuid.UUID)).any()
+            ):
+                result[column_name] = series.map(
+                    lambda v: str(v) if isinstance(v, uuid.UUID) else v
+                )
+
+    return result
 
 
 class PostgreSQLAnalyzer:
@@ -159,7 +247,7 @@ def main():
                     )
                     if table_info is not None:
                         st.write("**Table Structure:**")
-                        st.dataframe(table_info)
+                        st.dataframe(_make_arrow_compatible(table_info))
 
                     # Row count
                     row_count = st.session_state.analyzer.get_row_count(selected_table)
@@ -182,7 +270,7 @@ def main():
                         selected_table, sample_size
                     )
                     if sample_data is not None:
-                        st.dataframe(sample_data)
+                        st.dataframe(_make_arrow_compatible(sample_data))
 
                         # Download option
                         csv = sample_data.to_csv(index=False)
@@ -302,7 +390,7 @@ def main():
             if query:
                 result = st.session_state.analyzer.execute_query(query)
                 if result is not None:
-                    st.dataframe(result)
+                    st.dataframe(_make_arrow_compatible(result))
 
                     # Download option
                     csv = result.to_csv(index=False)
