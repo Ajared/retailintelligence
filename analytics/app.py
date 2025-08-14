@@ -6,6 +6,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import os
+import hmac
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -91,39 +92,45 @@ def main():
     if "analyzer" not in st.session_state:
         st.session_state.analyzer = PostgreSQLAnalyzer()
 
-    # Database connection section
-    st.header("Database Connection")
+    # Authentication & background connection via admin secret
+    if "authenticated" not in st.session_state:
+        st.session_state.authenticated = False
+    if "connected" not in st.session_state:
+        st.session_state.connected = False
+    if "admin_prompt_active" not in st.session_state:
+        st.session_state.admin_prompt_active = True
 
-    # Connection form
-    with st.form("connection_form"):
-        col1, col2 = st.columns(2)
+    if not st.session_state.authenticated:
+        if st.session_state.admin_prompt_active:
+            st.header("Admin Access")
+            with st.form("admin_secret_form"):
+                admin_secret_input = st.text_input("Admin Secret", type="password")
+                unlock_button = st.form_submit_button("Unlock")
 
-        with col1:
-            host = st.text_input("Host", value=os.getenv("DB_HOST", "localhost"))
-            port = st.text_input("Port", value=os.getenv("DB_PORT", "5432"))
-            database = st.text_input("Database", value=os.getenv("DB_NAME", ""))
+            if unlock_button:
+                expected_secret = os.getenv("ADMIN_SECRET", "")
+                if not expected_secret:
+                    st.error("Server misconfiguration: ADMIN_SECRET is not set.")
+                    st.session_state.admin_prompt_active = False
+                elif hmac.compare_digest(admin_secret_input or "", expected_secret):
+                    with st.spinner("Verifying and connecting..."):
+                        if st.session_state.analyzer.connect():
+                            st.success("Connected to database successfully!")
+                            st.session_state.connected = True
+                            st.session_state.authenticated = True
+                        else:
+                            st.session_state.connected = False
+                    st.session_state.admin_prompt_active = False
+                else:
+                    st.error("Invalid admin secret.")
+                    st.session_state.admin_prompt_active = False
+        else:
+            if not st.session_state.connected:
+                st.info("Access restricted. Refresh the page to try again.")
 
-        with col2:
-            user = st.text_input("Username", value=os.getenv("DB_USER", ""))
-            password = st.text_input(
-                "Password", type="password", value=os.getenv("DB_PASSWORD", "")
-            )
-
-        connect_button = st.form_submit_button("Connect to Database")
-
-        if connect_button:
-            # Update environment variables
-            os.environ["DB_HOST"] = host
-            os.environ["DB_PORT"] = port
-            os.environ["DB_NAME"] = database
-            os.environ["DB_USER"] = user
-            os.environ["DB_PASSWORD"] = password
-
-            if st.session_state.analyzer.connect():
-                st.success("Connected to database successfully!")
-                st.session_state.connected = True
-            else:
-                st.session_state.connected = False
+    # Stop rendering the rest of the app until a successful connection is established
+    if not st.session_state.get("connected", False):
+        st.stop()
 
     # Main analysis section
     if st.session_state.get("connected", False):
@@ -262,15 +269,19 @@ def main():
 
                             if selected_categorical:
                                 # Value counts
-                                value_counts = (
+                                series_for_counts = (
                                     sample_data[selected_categorical]
-                                    .value_counts()
-                                    .head(10)
+                                    .dropna()
+                                    .astype(str)
                                 )
+                                value_counts = series_for_counts.value_counts().head(10)
+                                x_values = value_counts.index.tolist()
+                                y_values = value_counts.values.tolist()
                                 fig_bar = px.bar(
-                                    x=value_counts.index,
-                                    y=value_counts.values,
+                                    x=x_values,
+                                    y=y_values,
                                     title=f"Top 10 Values in {selected_categorical}",
+                                    labels={"x": selected_categorical, "y": "Count"},
                                 )
                                 st.plotly_chart(fig_bar, use_container_width=True)
 
