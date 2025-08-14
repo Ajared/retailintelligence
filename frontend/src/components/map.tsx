@@ -28,7 +28,7 @@ export default function Map({
   center?: LatLngExpression;
   zoom?: number;
 }) {
-  const mapZoom = zoom ?? 14;
+  const mapZoom = zoom ?? 15;
   const mapCenter = center ?? {
     lat: 9.074426322081734,
     lng: 7.477762699127198,
