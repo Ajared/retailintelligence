@@ -2,7 +2,7 @@
 
 Retailytics provides a way to collect, analyze and share data about retail stores in a city.
 
-It solves the problem of having valuable local data for small and medium scale businesses to plan and research their market, by making it easy to crowdsource store data from enumerators across multiple local governments or districts.
+It solves the problem of having valuable local data for small and medium scale businesses to plan and research their market, by making it easy to crowdsource store data using enumerators across multiple local governments or districts.
 
 How It works
     
