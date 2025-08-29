@@ -6,17 +6,25 @@ import { Response } from 'express';
 import { NullishValueError } from '~/helpers/try-safe';
 import { CustomHttpException } from '~/helpers/custom.exception';
 import { HttpStatus } from '@nestjs/common';
-import { EntityMetadata, EntityPropertyNotFoundError } from 'typeorm';
+import {
+  EntityMetadata,
+  EntityPropertyNotFoundError,
+  Repository,
+  ILike,
+  Between,
+} from 'typeorm';
 import { Store } from './entities/store.entity';
 import { StoreQueryOptions } from './types/list-store.type';
 import { UserRole, UserStatus } from '../user/constants/user.constant';
 import { AuthProvider } from '../auth/constants/auth.constant';
 import * as SYS_MSG from '~/helpers/system-messages';
 import { ExportType } from '~/helpers/query.helper';
+import { getRepositoryToken } from '@nestjs/typeorm';
 
 describe('StoreService', () => {
   let service: StoreService;
   let storeModelAction: StoreModelAction;
+  let mockRepository: jest.Mocked<Repository<Store>>;
 
   const mockResponse = {
     setHeader: jest.fn(),
@@ -99,6 +107,15 @@ describe('StoreService', () => {
       list: jest.fn(),
     };
 
+    const mockRepositoryMethods = {
+      find: jest.fn(),
+      count: jest.fn(),
+      save: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+      findOne: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         StoreService,
@@ -106,11 +123,18 @@ describe('StoreService', () => {
           provide: StoreModelAction,
           useValue: mockStoreModelAction,
         },
+        {
+          provide: getRepositoryToken(Store),
+          useValue: mockRepositoryMethods,
+        },
       ],
     }).compile();
 
     service = module.get<StoreService>(StoreService);
     storeModelAction = module.get<StoreModelAction>(StoreModelAction);
+    mockRepository = module.get<Repository<Store>>(
+      getRepositoryToken(Store),
+    ) as jest.Mocked<Repository<Store>>;
   });
 
   it('should be defined', () => {
@@ -482,6 +506,443 @@ describe('StoreService', () => {
           message: SYS_MSG.RESOURCE_FETCH_FAILED('Stores'),
         }),
       );
+    });
+  });
+
+  describe('StoreModelAction - Partial Search Tests', () => {
+    let modelAction: StoreModelAction;
+
+    beforeEach(() => {
+      modelAction = new StoreModelAction(mockRepository);
+    });
+
+    describe('list - partial search functionality', () => {
+      it('should perform exact match for non-name fields', async () => {
+        const stores = [mockStore];
+        mockRepository.find.mockResolvedValue(stores);
+        mockRepository.count.mockResolvedValue(1);
+
+        const listOptions = {
+          paginationPayload: { page: 1, limit: 10 },
+          filterRecordOptions: {
+            stateId: 'state1',
+            enumeratorId: 'user1',
+          },
+        };
+
+        await modelAction.list(listOptions);
+
+        expect(mockRepository.find).toHaveBeenCalledWith({
+          where: {
+            stateId: 'state1',
+            enumeratorId: 'user1',
+          },
+          relations: undefined,
+          take: 10,
+          skip: 0,
+          order: { createdAt: 'DESC' },
+        });
+      });
+
+      it('should perform case-insensitive partial search for name field', async () => {
+        const stores = [mockStore];
+        mockRepository.find.mockResolvedValue(stores);
+        mockRepository.count.mockResolvedValue(1);
+
+        const listOptions = {
+          paginationPayload: { page: 1, limit: 10 },
+          filterRecordOptions: {
+            name: 'Test',
+            stateId: 'state1',
+          },
+        };
+
+        await modelAction.list(listOptions);
+
+        expect(mockRepository.find).toHaveBeenCalledWith({
+          where: {
+            name: ILike('%Test%'),
+            stateId: 'state1',
+          },
+          relations: undefined,
+          take: 10,
+          skip: 0,
+          order: { createdAt: 'DESC' },
+        });
+
+        expect(mockRepository.count).toHaveBeenCalledWith({
+          where: {
+            name: ILike('%Test%'),
+            stateId: 'state1',
+          },
+        });
+      });
+
+      it('should handle partial name search with special characters', async () => {
+        const stores = [mockStore];
+        mockRepository.find.mockResolvedValue(stores);
+        mockRepository.count.mockResolvedValue(1);
+
+        const listOptions = {
+          paginationPayload: { page: 1, limit: 10 },
+          filterRecordOptions: {
+            name: 'Store & Shop',
+          },
+        };
+
+        await modelAction.list(listOptions);
+
+        expect(mockRepository.find).toHaveBeenCalledWith({
+          where: {
+            name: ILike('%Store & Shop%'),
+          },
+          relations: undefined,
+          take: 10,
+          skip: 0,
+          order: { createdAt: 'DESC' },
+        });
+      });
+
+      it('should ignore undefined and null values in filter', async () => {
+        const stores = [mockStore];
+        mockRepository.find.mockResolvedValue(stores);
+        mockRepository.count.mockResolvedValue(1);
+
+        const listOptions = {
+          paginationPayload: { page: 1, limit: 10 },
+          filterRecordOptions: {
+            name: 'Test',
+            stateId: undefined,
+            localGovernmentId: null,
+          },
+        };
+
+        await modelAction.list(listOptions);
+
+        expect(mockRepository.find).toHaveBeenCalledWith({
+          where: {
+            name: ILike('%Test%'),
+          },
+          relations: undefined,
+          take: 10,
+          skip: 0,
+          order: { createdAt: 'DESC' },
+        });
+      });
+
+      it('should work without pagination', async () => {
+        const stores = [mockStore];
+        mockRepository.find.mockResolvedValue(stores);
+
+        const listOptions = {
+          filterRecordOptions: {
+            name: 'Test Store',
+          },
+        };
+
+        const result = await modelAction.list(listOptions);
+
+        expect(mockRepository.find).toHaveBeenCalledWith({
+          where: {
+            name: ILike('%Test Store%'),
+          },
+          relations: undefined,
+          order: { createdAt: 'DESC' },
+        });
+
+        expect(result).toEqual({
+          payload: stores,
+          paginationMeta: {
+            total: 1,
+            page: 1,
+            limit: 1,
+            totalPages: 1,
+            hasNext: false,
+            hasPrevious: false,
+          },
+        });
+      });
+
+      it('should work with empty name string', async () => {
+        const stores = [mockStore];
+        mockRepository.find.mockResolvedValue(stores);
+        mockRepository.count.mockResolvedValue(1);
+
+        const listOptions = {
+          paginationPayload: { page: 1, limit: 10 },
+          filterRecordOptions: {
+            name: '',
+            stateId: 'state1',
+          },
+        };
+
+        await modelAction.list(listOptions);
+
+        expect(mockRepository.find).toHaveBeenCalledWith({
+          where: {
+            name: ILike('%%'),
+            stateId: 'state1',
+          },
+          relations: undefined,
+          take: 10,
+          skip: 0,
+          order: { createdAt: 'DESC' },
+        });
+      });
+
+      it('should handle sorting with partial search', async () => {
+        const stores = [mockStore];
+        mockRepository.find.mockResolvedValue(stores);
+        mockRepository.count.mockResolvedValue(1);
+
+        const listOptions = {
+          paginationPayload: { page: 1, limit: 10 },
+          filterRecordOptions: {
+            name: 'Test',
+            stateId: 'state1',
+            sort: 'ASC' as const,
+          },
+        };
+
+        await modelAction.list(listOptions);
+
+        expect(mockRepository.find).toHaveBeenCalledWith({
+          where: {
+            name: ILike('%Test%'),
+            stateId: 'state1',
+          },
+          relations: undefined,
+          take: 10,
+          skip: 0,
+          order: { stateId: 'ASC' },
+        });
+      });
+
+      it('should fall back to parent implementation when no filter options', async () => {
+        const stores = [mockStore];
+        mockRepository.find.mockResolvedValue(stores);
+        mockRepository.count.mockResolvedValue(1);
+
+        const listOptions = {
+          paginationPayload: { page: 1, limit: 10 },
+          filterRecordOptions: undefined,
+        };
+
+        await modelAction.list(listOptions);
+
+        expect(mockRepository.find).toHaveBeenCalledWith({
+          relations: undefined,
+          take: 10,
+          skip: 0,
+          order: { createdAt: 'DESC' },
+        });
+      });
+
+      it('should handle geographic bounds filtering for lat/lng viewport', async () => {
+        const stores = [mockStore];
+        mockRepository.find.mockResolvedValue(stores);
+        mockRepository.count.mockResolvedValue(1);
+
+        const listOptions = {
+          paginationPayload: { page: 1, limit: 10 },
+          filterRecordOptions: {
+            minLat: '9.070992170693003',
+            maxLat: '9.089723037902536',
+            minLng: '7.464008331298829',
+            maxLng: '7.497739791870118',
+          },
+        };
+
+        await modelAction.list(listOptions);
+
+        expect(mockRepository.find).toHaveBeenCalledWith({
+          where: {
+            latitude: Between(9.070992170693003, 9.089723037902536),
+            longitude: Between(7.464008331298829, 7.497739791870118),
+          },
+          relations: undefined,
+          take: 10,
+          skip: 0,
+          order: { createdAt: 'DESC' },
+        });
+      });
+
+      it('should handle combined name search and geographic bounds filtering', async () => {
+        const stores = [mockStore];
+        mockRepository.find.mockResolvedValue(stores);
+        mockRepository.count.mockResolvedValue(1);
+
+        const listOptions = {
+          paginationPayload: { page: 1, limit: 10 },
+          filterRecordOptions: {
+            name: 'Market',
+            stateId: 'state1',
+            minLat: '9.0',
+            maxLat: '9.1',
+            minLng: '7.4',
+            maxLng: '7.5',
+          },
+        };
+
+        await modelAction.list(listOptions);
+
+        expect(mockRepository.find).toHaveBeenCalledWith({
+          where: {
+            name: ILike('%Market%'),
+            stateId: 'state1',
+            latitude: Between(9.0, 9.1),
+            longitude: Between(7.4, 7.5),
+          },
+          relations: undefined,
+          take: 10,
+          skip: 0,
+          order: { createdAt: 'DESC' },
+        });
+      });
+
+      it('should ignore incomplete bounds (only min or max provided)', async () => {
+        const stores = [mockStore];
+        mockRepository.find.mockResolvedValue(stores);
+        mockRepository.count.mockResolvedValue(1);
+
+        const listOptions = {
+          paginationPayload: { page: 1, limit: 10 },
+          filterRecordOptions: {
+            name: 'Test',
+            minLat: '9.0', // Only min provided, no max
+            maxLng: '7.5', // Only max provided, no min
+          },
+        };
+
+        await modelAction.list(listOptions);
+
+        expect(mockRepository.find).toHaveBeenCalledWith({
+          where: {
+            name: ILike('%Test%'),
+          },
+          relations: undefined,
+          take: 10,
+          skip: 0,
+          order: { createdAt: 'DESC' },
+        });
+      });
+
+      it('should handle invalid numeric values in bounds', async () => {
+        const stores = [mockStore];
+        mockRepository.find.mockResolvedValue(stores);
+        mockRepository.count.mockResolvedValue(1);
+
+        const listOptions = {
+          paginationPayload: { page: 1, limit: 10 },
+          filterRecordOptions: {
+            name: 'Test',
+            minLat: 'invalid',
+            maxLat: 'alsoinvalid',
+            minLng: '7.4',
+            maxLng: '7.5',
+          },
+        };
+
+        await modelAction.list(listOptions);
+
+        expect(mockRepository.find).toHaveBeenCalledWith({
+          where: {
+            name: ILike('%Test%'),
+            longitude: Between(7.4, 7.5),
+          },
+          relations: undefined,
+          take: 10,
+          skip: 0,
+          order: { createdAt: 'DESC' },
+        });
+      });
+
+      it('should work with geographic bounds only (no other filters)', async () => {
+        const stores = [mockStore];
+        mockRepository.find.mockResolvedValue(stores);
+        mockRepository.count.mockResolvedValue(1);
+
+        const listOptions = {
+          paginationPayload: { page: 1, limit: 10 },
+          filterRecordOptions: {
+            minLat: '8.5',
+            maxLat: '9.5',
+            minLng: '7.0',
+            maxLng: '8.0',
+          },
+        };
+
+        await modelAction.list(listOptions);
+
+        expect(mockRepository.find).toHaveBeenCalledWith({
+          where: {
+            latitude: Between(8.5, 9.5),
+            longitude: Between(7.0, 8.0),
+          },
+          relations: undefined,
+          take: 10,
+          skip: 0,
+          order: { createdAt: 'DESC' },
+        });
+      });
+
+      it('should handle zero values in bounds', async () => {
+        const stores = [mockStore];
+        mockRepository.find.mockResolvedValue(stores);
+        mockRepository.count.mockResolvedValue(1);
+
+        const listOptions = {
+          paginationPayload: { page: 1, limit: 10 },
+          filterRecordOptions: {
+            minLat: '0',
+            maxLat: '1',
+            minLng: '0',
+            maxLng: '1',
+          },
+        };
+
+        await modelAction.list(listOptions);
+
+        expect(mockRepository.find).toHaveBeenCalledWith({
+          where: {
+            latitude: Between(0, 1),
+            longitude: Between(0, 1),
+          },
+          relations: undefined,
+          take: 10,
+          skip: 0,
+          order: { createdAt: 'DESC' },
+        });
+      });
+
+      it('should handle negative coordinates in bounds', async () => {
+        const stores = [mockStore];
+        mockRepository.find.mockResolvedValue(stores);
+        mockRepository.count.mockResolvedValue(1);
+
+        const listOptions = {
+          paginationPayload: { page: 1, limit: 10 },
+          filterRecordOptions: {
+            minLat: '-90',
+            maxLat: '-80',
+            minLng: '-180',
+            maxLng: '-170',
+          },
+        };
+
+        await modelAction.list(listOptions);
+
+        expect(mockRepository.find).toHaveBeenCalledWith({
+          where: {
+            latitude: Between(-90, -80),
+            longitude: Between(-180, -170),
+          },
+          relations: undefined,
+          take: 10,
+          skip: 0,
+          order: { createdAt: 'DESC' },
+        });
+      });
     });
   });
 });

@@ -7,6 +7,6 @@ import { AbstractModelAction } from '~/database/base/base.model-action';
 @Injectable()
 export class StoreModelAction extends AbstractModelAction<Store> {
   constructor(@InjectRepository(Store) repository: Repository<Store>) {
-    super(repository, Store);
+    super(repository, Store, ['name'], ['latitude', 'longitude']);
   }
 }

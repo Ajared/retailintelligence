@@ -5,6 +5,8 @@ import {
   FindOptionsWhere,
   ObjectLiteral,
   Repository,
+  ILike,
+  Between,
 } from 'typeorm';
 import { computePaginationMeta, PaginationMeta } from '~/helpers/query.helper';
 import ListGenericRecord from '~/types/generic/list-record.type';
@@ -15,12 +17,18 @@ import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity
 
 export abstract class AbstractModelAction<T extends ObjectLiteral> {
   model: EntityTarget<T>;
+  protected partialSearchFields: string[] = [];
+  protected rangeFields: string[] = [];
 
   constructor(
     protected readonly repository: Repository<T>,
     model: EntityTarget<T>,
+    partialSearchFields: string[] = [],
+    rangeFields: string[] = [],
   ) {
     this.model = model;
+    this.partialSearchFields = partialSearchFields;
+    this.rangeFields = rangeFields;
   }
 
   async create(
@@ -115,10 +123,43 @@ export abstract class AbstractModelAction<T extends ObjectLiteral> {
       sort?: 'ASC' | 'DESC';
     } & Record<string, unknown>;
 
+    // Build where clause with partial search and range support
+    const whereClause: FindOptionsWhere<T> = {};
+    const processedRangeFields = new Set<string>();
+
+    Object.entries(filter).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        // Handle range fields (lat/lng bounds)
+        if (this.isRangeField(key)) {
+          const baseField = this.getBaseFieldFromRangeKey(key);
+          if (!processedRangeFields.has(baseField)) {
+            const rangeValue = this.buildRangeQuery(baseField, filter);
+            if (rangeValue) {
+              (whereClause as Record<string, unknown>)[baseField] = rangeValue;
+              processedRangeFields.add(baseField);
+            }
+          }
+        }
+        // Handle partial search fields
+        else if (
+          this.partialSearchFields.includes(key) &&
+          typeof value === 'string'
+        ) {
+          (whereClause as Record<string, unknown>)[key] = ILike(`%${value}%`);
+        }
+        // Handle exact match fields
+        else if (!this.isRangeKey(key)) {
+          (whereClause as Record<string, unknown>)[key] = value;
+        }
+      }
+    });
+
     const orderBy = {} as FindOptionsOrder<T>;
     if (sort) {
       Object.keys(filter).forEach((key) => {
-        (orderBy as unknown as Record<string, 'ASC' | 'DESC'>)[key] = sort;
+        if (key !== 'sort' && !this.partialSearchFields.includes(key)) {
+          (orderBy as unknown as Record<string, 'ASC' | 'DESC'>)[key] = sort;
+        }
       });
     } else {
       (orderBy as unknown as Record<string, 'ASC' | 'DESC'>).createdAt = 'DESC';
@@ -127,7 +168,7 @@ export abstract class AbstractModelAction<T extends ObjectLiteral> {
     if (paginationPayload) {
       const { limit, page } = paginationPayload;
       const query = await this.repository.find({
-        where: filter as FindOptionsWhere<T>,
+        where: whereClause,
         relations,
         take: +limit,
         skip: +limit * (+page - 1),
@@ -135,7 +176,7 @@ export abstract class AbstractModelAction<T extends ObjectLiteral> {
       });
 
       const total = await this.repository.count({
-        where: filter as FindOptionsWhere<T>,
+        where: whereClause,
       });
 
       return {
@@ -145,7 +186,7 @@ export abstract class AbstractModelAction<T extends ObjectLiteral> {
     }
 
     const query = await this.repository.find({
-      where: filter as FindOptionsWhere<T>,
+      where: whereClause,
       relations,
       order: orderBy,
     });
@@ -153,5 +194,71 @@ export abstract class AbstractModelAction<T extends ObjectLiteral> {
       payload: query,
       paginationMeta: computePaginationMeta(query.length, query.length, 1),
     };
+  }
+
+  private isRangeField(key: string): boolean {
+    const baseField = this.getBaseFieldFromRangeKey(key);
+    return this.rangeFields.includes(baseField);
+  }
+
+  private isRangeKey(key: string): boolean {
+    return key.startsWith('min') || key.startsWith('max');
+  }
+
+  private getBaseFieldFromRangeKey(key: string): string {
+    if (key.startsWith('min') || key.startsWith('max')) {
+      // Convert minLat -> latitude, maxLng -> longitude, etc.
+      const baseName = key.substring(3); // Remove 'min' or 'max'
+      if (baseName === 'Lat') return 'latitude';
+      if (baseName === 'Lng') return 'longitude';
+      return baseName.toLowerCase();
+    }
+    return key;
+  }
+
+  private buildRangeQuery(
+    baseField: string,
+    filter: Record<string, unknown>,
+  ): ReturnType<typeof Between> | null {
+    let minKey: string, maxKey: string;
+
+    // Map base field to min/max keys
+    if (baseField === 'latitude') {
+      minKey = 'minLat';
+      maxKey = 'maxLat';
+    } else if (baseField === 'longitude') {
+      minKey = 'minLng';
+      maxKey = 'maxLng';
+    } else {
+      minKey = `min${baseField.charAt(0).toUpperCase() + baseField.slice(1)}`;
+      maxKey = `max${baseField.charAt(0).toUpperCase() + baseField.slice(1)}`;
+    }
+
+    const minValue = filter[minKey];
+    const maxValue = filter[maxKey];
+
+    // Both min and max values are required for range query
+    if (
+      minValue !== undefined &&
+      maxValue !== undefined &&
+      minValue !== null &&
+      maxValue !== null
+    ) {
+      const min =
+        typeof minValue === 'string' ? parseFloat(minValue) : Number(minValue);
+      const max =
+        typeof maxValue === 'string' ? parseFloat(maxValue) : Number(maxValue);
+
+      if (
+        !isNaN(min) &&
+        !isNaN(max) &&
+        typeof min === 'number' &&
+        typeof max === 'number'
+      ) {
+        return Between(min, max);
+      }
+    }
+
+    return null;
   }
 }
