@@ -8,7 +8,7 @@ import { LatLngExpression } from 'leaflet';
 import { StoreInterface } from '~/types/store';
 import { Button } from '~/components/ui/button';
 
-const Map = dynamic(() => import('~/components/map'), {
+const Map = dynamic(() => import('./_components/map'), {
   ssr: false,
 });
 
