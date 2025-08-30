@@ -5,12 +5,12 @@ import dynamic from 'next/dynamic';
 import { Session } from 'next-auth';
 import { Store } from 'lucide-react';
 import { LatLngExpression } from 'leaflet';
-import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
+import { getAdminMapData } from './actions';
 import { StoreInterface } from '~/types/store';
 import { Button } from '~/components/ui/button';
-import { getAdminMapData } from './actions';
+import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
 
-const Map = dynamic(() => import('./_components/map'), {
+const Map = dynamic(() => import('~/components/map'), {
   ssr: false,
 });
 
