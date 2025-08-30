@@ -5,7 +5,11 @@ import { UserInterface } from '~/types/user';
 import customFetch from '~/lib/custom-fetch';
 import { StoreInterface } from '~/types/store';
 import { collectErrorMessages } from '~/lib/utils';
-import { Response, ErrorResponse } from '~/types/actions';
+import {
+  Response,
+  ErrorResponse,
+  PaginatedSuccessResponse,
+} from '~/types/actions';
 import { InviteUserFormData, inviteUserFormSchema } from './schema';
 
 export const getAllStores = async (
@@ -234,6 +238,63 @@ export const assignLocation = async (params: {
     }
 
     return response;
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : 'Something went wrong';
+    return {
+      error: errorMessage,
+      message: errorMessage,
+      timestamp: new Date().toISOString(),
+    } as ErrorResponse;
+  }
+};
+
+export const getAdminMapData = async (
+  page: number = 1,
+  limit: number = 20,
+  sort: string = 'ASC',
+  minLat: number,
+  maxLat: number,
+  minLng: number,
+  maxLng: number,
+): Promise<Response<StoreInterface[]>> => {
+  try {
+    let allData: StoreInterface[] = [];
+    let currentPage = page;
+    let hasNext = true;
+    let compiledResponse: PaginatedSuccessResponse<StoreInterface[]> | null =
+      null;
+
+    while (hasNext) {
+      const response = await customFetch.get<StoreInterface[]>(
+        `/admin/stores?minLat=${minLat}&maxLat=${maxLat}&minLng=${minLng}&maxLng=${maxLng}&page=${currentPage}&limit=${limit}&sort=${sort}`,
+      );
+
+      if (!('data' in response)) {
+        throw new Error(response.message);
+      }
+
+      allData = allData.concat(response.data);
+
+      compiledResponse = response;
+
+      hasNext = response.meta.has_next;
+      currentPage++;
+    }
+
+    if (!compiledResponse) {
+      throw new Error('No data fetched');
+    }
+
+    return {
+      ...compiledResponse,
+      data: allData,
+      meta: {
+        ...compiledResponse.meta,
+        has_next: false,
+        total: allData.length,
+      },
+    };
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : 'Something went wrong';

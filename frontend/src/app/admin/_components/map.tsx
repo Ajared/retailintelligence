@@ -23,27 +23,46 @@ const MapPlaceHolder = () => {
   );
 };
 
-const MapBoundsLogger = () => {
+const MapBoundsListener = ({
+  onBoundsChange,
+}: {
+  onBoundsChange?: (bounds: {
+    minLat: number;
+    maxLat: number;
+    minLng: number;
+    maxLng: number;
+  }) => void;
+}) => {
   const map = useMapEvents({
-    moveend: () => {
+    load: () => {
+      if (!onBoundsChange) return;
       const bounds = map.getBounds();
-      const query = {
+      onBoundsChange({
         minLat: bounds.getSouth(),
         maxLat: bounds.getNorth(),
         minLng: bounds.getWest(),
         maxLng: bounds.getEast(),
-      };
-      console.log('Map bounds:', query);
+      });
+    },
+    moveend: () => {
+      if (!onBoundsChange) return;
+      const bounds = map.getBounds();
+      onBoundsChange({
+        minLat: bounds.getSouth(),
+        maxLat: bounds.getNorth(),
+        minLng: bounds.getWest(),
+        maxLng: bounds.getEast(),
+      });
     },
     zoomend: () => {
+      if (!onBoundsChange) return;
       const bounds = map.getBounds();
-      const query = {
+      onBoundsChange({
         minLat: bounds.getSouth(),
         maxLat: bounds.getNorth(),
         minLng: bounds.getWest(),
         maxLng: bounds.getEast(),
-      };
-      console.log('Map bounds (after zoom):', query);
+      });
     },
   });
   return null;
@@ -54,11 +73,18 @@ export default function Map({
   session,
   center,
   zoom,
+  onBoundsChange,
 }: {
   stores: StoreInterface[];
   session: Session;
   center?: LatLngExpression;
   zoom?: number;
+  onBoundsChange?: (bounds: {
+    minLat: number;
+    maxLat: number;
+    minLng: number;
+    maxLng: number;
+  }) => void;
 }) {
   const mapZoom = zoom ?? 15;
   const mapCenter = center ?? {
@@ -73,7 +99,7 @@ export default function Map({
       style={{ width: '100%', height: '100%', zIndex: 0 }}
       placeholder={<MapPlaceHolder />}
     >
-      <MapBoundsLogger />
+      <MapBoundsListener onBoundsChange={onBoundsChange} />
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
