@@ -157,10 +157,19 @@ export abstract class AbstractModelAction<T extends ObjectLiteral> {
     const orderBy = {} as FindOptionsOrder<T>;
     if (sort) {
       Object.keys(filter).forEach((key) => {
-        if (key !== 'sort' && !this.partialSearchFields.includes(key)) {
+        if (
+          key !== 'sort' &&
+          !this.partialSearchFields.includes(key) &&
+          !this.isRangeKey(key)
+        ) {
           (orderBy as unknown as Record<string, 'ASC' | 'DESC'>)[key] = sort;
         }
       });
+
+      if (Object.keys(orderBy as object).length === 0) {
+        (orderBy as unknown as Record<string, 'ASC' | 'DESC'>).createdAt =
+          'DESC';
+      }
     } else {
       (orderBy as unknown as Record<string, 'ASC' | 'DESC'>).createdAt = 'DESC';
     }
