@@ -10,7 +10,7 @@ import { StoreInterface } from '~/types/store';
 import { Button } from '~/components/ui/button';
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
 
-const Map = dynamic(() => import('~/components/map'), {
+const InteractiveMap = dynamic(() => import('~/components/map'), {
   ssr: false,
 });
 
@@ -41,7 +41,7 @@ export default function Content({
   const isPendingRef = useRef<boolean>(false);
   const MAX_CACHE_ENTRIES = 20;
   const cacheRef = useRef<Map<string, StoreInterface[]>>(
-    new globalThis.Map<string, StoreInterface[]>(),
+    new Map<string, StoreInterface[]>(),
   );
 
   useEffect(() => {
@@ -50,11 +50,16 @@ export default function Content({
 
   const normalizeBounds = useCallback((b: BoundsQuery): BoundsQuery => {
     const round = (n: number) => Math.round(n * 10000) / 10000;
+    const rMinLat = round(b.minLat);
+    const rMaxLat = round(b.maxLat);
+    const rMinLng = round(b.minLng);
+    const rMaxLng = round(b.maxLng);
+
     return {
-      minLat: round(b.minLat),
-      maxLat: round(b.maxLat),
-      minLng: round(b.minLng),
-      maxLng: round(b.maxLng),
+      minLat: Math.min(rMinLat, rMaxLat),
+      maxLat: Math.max(rMinLat, rMaxLat),
+      minLng: rMinLng,
+      maxLng: rMaxLng,
     };
   }, []);
 
@@ -92,8 +97,8 @@ export default function Content({
   );
 
   const setCache = useCallback((key: string, data: StoreInterface[]) => {
-    if (!(cacheRef.current instanceof globalThis.Map)) {
-      cacheRef.current = new globalThis.Map<string, StoreInterface[]>();
+    if (!(cacheRef.current instanceof Map)) {
+      cacheRef.current = new Map<string, StoreInterface[]>();
     }
     const cache = cacheRef.current as Map<string, StoreInterface[]>;
     if (cache.has(key)) cache.delete(key);
@@ -129,30 +134,27 @@ export default function Content({
           }
         }
 
-        if (!(cacheRef.current instanceof globalThis.Map)) {
-          cacheRef.current = new globalThis.Map<string, StoreInterface[]>();
+        if (!(cacheRef.current instanceof Map)) {
+          cacheRef.current = new Map<string, StoreInterface[]>();
         }
         const cached = cacheRef.current.get(key);
         if (cached) {
           setStores(cached);
+
+          lastFetchedBoundsRef.current = { ...bounds };
+          lastFetchedStoresRef.current = cached;
+
+          setCache(key, cached);
+
           return;
         }
 
         startTransition(() => {
-          getUserMapData(
-            1,
-            300,
-            'ASC',
-            bounds.minLat,
-            bounds.maxLat,
-            bounds.minLng,
-            bounds.maxLng,
-          )
+          getUserMapData(bounds, { page: 1, limit: 300, sort: 'ASC' })
             .then((response) => {
               if (requestId !== latestRequestIdRef.current) return;
               if ('error' in response) {
                 setError(response.message ?? 'Failed to load data');
-                setStores([]);
                 return;
               }
               setStores(response.data);
@@ -165,7 +167,6 @@ export default function Content({
               setError(
                 err instanceof Error ? err.message : 'Failed to load data',
               );
-              setStores([]);
             });
         });
       }, delay);
@@ -193,13 +194,13 @@ export default function Content({
         </Button>
       </div>
       <div style={{ aspectRatio: '16/9' }} className="relative">
-        <Map
+        <InteractiveMap
           stores={stores}
           session={session}
           center={center}
           zoom={zoom}
           disabled={isPending}
-          onBoundsChange={handleBoundsChange}
+          onBoundsChangeAction={handleBoundsChange}
         />
         {isPending ? (
           <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-background/40">

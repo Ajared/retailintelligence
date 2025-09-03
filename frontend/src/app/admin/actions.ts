@@ -5,7 +5,7 @@ import { UserInterface } from '~/types/user';
 import customFetch from '~/lib/custom-fetch';
 import { StoreInterface } from '~/types/store';
 import { collectErrorMessages } from '~/lib/utils';
-import {
+import type {
   Response,
   ErrorResponse,
   PaginatedSuccessResponse,
@@ -250,34 +250,42 @@ export const assignLocation = async (params: {
 };
 
 export const getAdminMapData = async (
-  page: number = 1,
-  limit: number = 20,
-  sort: string = 'ASC',
-  minLat: number,
-  maxLat: number,
-  minLng: number,
-  maxLng: number,
+  bounds: { minLat: number; maxLat: number; minLng: number; maxLng: number },
+  opts: { page?: number; limit?: number; sort?: 'ASC' | 'DESC' } = {},
 ): Promise<Response<StoreInterface[]>> => {
   try {
+    const { page = 1, limit = 20, sort = 'ASC' } = opts;
     let allData: StoreInterface[] = [];
     let currentPage = page;
     let hasNext = true;
     let compiledResponse: PaginatedSuccessResponse<StoreInterface[]> | null =
       null;
+    const MAX_PAGES = 50;
 
-    while (hasNext) {
+    while (hasNext && currentPage <= MAX_PAGES) {
+      const params = new URLSearchParams({
+        minLat: String(bounds.minLat),
+        maxLat: String(bounds.maxLat),
+        minLng: String(bounds.minLng),
+        maxLng: String(bounds.maxLng),
+        page: String(currentPage),
+        limit: String(limit),
+        sort,
+      });
       const response = await customFetch.get<StoreInterface[]>(
-        `/admin/stores?minLat=${minLat}&maxLat=${maxLat}&minLng=${minLng}&maxLng=${maxLng}&page=${currentPage}&limit=${limit}&sort=${sort}`,
+        `/admin/stores?${params.toString()}`,
       );
 
       if (!('data' in response)) {
         throw new Error(response.message);
       }
 
-      allData = allData.concat(response.data);
+      allData.push(...response.data);
 
       compiledResponse = response;
-
+      if (!response.meta || typeof response.meta.has_next !== 'boolean') {
+        throw new Error('Invalid pagination metadata');
+      }
       hasNext = response.meta.has_next;
       currentPage++;
     }

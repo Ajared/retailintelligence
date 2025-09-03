@@ -17,6 +17,13 @@ import {
 } from 'react-leaflet';
 import 'leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css';
 
+type MapWithTouchZoom = {
+  touchZoom?: {
+    disable: () => void;
+    enable: () => void;
+  };
+};
+
 const MapPlaceHolder = () => {
   return (
     <div className="flex h-full w-full items-center justify-center">
@@ -26,9 +33,9 @@ const MapPlaceHolder = () => {
 };
 
 const MapBoundsListener = ({
-  onBoundsChange,
+  onBoundsChangeAction,
 }: {
-  onBoundsChange?: (bounds: {
+  onBoundsChangeAction?: (bounds: {
     minLat: number;
     maxLat: number;
     minLng: number;
@@ -37,9 +44,9 @@ const MapBoundsListener = ({
 }) => {
   const map = useMapEvents({
     load: () => {
-      if (!onBoundsChange) return;
+      if (!onBoundsChangeAction) return;
       const bounds = map.getBounds();
-      onBoundsChange({
+      onBoundsChangeAction({
         minLat: bounds.getSouth(),
         maxLat: bounds.getNorth(),
         minLng: bounds.getWest(),
@@ -47,9 +54,9 @@ const MapBoundsListener = ({
       });
     },
     moveend: () => {
-      if (!onBoundsChange) return;
+      if (!onBoundsChangeAction) return;
       const bounds = map.getBounds();
-      onBoundsChange({
+      onBoundsChangeAction({
         minLat: bounds.getSouth(),
         maxLat: bounds.getNorth(),
         minLng: bounds.getWest(),
@@ -57,9 +64,9 @@ const MapBoundsListener = ({
       });
     },
     zoomend: () => {
-      if (!onBoundsChange) return;
+      if (!onBoundsChangeAction) return;
       const bounds = map.getBounds();
-      onBoundsChange({
+      onBoundsChangeAction({
         minLat: bounds.getSouth(),
         maxLat: bounds.getNorth(),
         minLng: bounds.getWest(),
@@ -69,9 +76,9 @@ const MapBoundsListener = ({
   });
 
   useEffect(() => {
-    if (!onBoundsChange) return;
+    if (!onBoundsChangeAction) return;
     const bounds = map.getBounds();
-    onBoundsChange({
+    onBoundsChangeAction({
       minLat: bounds.getSouth(),
       maxLat: bounds.getNorth(),
       minLng: bounds.getWest(),
@@ -82,20 +89,48 @@ const MapBoundsListener = ({
   return null;
 };
 
+const MapInteractivityController = ({
+  isDisabled,
+}: {
+  isDisabled?: boolean;
+}) => {
+  const map = useMap();
+  useEffect(() => {
+    if (!map) return;
+    const mapWithTouch = map as unknown as MapWithTouchZoom;
+    if (isDisabled) {
+      map.dragging.disable();
+      map.scrollWheelZoom.disable();
+      map.doubleClickZoom.disable();
+      map.boxZoom.disable();
+      map.keyboard.disable();
+      mapWithTouch.touchZoom?.disable();
+    } else {
+      map.dragging.enable();
+      map.scrollWheelZoom.enable();
+      map.doubleClickZoom.enable();
+      map.boxZoom.enable();
+      map.keyboard.enable();
+      mapWithTouch.touchZoom?.enable();
+    }
+  }, [map, isDisabled]);
+  return null;
+};
+
 export default function Map({
   stores,
   session,
   center,
   zoom,
   disabled,
-  onBoundsChange,
+  onBoundsChangeAction,
 }: {
   stores: StoreInterface[];
   session: Session;
   center?: LatLngExpression;
   zoom?: number;
   disabled?: boolean;
-  onBoundsChange?: (bounds: {
+  onBoundsChangeAction?: (bounds: {
     minLat: number;
     maxLat: number;
     minLng: number;
@@ -108,45 +143,6 @@ export default function Map({
     lng: 7.477762699127198,
   };
 
-  const MapInteractivityController = ({
-    isDisabled,
-  }: {
-    isDisabled?: boolean;
-  }) => {
-    const map = useMap();
-    useEffect(() => {
-      if (!map) return;
-      if (isDisabled) {
-        map.dragging.disable();
-        map.scrollWheelZoom.disable();
-        map.doubleClickZoom.disable();
-        map.boxZoom.disable();
-        map.keyboard.disable();
-        if (
-          (map as unknown as { touchZoom?: { disable: () => void } }).touchZoom
-        ) {
-          (
-            map as unknown as { touchZoom?: { disable: () => void } }
-          ).touchZoom?.disable();
-        }
-      } else {
-        map.dragging.enable();
-        map.scrollWheelZoom.enable();
-        map.doubleClickZoom.enable();
-        map.boxZoom.enable();
-        map.keyboard.enable();
-        if (
-          (map as unknown as { touchZoom?: { enable: () => void } }).touchZoom
-        ) {
-          (
-            map as unknown as { touchZoom?: { enable: () => void } }
-          ).touchZoom?.enable();
-        }
-      }
-    }, [map, isDisabled]);
-    return null;
-  };
-
   return (
     <MapContainer
       zoom={mapZoom}
@@ -155,7 +151,7 @@ export default function Map({
       placeholder={<MapPlaceHolder />}
     >
       <MapInteractivityController isDisabled={disabled} />
-      <MapBoundsListener onBoundsChange={onBoundsChange} />
+      <MapBoundsListener onBoundsChangeAction={onBoundsChangeAction} />
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
