@@ -8,10 +8,10 @@ interface StoreFilterOptions extends FilterOptions {
   localGovernmentId?: string;
   phaseId?: string;
   districtId?: string;
-  minLat?: string;
-  maxLat?: string;
-  minLng?: string;
-  maxLng?: string;
+  minLat?: `${number}`;
+  maxLat?: `${number}`;
+  minLng?: `${number}`;
+  maxLng?: `${number}`;
 }
 
 interface StoreQueryOptions extends StoreFilterOptions, PaginationOptions {}

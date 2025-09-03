@@ -17,18 +17,18 @@ import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity
 
 export abstract class AbstractModelAction<T extends ObjectLiteral> {
   model: EntityTarget<T>;
-  protected partialSearchFields: string[] = [];
-  protected rangeFields: string[] = [];
+  protected readonly partialSearchFields: string[] = [];
+  protected readonly rangeFields: string[] = [];
 
   constructor(
     protected readonly repository: Repository<T>,
     model: EntityTarget<T>,
-    partialSearchFields: string[] = [],
-    rangeFields: string[] = [],
+    partialSearchFields: readonly string[] = [],
+    rangeFields: readonly string[] = [],
   ) {
     this.model = model;
-    this.partialSearchFields = partialSearchFields;
-    this.rangeFields = rangeFields;
+    this.partialSearchFields = [...partialSearchFields];
+    this.rangeFields = [...rangeFields];
   }
 
   async create(
@@ -206,6 +206,7 @@ export abstract class AbstractModelAction<T extends ObjectLiteral> {
   }
 
   private isRangeField(key: string): boolean {
+    if (!this.isRangeKey(key)) return false;
     const baseField = this.getBaseFieldFromRangeKey(key);
     return this.rangeFields.includes(baseField);
   }
