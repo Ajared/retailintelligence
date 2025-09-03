@@ -255,7 +255,7 @@ export const getAdminMapData = async (
 ): Promise<Response<StoreInterface[]>> => {
   try {
     const { page = 1, limit = 20, sort = 'ASC' } = opts;
-    let allData: StoreInterface[] = [];
+    const allData: StoreInterface[] = [];
     let currentPage = page;
     let hasNext = true;
     let compiledResponse: PaginatedSuccessResponse<StoreInterface[]> | null =
