@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { StoreService } from './store.service';
+import { SkipThrottle } from '@nestjs/throttler';
 import { QueryValidator } from '~/helpers/query.helper';
 import { StoreDto, StoreQueryValidator } from './dto/store.dto';
 
@@ -39,6 +40,7 @@ export class StoreController {
   }
 
   @Get()
+  @SkipThrottle()
   @HttpCode(HttpStatus.OK)
   async listStores(
     @Req() req: Request & { user: { sub: string } },

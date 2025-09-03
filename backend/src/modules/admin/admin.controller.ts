@@ -18,6 +18,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AdminService } from './admin.service';
+import { SkipThrottle } from '@nestjs/throttler';
 import { StoreQueryValidator } from '../store/dto/store.dto';
 import { AssignLocationDto, UserQueryValidator } from '../user/dto/user.dto';
 
@@ -63,6 +64,7 @@ export class AdminController {
   }
 
   @Get('stores')
+  @SkipThrottle()
   async getStores(@Query() queryOptions: StoreQueryValidator) {
     return this.adminService.listStores(queryOptions);
   }
