@@ -1,5 +1,12 @@
+import {
+  IsString,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsLatitude,
+  IsLongitude,
+} from 'class-validator';
 import { QueryValidator } from '~/helpers/query.helper';
-import { IsString, IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
 
 export class StoreDto {
   @IsString()
@@ -74,4 +81,20 @@ export class StoreQueryValidator extends QueryValidator {
   @IsString()
   @IsOptional()
   districtId?: string;
+
+  @IsOptional()
+  @IsLatitude()
+  minLat?: `${number}`;
+
+  @IsOptional()
+  @IsLatitude()
+  maxLat?: `${number}`;
+
+  @IsOptional()
+  @IsLongitude()
+  minLng?: `${number}`;
+
+  @IsOptional()
+  @IsLongitude()
+  maxLng?: `${number}`;
 }
