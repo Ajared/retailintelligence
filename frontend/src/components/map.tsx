@@ -1,13 +1,28 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect } from 'react';
 import 'leaflet/dist/leaflet.css';
 import { Session } from 'next-auth';
 import 'leaflet-defaulticon-compatibility';
 import { LatLngExpression } from 'leaflet';
 import { StoreInterface } from '~/types/store';
-import { Popup, Marker, TileLayer, MapContainer } from 'react-leaflet';
+import {
+  Popup,
+  Marker,
+  TileLayer,
+  MapContainer,
+  useMap,
+  useMapEvents,
+} from 'react-leaflet';
 import 'leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css';
+
+type MapWithTouchZoom = {
+  touchZoom?: {
+    disable: () => void;
+    enable: () => void;
+  };
+};
 
 const MapPlaceHolder = () => {
   return (
@@ -17,16 +32,110 @@ const MapPlaceHolder = () => {
   );
 };
 
+const MapBoundsListener = ({
+  onBoundsChangeAction,
+}: {
+  onBoundsChangeAction?: (bounds: {
+    minLat: number;
+    maxLat: number;
+    minLng: number;
+    maxLng: number;
+  }) => void;
+}) => {
+  const map = useMapEvents({
+    load: () => {
+      if (!onBoundsChangeAction) return;
+      const bounds = map.getBounds();
+      onBoundsChangeAction({
+        minLat: bounds.getSouth(),
+        maxLat: bounds.getNorth(),
+        minLng: bounds.getWest(),
+        maxLng: bounds.getEast(),
+      });
+    },
+    moveend: () => {
+      if (!onBoundsChangeAction) return;
+      const bounds = map.getBounds();
+      onBoundsChangeAction({
+        minLat: bounds.getSouth(),
+        maxLat: bounds.getNorth(),
+        minLng: bounds.getWest(),
+        maxLng: bounds.getEast(),
+      });
+    },
+    zoomend: () => {
+      if (!onBoundsChangeAction) return;
+      const bounds = map.getBounds();
+      onBoundsChangeAction({
+        minLat: bounds.getSouth(),
+        maxLat: bounds.getNorth(),
+        minLng: bounds.getWest(),
+        maxLng: bounds.getEast(),
+      });
+    },
+  });
+
+  useEffect(() => {
+    if (!onBoundsChangeAction) return;
+    const bounds = map.getBounds();
+    onBoundsChangeAction({
+      minLat: bounds.getSouth(),
+      maxLat: bounds.getNorth(),
+      minLng: bounds.getWest(),
+      maxLng: bounds.getEast(),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return null;
+};
+
+const MapInteractivityController = ({
+  isDisabled,
+}: {
+  isDisabled?: boolean;
+}) => {
+  const map = useMap();
+  useEffect(() => {
+    if (!map) return;
+    const mapWithTouch = map as unknown as MapWithTouchZoom;
+    if (isDisabled) {
+      map.dragging.disable();
+      map.scrollWheelZoom.disable();
+      map.doubleClickZoom.disable();
+      map.boxZoom.disable();
+      map.keyboard.disable();
+      mapWithTouch.touchZoom?.disable();
+    } else {
+      map.dragging.enable();
+      map.scrollWheelZoom.enable();
+      map.doubleClickZoom.enable();
+      map.boxZoom.enable();
+      map.keyboard.enable();
+      mapWithTouch.touchZoom?.enable();
+    }
+  }, [map, isDisabled]);
+  return null;
+};
+
 export default function Map({
   stores,
   session,
   center,
   zoom,
+  disabled,
+  onBoundsChangeAction,
 }: {
   stores: StoreInterface[];
   session: Session;
   center?: LatLngExpression;
   zoom?: number;
+  disabled?: boolean;
+  onBoundsChangeAction?: (bounds: {
+    minLat: number;
+    maxLat: number;
+    minLng: number;
+    maxLng: number;
+  }) => void;
 }) {
   const mapZoom = zoom ?? 15;
   const mapCenter = center ?? {
@@ -41,6 +150,8 @@ export default function Map({
       style={{ width: '100%', height: '100%', zIndex: 0 }}
       placeholder={<MapPlaceHolder />}
     >
+      <MapInteractivityController isDisabled={disabled} />
+      <MapBoundsListener onBoundsChangeAction={onBoundsChangeAction} />
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

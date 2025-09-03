@@ -5,7 +5,11 @@ import { UserInterface } from '~/types/user';
 import customFetch from '~/lib/custom-fetch';
 import { StoreInterface } from '~/types/store';
 import { collectErrorMessages } from '~/lib/utils';
-import { Response, ErrorResponse } from '~/types/actions';
+import type {
+  Response,
+  ErrorResponse,
+  PaginatedSuccessResponse,
+} from '~/types/actions';
 import { InviteUserFormData, inviteUserFormSchema } from './schema';
 
 export const getAllStores = async (
@@ -234,6 +238,71 @@ export const assignLocation = async (params: {
     }
 
     return response;
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : 'Something went wrong';
+    return {
+      error: errorMessage,
+      message: errorMessage,
+      timestamp: new Date().toISOString(),
+    } as ErrorResponse;
+  }
+};
+
+export const getAdminMapData = async (
+  bounds: { minLat: number; maxLat: number; minLng: number; maxLng: number },
+  opts: { page?: number; limit?: number; sort?: 'ASC' | 'DESC' } = {},
+): Promise<Response<StoreInterface[]>> => {
+  try {
+    const { page = 1, limit = 20, sort = 'ASC' } = opts;
+    let allData: StoreInterface[] = [];
+    let currentPage = page;
+    let hasNext = true;
+    let compiledResponse: PaginatedSuccessResponse<StoreInterface[]> | null =
+      null;
+    const MAX_PAGES = 50;
+
+    while (hasNext && currentPage <= MAX_PAGES) {
+      const params = new URLSearchParams({
+        minLat: String(bounds.minLat),
+        maxLat: String(bounds.maxLat),
+        minLng: String(bounds.minLng),
+        maxLng: String(bounds.maxLng),
+        page: String(currentPage),
+        limit: String(limit),
+        sort,
+      });
+      const response = await customFetch.get<StoreInterface[]>(
+        `/admin/stores?${params.toString()}`,
+      );
+
+      if (!('data' in response)) {
+        throw new Error(response.message);
+      }
+
+      allData.push(...response.data);
+
+      compiledResponse = response;
+      if (!response.meta || typeof response.meta.has_next !== 'boolean') {
+        throw new Error('Invalid pagination metadata');
+      }
+      hasNext = response.meta.has_next;
+      currentPage++;
+    }
+
+    if (!compiledResponse) {
+      throw new Error('No data fetched');
+    }
+
+    return {
+      ...compiledResponse,
+      data: allData,
+      meta: {
+        ...compiledResponse.meta,
+        has_next: false,
+        total: allData.length,
+      },
+    };
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : 'Something went wrong';
