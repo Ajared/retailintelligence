@@ -17,6 +17,12 @@ import { getAdminMapData, getAllStores } from '../actions';
 import { StoreInterface } from '~/types/store';
 import { Button } from '~/components/ui/button';
 import { Input } from '~/components/ui/input';
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from '~/components/ui/context-menu';
 
 const InteractiveMap = dynamic(() => import('~/components/map'), {
   ssr: false,
@@ -379,23 +385,43 @@ export default function Content({
               ) : (
                 <div className="space-y-1">
                   {allStores.map((store) => (
-                    <div
-                      key={store.id}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setFocus({
-                          lat: store.latitude,
-                          lng: store.longitude,
-                          zoom: 18,
-                        });
-                      }}
-                      className="block rounded-md border p-2 hover:bg-muted cursor-pointer"
-                    >
-                      <div className="font-medium truncate">{store.name}</div>
-                      <div className="text-xs text-muted-foreground truncate">
-                        {store.store_type}, {store.address}
-                      </div>
-                    </div>
+                    <ContextMenu>
+                      <ContextMenuTrigger
+                        key={store.id}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setFocus({
+                            lat: store.latitude,
+                            lng: store.longitude,
+                            zoom: 18,
+                          });
+                        }}
+                        className="block rounded-md border p-2 hover:bg-muted cursor-pointer"
+                      >
+                        <div className="font-medium truncate">{store.name}</div>
+                        <div className="text-xs text-muted-foreground truncate">
+                          {store.store_type}, {store.address}
+                        </div>
+                      </ContextMenuTrigger>
+                      <ContextMenuContent>
+                        <ContextMenuItem
+                          onClick={() => {
+                            setFocus({
+                              lat: store.latitude,
+                              lng: store.longitude,
+                              zoom: 18,
+                            });
+                          }}
+                        >
+                          View on Map
+                        </ContextMenuItem>
+                        <ContextMenuItem>
+                          <Link href={`/admin/stores/${store.id}`}>
+                            View Store Details
+                          </Link>
+                        </ContextMenuItem>
+                      </ContextMenuContent>
+                    </ContextMenu>
                   ))}
                   <div ref={sentinelRef} />
                   {isPendingAllStores && (
