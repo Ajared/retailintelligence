@@ -203,7 +203,14 @@ export default function Content({
         });
       }, delay);
     },
-    [boundsKey, filterStoresByBounds, isSubsetBounds, sanitizedName, setCache],
+    [
+      boundsKey,
+      filterStoresByBounds,
+      isSubsetBounds,
+      sanitizedName,
+      setCache,
+      isPending,
+    ],
   );
 
   const loadAllStoresPage = useCallback(
@@ -385,9 +392,8 @@ export default function Content({
               ) : (
                 <div className="space-y-1">
                   {allStores.map((store) => (
-                    <ContextMenu>
+                    <ContextMenu key={store.id}>
                       <ContextMenuTrigger
-                        key={store.id}
                         onClick={(e) => {
                           e.preventDefault();
                           setFocus({

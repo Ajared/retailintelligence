@@ -166,7 +166,7 @@ export default function Content({
         });
       }, delay);
     },
-    [boundsKey, filterStoresByBounds, isSubsetBounds, setCache],
+    [boundsKey, filterStoresByBounds, isSubsetBounds, setCache, isPending],
   );
 
   useEffect(() => {
