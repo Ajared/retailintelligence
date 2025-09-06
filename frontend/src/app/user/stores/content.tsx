@@ -58,11 +58,14 @@ export default function Content({
     lgs: false,
   });
   const selectedStateId = searchParams.get('stateId') || undefined;
-  const selectedLocalGovernmentId = searchParams.get('localGovernmentId') || undefined;
+  const selectedLocalGovernmentId =
+    searchParams.get('localGovernmentId') || undefined;
   const initialName = searchParams.get('name') || '';
   const [searchTerm, setSearchTerm] = useState(initialName);
 
-  const updateSearch = (updates: Record<string, string | number | boolean | null>) => {
+  const updateSearch = (
+    updates: Record<string, string | number | boolean | null>,
+  ) => {
     const params = new URLSearchParams(searchParams.toString());
     Object.entries(updates).forEach(([key, value]) => {
       if (value === null) params.delete(key);
@@ -301,7 +304,9 @@ export default function Content({
 
           {stores.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              {stores.length === 0 ? 'No stores found.' : 'No stores found matching your criteria.'}
+              {stores.length === 0
+                ? 'No stores found.'
+                : 'No stores found matching your criteria.'}
             </div>
           ) : (
             stores.map((store) => (
@@ -411,7 +416,9 @@ export default function Content({
           {pagination.total !== 0 && stores.length !== 0 && (
             <Select
               value={pagination.limit.toString()}
-              onValueChange={(value) => updateSearch({ limit: Number(value), page: 1 })}
+              onValueChange={(value) =>
+                updateSearch({ limit: Number(value), page: 1 })
+              }
             >
               <SelectTrigger className="h-8 w-[70px]">
                 <SelectValue placeholder={pagination.limit} />

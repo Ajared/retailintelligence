@@ -185,7 +185,8 @@ export default function AppMap({
     }, [store?.id]);
     return (
       <Marker ref={ref} position={[store.latitude, store.longitude]}>
-        {session.user.role === 'admin' || session.user.role === 'super_admin' ? (
+        {session.user.role === 'admin' ||
+        session.user.role === 'super_admin' ? (
           <Popup>
             <Link href={`/admin/stores/${store.id}`} className="cursor-pointer">
               {store.name}

@@ -404,7 +404,11 @@ export default function Content({
                           suppressNextBoundsRef.current = true;
                           setHighlightedStore(store);
                           setActiveStoreId(store.id ?? null);
-                          setFocus({ lat: store.latitude, lng: store.longitude, zoom: 18 });
+                          setFocus({
+                            lat: store.latitude,
+                            lng: store.longitude,
+                            zoom: 18,
+                          });
                         }}
                         className="block rounded-md border p-2 hover:bg-muted cursor-pointer"
                       >
@@ -419,7 +423,11 @@ export default function Content({
                             suppressNextBoundsRef.current = true;
                             setHighlightedStore(store);
                             setActiveStoreId(store.id ?? null);
-                            setFocus({ lat: store.latitude, lng: store.longitude, zoom: 18 });
+                            setFocus({
+                              lat: store.latitude,
+                              lng: store.longitude,
+                              zoom: 18,
+                            });
                           }}
                         >
                           View on Map
