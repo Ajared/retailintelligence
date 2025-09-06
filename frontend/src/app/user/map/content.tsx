@@ -50,6 +50,7 @@ export default function Content({
   const [allStores, setAllStores] = useState<StoreInterface[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const isPendingRef = useRef(isPending);
   const [isPendingAllStores, startTransitionAllStores] = useTransition();
   const [focus, setFocus] = useState<{
     lat: number;
@@ -72,6 +73,10 @@ export default function Content({
   const cacheRef = useRef<Map<string, StoreInterface[]>>(
     new Map<string, StoreInterface[]>(),
   );
+
+  useEffect(() => {
+    isPendingRef.current = isPending;
+  }, [isPending]);
 
   const normalizeBounds = useCallback((b: BoundsQuery): BoundsQuery => {
     const round = (n: number) => Math.round(n * 10000) / 10000;
@@ -142,7 +147,7 @@ export default function Content({
         window.clearTimeout(debounceTimerRef.current);
       }
 
-      const delay = isPending ? 800 : 500;
+      const delay = isPendingRef.current ? 800 : 500;
       debounceTimerRef.current = window.setTimeout(() => {
         latestRequestIdRef.current += 1;
         const requestId = latestRequestIdRef.current;
@@ -203,14 +208,7 @@ export default function Content({
         });
       }, delay);
     },
-    [
-      boundsKey,
-      filterStoresByBounds,
-      isSubsetBounds,
-      sanitizedName,
-      setCache,
-      isPending,
-    ],
+    [boundsKey, filterStoresByBounds, isSubsetBounds, setCache, sanitizedName],
   );
 
   const loadAllStoresPage = useCallback(
