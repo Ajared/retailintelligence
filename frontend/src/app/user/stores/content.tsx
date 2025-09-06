@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { useMemo, useState, useTransition } from 'react';
 import { Input } from '~/components/ui/input';
 import { Button } from '~/components/ui/button';
 import {
@@ -61,8 +61,6 @@ export default function Content({
   const selectedLocalGovernmentId = searchParams.get('localGovernmentId') || undefined;
   const initialName = searchParams.get('name') || '';
   const [searchTerm, setSearchTerm] = useState(initialName);
-
-  const isFirstRef = useRef(true);
 
   const updateSearch = (updates: Record<string, string | number | boolean | null>) => {
     const params = new URLSearchParams(searchParams.toString());

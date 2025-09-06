@@ -122,6 +122,7 @@ export default function Content({
       updateSearch({ name: searchTerm.trim() ? searchTerm : null, page: 1 });
     }, 400);
     return () => clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm]);
 
   const handleSearch = (value: string) => {
@@ -502,7 +503,7 @@ export default function Content({
           {pagination.total !== 0 && stores.length !== 0 && (
             <Select
               value={pagination.limit.toString()}
-              onValueChange={(value) => setLimit(Number(value))}
+              onValueChange={(value) => updateSearch({ limit: Number(value), page: 1 })}
             >
               <SelectTrigger className="h-8 w-[70px]">
                 <SelectValue placeholder={pagination.limit} />
