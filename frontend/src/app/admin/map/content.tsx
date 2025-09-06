@@ -57,7 +57,11 @@ export default function Content({
   const latestRequestIdRef = useRef(0);
   const lastFetchedBoundsRef = useRef<BoundsQuery | null>(null);
   const lastFetchedStoresRef = useRef<StoreInterface[] | null>(null);
-  const latestAllStoresRequestIdRef = useRef(0);
+  const allStoresQueryKeyRef = useRef<string>('');
+  const listContainerRef = useRef<HTMLDivElement | null>(null);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const [allStoresPage, setAllStoresPage] = useState<number>(0);
+  const [allStoresHasNext, setAllStoresHasNext] = useState<boolean>(true);
   const MAX_CACHE_ENTRIES = 20;
   const cacheRef = useRef<Map<string, StoreInterface[]>>(
     new Map<string, StoreInterface[]>(),
@@ -196,27 +200,72 @@ export default function Content({
     [boundsKey, filterStoresByBounds, isSubsetBounds, sanitizedName, setCache],
   );
 
-  const fetchAllStores = useCallback((queryName?: string) => {
-    latestAllStoresRequestIdRef.current += 1;
-    const requestId = latestAllStoresRequestIdRef.current;
-    startTransitionAllStores(() => {
-      const trimmed = queryName?.trim();
-      const nameParam = trimmed && trimmed.length > 0 ? trimmed : undefined;
-      getAllStores(1, 300, 'ASC', undefined, undefined, undefined, nameParam)
-        .then((response) => {
-          if (requestId !== latestAllStoresRequestIdRef.current) return;
-          if ('error' in response) {
-            setError(response.message ?? 'Failed to load data');
-            return;
-          }
-          setAllStores(response.data);
-        })
-        .catch((err: unknown) => {
-          if (requestId !== latestAllStoresRequestIdRef.current) return;
-          setError(err instanceof Error ? err.message : 'Failed to load data');
-        });
-    });
-  }, []);
+  const loadAllStoresPage = useCallback(
+    (params: { page: number; name?: string; append: boolean; key: string }) => {
+      const { page, name, append, key } = params;
+      startTransitionAllStores(() => {
+        const trimmed = name?.trim();
+        const nameParam = trimmed && trimmed.length > 0 ? trimmed : undefined;
+        getAllStores(
+          page,
+          50,
+          'ASC',
+          undefined,
+          undefined,
+          undefined,
+          nameParam,
+        )
+          .then((response) => {
+            if (allStoresQueryKeyRef.current !== key) return;
+            if ('error' in response) {
+              setError(response.message ?? 'Failed to load data');
+              return;
+            }
+            const hasNext = Boolean(response.meta?.has_next);
+            const incoming = response.data;
+            setAllStores((prev) => {
+              if (!append) return incoming;
+              const existingIds = new Set(prev.map((s) => s.id));
+              const deduped = incoming.filter((s) => !existingIds.has(s.id));
+              return prev.concat(deduped);
+            });
+            setAllStoresPage(page);
+            setAllStoresHasNext(hasNext);
+          })
+          .catch((err: unknown) => {
+            if (allStoresQueryKeyRef.current !== key) return;
+            setError(
+              err instanceof Error ? err.message : 'Failed to load data',
+            );
+          });
+      });
+    },
+    [],
+  );
+
+  const resetAndLoadAllStores = useCallback(
+    (queryName?: string) => {
+      const key = `${queryName ?? ''}:${Date.now()}`;
+      allStoresQueryKeyRef.current = key;
+      setAllStores([]);
+      setAllStoresPage(0);
+      setAllStoresHasNext(true);
+      loadAllStoresPage({ page: 1, name: queryName, append: false, key });
+    },
+    [loadAllStoresPage],
+  );
+
+  const loadNextAllStoresPage = useCallback(() => {
+    if (!allStoresHasNext || isPendingAllStores) return;
+    const key = allStoresQueryKeyRef.current;
+    loadAllStoresPage({ page: allStoresPage + 1, name, append: true, key });
+  }, [
+    allStoresHasNext,
+    isPendingAllStores,
+    allStoresPage,
+    loadAllStoresPage,
+    name,
+  ]);
 
   useEffect(() => {
     if (searchDebounceRef.current) {
@@ -226,15 +275,33 @@ export default function Content({
       if (lastFetchedBoundsRef.current) {
         handleBoundsChange(lastFetchedBoundsRef.current);
       }
-
-      fetchAllStores(name);
+      resetAndLoadAllStores(name);
     }, 400);
     return () => {
       if (searchDebounceRef.current) {
         window.clearTimeout(searchDebounceRef.current);
       }
     };
-  }, [name, handleBoundsChange, fetchAllStores]);
+  }, [name, handleBoundsChange, resetAndLoadAllStores]);
+
+  useEffect(() => {
+    if (!sentinelRef.current || !listContainerRef.current) return;
+    const root = listContainerRef.current;
+    const sentinel = sentinelRef.current;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry.isIntersecting) {
+          loadNextAllStoresPage();
+        }
+      },
+      { root, rootMargin: '200px', threshold: 0 },
+    );
+    observer.observe(sentinel);
+    return () => {
+      observer.disconnect();
+    };
+  }, [loadNextAllStoresPage, allStoresHasNext]);
 
   useEffect(() => {
     return () => {
@@ -299,16 +366,19 @@ export default function Content({
                   placeholder="Search by name"
                   className="pl-8"
                 />
-                {isPendingAllStores && (
+                {/* {isPendingAllStores && (
                   <Loader2
                     className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground"
                     aria-label="Loading"
                   />
-                )}
+                )} */}
               </div>
             </div>
-            <div className="max-h-[420px] overflow-auto p-2">
-              {allStores.length === 0 ? (
+            <div
+              className="max-h-[420px] overflow-auto p-2"
+              ref={listContainerRef}
+            >
+              {allStores.length === 0 && !isPendingAllStores ? (
                 <div className="p-3 text-sm text-muted-foreground">
                   No stores found.
                 </div>
@@ -329,10 +399,19 @@ export default function Content({
                     >
                       <div className="font-medium truncate">{store.name}</div>
                       <div className="text-xs text-muted-foreground truncate">
-                        {store.store_type}
+                        {store.store_type}, {store.address}
                       </div>
                     </div>
                   ))}
+                  <div ref={sentinelRef} />
+                  {isPendingAllStores && (
+                    <div className="flex items-center justify-center py-2">
+                      <Loader2
+                        className="h-4 w-4 animate-spin text-muted-foreground"
+                        aria-label="Loading more"
+                      />
+                    </div>
+                  )}
                 </div>
               )}
             </div>
