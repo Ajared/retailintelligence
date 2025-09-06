@@ -366,12 +366,6 @@ export default function Content({
                   placeholder="Search by name"
                   className="pl-8"
                 />
-                {/* {isPendingAllStores && (
-                  <Loader2
-                    className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground"
-                    aria-label="Loading"
-                  />
-                )} */}
               </div>
             </div>
             <div
