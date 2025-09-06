@@ -203,7 +203,14 @@ export default function Content({
         });
       }, delay);
     },
-    [boundsKey, filterStoresByBounds, isSubsetBounds, sanitizedName, setCache],
+    [
+      boundsKey,
+      filterStoresByBounds,
+      isSubsetBounds,
+      sanitizedName,
+      setCache,
+      isPending,
+    ],
   );
 
   const loadAllStoresPage = useCallback(
