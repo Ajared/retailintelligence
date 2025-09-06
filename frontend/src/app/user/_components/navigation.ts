@@ -1,5 +1,5 @@
-import { Home, Store } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { Home, Store, MapPin } from 'lucide-react';
 
 interface NavigationItem {
   title: string;
@@ -12,6 +12,11 @@ export const navigationItems: NavigationItem[] = [
     title: 'Home',
     icon: Home,
     url: '/user',
+  },
+  {
+    title: 'Map',
+    icon: MapPin,
+    url: '/user/map',
   },
   {
     title: 'Stores',
