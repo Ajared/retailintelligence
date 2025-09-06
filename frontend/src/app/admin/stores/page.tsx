@@ -1,7 +1,6 @@
 import Content from './content';
 import { Suspense } from 'react';
 import { getAllStores } from '../actions';
-import { StoresProvider } from './context';
 import EmptyState from '../_components/empty';
 import { getAllLocations } from '~/app/actions';
 
@@ -17,9 +16,18 @@ export default async function StoresPage({
   const stateId = params.stateId as string;
   const localGovernmentId = params.localGovernmentId as string;
   const enumeratorId = params.enumeratorId as string;
+  const name = typeof params.name === 'string' ? params.name : undefined;
 
   const [storesResponse, locationsResponse] = await Promise.all([
-    getAllStores(page, limit, sort, stateId, localGovernmentId, enumeratorId),
+    getAllStores(
+      page,
+      limit,
+      sort,
+      stateId,
+      localGovernmentId,
+      enumeratorId,
+      name,
+    ),
     getAllLocations(),
   ]);
 
@@ -29,16 +37,11 @@ export default async function StoresPage({
 
   return (
     <Suspense fallback={<EmptyState />}>
-      <StoresProvider
-        initialStores={storesResponse.data}
-        currentStateId={stateId}
-        currentLocalGovernmentId={localGovernmentId}
-        currentEnumeratorId={enumeratorId}
-        metadata={storesResponse.meta}
+      <Content
+        stores={storesResponse.data}
+        pagination={storesResponse.meta}
         states={locationsResponse.data}
-      >
-        <Content />
-      </StoresProvider>
+      />
     </Suspense>
   );
 }

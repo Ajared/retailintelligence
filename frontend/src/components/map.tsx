@@ -116,7 +116,7 @@ const MapFlyToController = ({
     return () => {
       map.off('moveend', handler);
     };
-  }, [map, target, onComplete]);
+  }, [map, target, onComplete, activateSuppress]);
   return null;
 };
 
@@ -152,7 +152,10 @@ export default function AppMap({
     lng: 7.477762699127198,
   };
 
-  const markerRefs = useRef(new Map<string | number, any>());
+  type MarkerInstance = {
+    openPopup?: () => void;
+  } | null;
+  const markerRefs = useRef(new Map<string | number, MarkerInstance>());
   const suppressEventTokensRef = useRef(0);
   const shouldSuppressNextBounds = () => suppressEventTokensRef.current > 0;
   const consumeSuppressNextBounds = () => {
@@ -174,7 +177,7 @@ export default function AppMap({
   }, [activeStoreId]);
 
   const FocusedMarker = ({ store }: { store: StoreInterface }) => {
-    const ref = useRef<any>(null);
+    const ref = useRef<MarkerInstance>(null);
     useEffect(() => {
       if (ref.current && typeof ref.current.openPopup === 'function') {
         ref.current.openPopup();
@@ -182,7 +185,8 @@ export default function AppMap({
     }, [store?.id]);
     return (
       <Marker ref={ref} position={[store.latitude, store.longitude]}>
-        {session.user.role === 'admin' || session.user.role === 'super_admin' ? (
+        {session.user.role === 'admin' ||
+        session.user.role === 'super_admin' ? (
           <Popup>
             <Link href={`/admin/stores/${store.id}`} className="cursor-pointer">
               {store.name}
@@ -227,9 +231,9 @@ export default function AppMap({
           key={store.id}
           ref={(instance) => {
             if (instance) {
-              markerRefs.current.set(store.id as any, instance);
+              markerRefs.current.set(store.id as string | number, instance);
             } else {
-              markerRefs.current.delete(store.id as any);
+              markerRefs.current.delete(store.id as string | number);
             }
           }}
           position={[store.latitude, store.longitude]}

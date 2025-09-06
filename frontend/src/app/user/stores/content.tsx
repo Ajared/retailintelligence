@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useTransition } from 'react';
 import { Input } from '~/components/ui/input';
 import { Button } from '~/components/ui/button';
 import {
@@ -11,6 +11,7 @@ import {
   ChevronRight,
   MoreHorizontal,
   PackagePlus,
+  Loader2,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -28,50 +29,70 @@ import {
   SelectValue,
 } from '~/components/ui/select';
 import { useIsMobile } from '~/hooks/use-mobile';
-import { useStores } from './context';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { StoreInterface } from '~/types/store';
+import { StateInterface } from '~/types/state';
+import { PaginationMeta } from '~/types/actions';
 
-export default function Content() {
+export default function Content({
+  stores,
+  pagination,
+  states,
+}: {
+  stores: StoreInterface[];
+  pagination: PaginationMeta;
+  states: StateInterface[];
+}) {
   const isMobile = useIsMobile();
-  const {
-    stores,
-    searchTerm,
-    setSearchTerm,
-    filterOptions,
-    toggleStateFilter,
-    toggleLocalGovernmentFilter,
-    isSearchActive,
-    toggleSearchMode,
-    pagination,
-    setPage,
-    setLimit,
-    states,
-    filterSearch,
-    setFilterSearch,
-    searchMode,
-    setSearchMode,
-  } = useStores();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
+  const [isSearchActive, setIsSearchActive] = useState(false);
+  const [filterSearch, setFilterSearch] = useState({
+    states: '',
+    lgs: '',
+  });
+  const [searchMode, setSearchMode] = useState({
+    states: false,
+    lgs: false,
+  });
+  const selectedStateId = searchParams.get('stateId') || undefined;
+  const selectedLocalGovernmentId =
+    searchParams.get('localGovernmentId') || undefined;
+  const initialName = searchParams.get('name') || '';
+  const [searchTerm, setSearchTerm] = useState(initialName);
+
+  const updateSearch = (
+    updates: Record<string, string | number | boolean | null>,
+  ) => {
+    const params = new URLSearchParams(searchParams.toString());
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value === null) params.delete(key);
+      else params.set(key, value.toString());
+    });
+    startTransition(() => {
+      router.push(`?${params.toString()}`);
+    });
+  };
+
+  const toggleSearchMode = () => setIsSearchActive((prev) => !prev);
+
+  const toggleStateFilter = (stateId: string) => {
+    const newStateId = selectedStateId === stateId ? null : stateId;
+    updateSearch({ stateId: newStateId, localGovernmentId: null, page: 1 });
+  };
+
+  const toggleLocalGovernmentFilter = (lgId: string) => {
+    const newLgId = selectedLocalGovernmentId === lgId ? null : lgId;
+    updateSearch({ localGovernmentId: newLgId, page: 1 });
+  };
 
   const currentStateLGs = useMemo(() => {
-    const selectedStateId = Object.entries(filterOptions.states).find(
-      ([, selected]) => selected,
-    )?.[0];
     if (!selectedStateId) return [];
-
-    const selectedState = states.find((state) => state.id === selectedStateId);
-    return selectedState?.local_governments || [];
-  }, [filterOptions.states, states]);
-
-  const filteredStores = useMemo(() => {
-    return stores.filter((store) => {
-      const matchesSearch =
-        searchTerm === '' ||
-        store.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        store.store_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        store.address.toLowerCase().includes(searchTerm.toLowerCase());
-      return matchesSearch;
-    });
-  }, [stores, searchTerm]);
+    const state = states.find((s) => s.id === selectedStateId);
+    return state?.local_governments || [];
+  }, [selectedStateId, states]);
 
   const handleSearch = (value: string) => {
     setSearchTerm(value);
@@ -97,14 +118,19 @@ export default function Content() {
         {isSearchActive ? (
           <div className="flex items-center flex-1">
             <Search className="h-5 w-5 mr-2 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Search stores..."
-              value={searchTerm}
-              onChange={(e) => handleSearch(e.target.value)}
-              className="border-0 border-b border-input rounded-none shadow-none focus-visible:ring-0 pl-0 text-base bg-transparent focus:bg-transparent dark:bg-transparent dark:focus:bg-transparent"
-              autoFocus
-            />
+            <div className="relative flex-1">
+              <Input
+                type="text"
+                placeholder="Search stores..."
+                value={searchTerm}
+                onChange={(e) => handleSearch(e.target.value)}
+                className="border-0 border-b border-input rounded-none shadow-none focus-visible:ring-0 pl-0 pr-8 text-base bg-transparent focus:bg-transparent dark:bg-transparent dark:focus:bg-transparent"
+                autoFocus
+              />
+              {isPending && (
+                <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+              )}
+            </div>
             <Button
               variant="ghost"
               size="icon"
@@ -127,8 +153,11 @@ export default function Content() {
                   placeholder="Search stores..."
                   value={searchTerm}
                   onChange={(e) => handleSearch(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 pr-8"
                 />
+                {isPending && (
+                  <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                )}
               </div>
             )}
           </div>
@@ -190,7 +219,7 @@ export default function Content() {
               {filteredStates.slice(0, 4).map((state) => (
                 <DropdownMenuCheckboxItem
                   key={state.id}
-                  checked={!!state.id && filterOptions.states[state.id]}
+                  checked={!!state.id && selectedStateId === state.id}
                   onCheckedChange={() =>
                     state.id && toggleStateFilter(state.id)
                   }
@@ -233,7 +262,7 @@ export default function Content() {
               {filteredLGs.slice(0, 4).map((lg) => (
                 <DropdownMenuCheckboxItem
                   key={lg.id}
-                  checked={!!lg.id && filterOptions.localGovernments[lg.id]}
+                  checked={!!lg.id && selectedLocalGovernmentId === lg.id}
                   onCheckedChange={() =>
                     lg.id && toggleLocalGovernmentFilter(lg.id)
                   }
@@ -273,14 +302,14 @@ export default function Content() {
             <div className="text-right">Actions</div>
           </div>
 
-          {filteredStores.length === 0 ? (
+          {stores.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               {stores.length === 0
                 ? 'No stores found.'
                 : 'No stores found matching your criteria.'}
             </div>
           ) : (
-            filteredStores.map((store) => (
+            stores.map((store) => (
               <div
                 key={store.id}
                 className="hidden md:grid grid-cols-[1.25fr_1fr_1fr_1fr_0.5fr_0.5fr] gap-4 p-4 border-b items-center w-full overflow-x-auto"
@@ -322,8 +351,8 @@ export default function Content() {
             ))
           )}
 
-          {filteredStores.length > 0 &&
-            filteredStores.map((store) => (
+          {stores.length > 0 &&
+            stores.map((store) => (
               <div
                 key={store.id + '-mobile'}
                 className="md:hidden grid grid-cols-[1.5fr_1.25fr_0.5fr] gap-4 p-4 border-b bg-muted/50 font-medium text-sm"
@@ -374,7 +403,7 @@ export default function Content() {
       <div className="flex flex-col gap-4 items-center justify-center md:flex-row md:items-center md:justify-between">
         <div className="flex gap-2 justify-between items-center w-full md:w-auto">
           <p className="text-sm text-muted-foreground">
-            {pagination.total === 0 || filteredStores.length === 0 ? (
+            {pagination.total === 0 || stores.length === 0 ? (
               <>No results found</>
             ) : (
               <>
@@ -384,10 +413,12 @@ export default function Content() {
               </>
             )}
           </p>
-          {pagination.total !== 0 && filteredStores.length !== 0 && (
+          {pagination.total !== 0 && stores.length !== 0 && (
             <Select
               value={pagination.limit.toString()}
-              onValueChange={(value) => setLimit(Number(value))}
+              onValueChange={(value) =>
+                updateSearch({ limit: Number(value), page: 1 })
+              }
             >
               <SelectTrigger className="h-8 w-[70px]">
                 <SelectValue placeholder={pagination.limit} />
@@ -408,7 +439,7 @@ export default function Content() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setPage(pagination.page - 1)}
+              onClick={() => updateSearch({ page: pagination.page - 1 })}
               disabled={!pagination.has_previous}
             >
               <ChevronLeft className="h-4 w-4" />
@@ -420,7 +451,7 @@ export default function Content() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setPage(pagination.page + 1)}
+              onClick={() => updateSearch({ page: pagination.page + 1 })}
               disabled={!pagination.has_next}
             >
               <ChevronRight className="h-4 w-4" />
