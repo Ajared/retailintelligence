@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import 'leaflet/dist/leaflet.css';
 import { Session } from 'next-auth';
 import 'leaflet-defaulticon-compatibility';
@@ -27,6 +27,8 @@ const MapPlaceHolder = () => {
 
 const MapBoundsListener = ({
   onBoundsChangeAction,
+  shouldSuppress,
+  consumeSuppress,
 }: {
   onBoundsChangeAction?: (bounds: {
     minLat: number;
@@ -34,6 +36,8 @@ const MapBoundsListener = ({
     minLng: number;
     maxLng: number;
   }) => void;
+  shouldSuppress?: () => boolean;
+  consumeSuppress?: () => void;
 }) => {
   const map = useMapEvents({
     load: () => {
@@ -48,6 +52,10 @@ const MapBoundsListener = ({
     },
     moveend: () => {
       if (!onBoundsChangeAction) return;
+      if (shouldSuppress?.()) {
+        consumeSuppress?.();
+        return;
+      }
       const bounds = map.getBounds();
       onBoundsChangeAction({
         minLat: bounds.getSouth(),
@@ -58,6 +66,10 @@ const MapBoundsListener = ({
     },
     zoomend: () => {
       if (!onBoundsChangeAction) return;
+      if (shouldSuppress?.()) {
+        consumeSuppress?.();
+        return;
+      }
       const bounds = map.getBounds();
       onBoundsChangeAction({
         minLat: bounds.getSouth(),
@@ -85,14 +97,17 @@ const MapBoundsListener = ({
 const MapFlyToController = ({
   target,
   onComplete,
+  activateSuppress,
 }: {
   target?: { lat: number; lng: number; zoom?: number };
   onComplete?: () => void;
+  activateSuppress?: () => void;
 }) => {
   const map = useMap();
   useEffect(() => {
     if (!map || !target) return;
     const z = typeof target.zoom === 'number' ? target.zoom : map.getZoom();
+    activateSuppress?.();
     map.flyTo([target.lat, target.lng], z, { animate: true });
     const handler = () => {
       onComplete?.();
@@ -105,7 +120,7 @@ const MapFlyToController = ({
   return null;
 };
 
-export default function Map({
+export default function AppMap({
   stores,
   session,
   center,
@@ -113,6 +128,8 @@ export default function Map({
   onBoundsChangeAction,
   focus,
   onFocusComplete,
+  highlightedStore,
+  activeStoreId,
 }: {
   stores: StoreInterface[];
   session: Session;
@@ -126,11 +143,62 @@ export default function Map({
   }) => void;
   focus?: { lat: number; lng: number; zoom?: number };
   onFocusComplete?: () => void;
+  highlightedStore?: StoreInterface | null;
+  activeStoreId?: string | number | null;
 }) {
   const mapZoom = zoom ?? 15;
   const mapCenter = center ?? {
     lat: 9.074426322081734,
     lng: 7.477762699127198,
+  };
+
+  const markerRefs = useRef(new Map<string | number, any>());
+  const suppressEventTokensRef = useRef(0);
+  const shouldSuppressNextBounds = () => suppressEventTokensRef.current > 0;
+  const consumeSuppressNextBounds = () => {
+    if (suppressEventTokensRef.current > 0) {
+      suppressEventTokensRef.current -= 1;
+    }
+  };
+  const activateSuppressNextBounds = () => {
+    // Suppress both moveend and zoomend that can be triggered by flyTo
+    suppressEventTokensRef.current = 2;
+  };
+
+  useEffect(() => {
+    if (activeStoreId == null) return;
+    const ref = markerRefs.current.get(activeStoreId);
+    if (ref && typeof ref.openPopup === 'function') {
+      ref.openPopup();
+    }
+  }, [activeStoreId]);
+
+  const FocusedMarker = ({ store }: { store: StoreInterface }) => {
+    const ref = useRef<any>(null);
+    useEffect(() => {
+      if (ref.current && typeof ref.current.openPopup === 'function') {
+        ref.current.openPopup();
+      }
+    }, [store?.id]);
+    return (
+      <Marker ref={ref} position={[store.latitude, store.longitude]}>
+        {session.user.role === 'admin' || session.user.role === 'super_admin' ? (
+          <Popup>
+            <Link href={`/admin/stores/${store.id}`} className="cursor-pointer">
+              {store.name}
+              <br />
+              {store.store_type}
+            </Link>
+          </Popup>
+        ) : (
+          <Popup>
+            {store.name}
+            <br />
+            {store.store_type}
+          </Popup>
+        )}
+      </Marker>
+    );
   };
 
   return (
@@ -140,14 +208,32 @@ export default function Map({
       style={{ width: '100%', height: '100%', zIndex: 0 }}
       placeholder={<MapPlaceHolder />}
     >
-      <MapBoundsListener onBoundsChangeAction={onBoundsChangeAction} />
-      <MapFlyToController target={focus} onComplete={onFocusComplete} />
+      <MapBoundsListener
+        onBoundsChangeAction={onBoundsChangeAction}
+        shouldSuppress={shouldSuppressNextBounds}
+        consumeSuppress={consumeSuppressNextBounds}
+      />
+      <MapFlyToController
+        target={focus}
+        onComplete={onFocusComplete}
+        activateSuppress={activateSuppressNextBounds}
+      />
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       {stores.map((store) => (
-        <Marker key={store.id} position={[store.latitude, store.longitude]}>
+        <Marker
+          key={store.id}
+          ref={(instance) => {
+            if (instance) {
+              markerRefs.current.set(store.id as any, instance);
+            } else {
+              markerRefs.current.delete(store.id as any);
+            }
+          }}
+          position={[store.latitude, store.longitude]}
+        >
           {session.user.role === 'admin' ||
           session.user.role === 'super_admin' ? (
             <Popup>
@@ -169,6 +255,10 @@ export default function Map({
           )}
         </Marker>
       ))}
+      {highlightedStore &&
+        !stores.some((s) => s.id === highlightedStore.id) && (
+          <FocusedMarker store={highlightedStore} />
+        )}
     </MapContainer>
   );
 }
