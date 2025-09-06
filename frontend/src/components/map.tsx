@@ -6,6 +6,7 @@ import 'leaflet/dist/leaflet.css';
 import { Session } from 'next-auth';
 import 'leaflet-defaulticon-compatibility';
 import { LatLngExpression } from 'leaflet';
+import type { Marker as LeafletMarker } from 'leaflet';
 import { StoreInterface } from '~/types/store';
 import {
   Popup,
@@ -152,9 +153,7 @@ export default function AppMap({
     lng: 7.477762699127198,
   };
 
-  type MarkerInstance = {
-    openPopup?: () => void;
-  } | null;
+  type MarkerInstance = LeafletMarker | null;
   const markerRefs = useRef(new Map<string | number, MarkerInstance>());
   const suppressEventTokensRef = useRef(0);
   const shouldSuppressNextBounds = () => suppressEventTokensRef.current > 0;
@@ -177,7 +176,7 @@ export default function AppMap({
   }, [activeStoreId]);
 
   const FocusedMarker = ({ store }: { store: StoreInterface }) => {
-    const ref = useRef<MarkerInstance>(null);
+    const ref = useRef<LeafletMarker | null>(null);
     useEffect(() => {
       if (ref.current && typeof ref.current.openPopup === 'function') {
         ref.current.openPopup();
