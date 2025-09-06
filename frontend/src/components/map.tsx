@@ -17,13 +17,6 @@ import {
 } from 'react-leaflet';
 import 'leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css';
 
-type MapWithTouchZoom = {
-  touchZoom?: {
-    disable: () => void;
-    enable: () => void;
-  };
-};
-
 const MapPlaceHolder = () => {
   return (
     <div className="flex h-full w-full items-center justify-center">
@@ -89,31 +82,26 @@ const MapBoundsListener = ({
   return null;
 };
 
-const MapInteractivityController = ({
-  isDisabled,
+const MapFlyToController = ({
+  target,
+  onComplete,
 }: {
-  isDisabled?: boolean;
+  target?: { lat: number; lng: number; zoom?: number };
+  onComplete?: () => void;
 }) => {
   const map = useMap();
   useEffect(() => {
-    if (!map) return;
-    const mapWithTouch = map as unknown as MapWithTouchZoom;
-    if (isDisabled) {
-      map.dragging.disable();
-      map.scrollWheelZoom.disable();
-      map.doubleClickZoom.disable();
-      map.boxZoom.disable();
-      map.keyboard.disable();
-      mapWithTouch.touchZoom?.disable();
-    } else {
-      map.dragging.enable();
-      map.scrollWheelZoom.enable();
-      map.doubleClickZoom.enable();
-      map.boxZoom.enable();
-      map.keyboard.enable();
-      mapWithTouch.touchZoom?.enable();
-    }
-  }, [map, isDisabled]);
+    if (!map || !target) return;
+    const z = typeof target.zoom === 'number' ? target.zoom : map.getZoom();
+    map.flyTo([target.lat, target.lng], z, { animate: true });
+    const handler = () => {
+      onComplete?.();
+    };
+    map.once('moveend', handler);
+    return () => {
+      map.off('moveend', handler);
+    };
+  }, [map, target, onComplete]);
   return null;
 };
 
@@ -122,20 +110,22 @@ export default function Map({
   session,
   center,
   zoom,
-  disabled,
   onBoundsChangeAction,
+  focus,
+  onFocusComplete,
 }: {
   stores: StoreInterface[];
   session: Session;
   center?: LatLngExpression;
   zoom?: number;
-  disabled?: boolean;
   onBoundsChangeAction?: (bounds: {
     minLat: number;
     maxLat: number;
     minLng: number;
     maxLng: number;
   }) => void;
+  focus?: { lat: number; lng: number; zoom?: number };
+  onFocusComplete?: () => void;
 }) {
   const mapZoom = zoom ?? 15;
   const mapCenter = center ?? {
@@ -150,8 +140,8 @@ export default function Map({
       style={{ width: '100%', height: '100%', zIndex: 0 }}
       placeholder={<MapPlaceHolder />}
     >
-      <MapInteractivityController isDisabled={disabled} />
       <MapBoundsListener onBoundsChangeAction={onBoundsChangeAction} />
+      <MapFlyToController target={focus} onComplete={onFocusComplete} />
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

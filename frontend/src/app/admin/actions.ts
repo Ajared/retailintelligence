@@ -19,6 +19,7 @@ export const getAllStores = async (
   stateId?: string,
   localGovernmentId?: string,
   enumeratorId?: string,
+  name?: string,
 ): Promise<Response<StoreInterface[]>> => {
   try {
     const queryParams = new URLSearchParams({
@@ -31,6 +32,7 @@ export const getAllStores = async (
     if (localGovernmentId)
       queryParams.append('localGovernmentId', localGovernmentId);
     if (enumeratorId) queryParams.append('enumeratorId', enumeratorId);
+    if (name && name.trim().length > 0) queryParams.append('name', name.trim());
 
     const response = await customFetch.get<StoreInterface[]>(
       `/admin/stores?${queryParams.toString()}`,
@@ -251,7 +253,12 @@ export const assignLocation = async (params: {
 
 export const getAdminMapData = async (
   bounds: { minLat: number; maxLat: number; minLng: number; maxLng: number },
-  opts: { page?: number; limit?: number; sort?: 'ASC' | 'DESC' } = {},
+  opts: {
+    page?: number;
+    limit?: number;
+    sort?: 'ASC' | 'DESC';
+    name?: string;
+  } = {},
 ): Promise<Response<StoreInterface[]>> => {
   try {
     const { page = 1, limit = 20, sort = 'ASC' } = opts;
@@ -272,6 +279,9 @@ export const getAdminMapData = async (
         limit: String(limit),
         sort,
       });
+      if (opts.name && opts.name.trim().length > 0) {
+        params.append('name', opts.name.trim());
+      }
       const response = await customFetch.get<StoreInterface[]>(
         `/admin/stores?${params.toString()}`,
       );

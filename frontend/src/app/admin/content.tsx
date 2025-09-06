@@ -3,9 +3,9 @@
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { Session } from 'next-auth';
-import { Store } from 'lucide-react';
 import { LatLngExpression } from 'leaflet';
 import { getAdminMapData } from './actions';
+import { Store, Loader2 } from 'lucide-react';
 import { StoreInterface } from '~/types/store';
 import { Button } from '~/components/ui/button';
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
@@ -38,15 +38,10 @@ export default function Content({
   const latestRequestIdRef = useRef(0);
   const lastFetchedBoundsRef = useRef<BoundsQuery | null>(null);
   const lastFetchedStoresRef = useRef<StoreInterface[] | null>(null);
-  const isPendingRef = useRef<boolean>(false);
   const MAX_CACHE_ENTRIES = 20;
   const cacheRef = useRef<Map<string, StoreInterface[]>>(
     new Map<string, StoreInterface[]>(),
   );
-
-  useEffect(() => {
-    isPendingRef.current = isPending;
-  }, [isPending]);
 
   const normalizeBounds = useCallback((b: BoundsQuery): BoundsQuery => {
     const round = (n: number) => Math.round(n * 10000) / 10000;
@@ -115,7 +110,7 @@ export default function Content({
         window.clearTimeout(debounceTimerRef.current);
       }
 
-      const delay = isPendingRef.current ? 800 : 500;
+      const delay = isPending ? 800 : 500;
       debounceTimerRef.current = window.setTimeout(() => {
         latestRequestIdRef.current += 1;
         const requestId = latestRequestIdRef.current;
@@ -199,16 +194,28 @@ export default function Content({
           session={session}
           center={center}
           zoom={zoom}
-          disabled={isPending}
           onBoundsChangeAction={handleBoundsChange}
         />
-        {isPending ? (
-          <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-background/40">
-            <div className="rounded-md bg-background px-3 py-1 text-sm shadow">
-              Loading map data...
+        {isPending && (
+          <>
+            <div
+              className="pointer-events-none absolute top-0 right-0 z-[1000]"
+              style={{
+                width: '140px',
+                height: '140px',
+                background:
+                  'radial-gradient(circle at 100% 0%, rgba(0,0,0,0.14), rgba(0,0,0,0) 70%)',
+              }}
+              aria-hidden="true"
+            />
+            <div className="absolute top-4 right-4 z-[1001]">
+              <Loader2
+                className="h-6 w-6 animate-spin text-black"
+                aria-label="Loading"
+              />
             </div>
-          </div>
-        ) : null}
+          </>
+        )}
       </div>
       {error ? (
         <div className="text-sm text-red-600" role="status" aria-live="polite">
