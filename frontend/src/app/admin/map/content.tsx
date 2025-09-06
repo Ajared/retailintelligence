@@ -57,11 +57,6 @@ export default function Content({
     lng: number;
     zoom?: number;
   }>();
-  const [activeStoreId, setActiveStoreId] = useState<string | number | null>(
-    null,
-  );
-  const [highlightedStore, setHighlightedStore] =
-    useState<StoreInterface | null>(null);
   const [name, setName] = useState<string>(initialName ?? '');
 
   const debounceTimerRef = useRef<number | null>(null);
@@ -72,7 +67,7 @@ export default function Content({
   const allStoresQueryKeyRef = useRef<string>('');
   const listContainerRef = useRef<HTMLDivElement | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
-  const suppressNextBoundsRef = useRef<boolean>(false);
+
   const [allStoresPage, setAllStoresPage] = useState<number>(0);
   const [allStoresHasNext, setAllStoresHasNext] = useState<boolean>(true);
   const MAX_CACHE_ENTRIES = 20;
@@ -151,13 +146,6 @@ export default function Content({
     (bounds: BoundsQuery) => {
       if (debounceTimerRef.current) {
         window.clearTimeout(debounceTimerRef.current);
-      }
-
-      // If focus navigation triggered this bounds change, skip fetching
-      if (suppressNextBoundsRef.current) {
-        suppressNextBoundsRef.current = false;
-        lastFetchedBoundsRef.current = { ...bounds };
-        return;
       }
 
       const delay = isPendingRef.current ? 800 : 500;
@@ -357,8 +345,6 @@ export default function Content({
             onBoundsChangeAction={handleBoundsChange}
             focus={focus}
             onFocusComplete={() => setFocus(undefined)}
-            highlightedStore={highlightedStore}
-            activeStoreId={activeStoreId}
           />
           {isPending && (
             <>
@@ -409,9 +395,6 @@ export default function Content({
                       <ContextMenuTrigger
                         onClick={(e) => {
                           e.preventDefault();
-                          suppressNextBoundsRef.current = true;
-                          setHighlightedStore(store);
-                          setActiveStoreId(store.id ?? null);
                           setFocus({
                             lat: store.latitude,
                             lng: store.longitude,
@@ -428,9 +411,6 @@ export default function Content({
                       <ContextMenuContent>
                         <ContextMenuItem
                           onClick={() => {
-                            suppressNextBoundsRef.current = true;
-                            setHighlightedStore(store);
-                            setActiveStoreId(store.id ?? null);
                             setFocus({
                               lat: store.latitude,
                               lng: store.longitude,
