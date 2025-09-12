@@ -1,7 +1,6 @@
 'use client';
 
-import Link from 'next/link';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import 'leaflet/dist/leaflet.css';
 import { Session } from 'next-auth';
 import 'leaflet-defaulticon-compatibility';
@@ -17,6 +16,7 @@ import {
   useMapEvents,
 } from 'react-leaflet';
 import 'leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css';
+import StoreDetailsDialog from '~/components/store-dialog';
 
 const MapPlaceHolder = () => {
   return (
@@ -134,42 +134,51 @@ export default function AppMap({
     lng: 7.477762699127198,
   };
 
+  const [isDetailsOpen, setIsDetailsOpen] = useState<boolean>(false);
+  const [selectedStore, setSelectedStore] = useState<StoreInterface | null>(
+    null,
+  );
+
   return (
-    <MapContainer
-      zoom={mapZoom}
-      center={mapCenter}
-      style={{ width: '100%', height: '100%', zIndex: 0 }}
-      placeholder={<MapPlaceHolder />}
-    >
-      <MapBoundsListener onBoundsChangeAction={onBoundsChangeAction} />
-      <MapFlyToController target={focus} onComplete={onFocusComplete} />
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-      {stores.map((store) => (
-        <Marker key={store.id} position={[store.latitude, store.longitude]}>
-          {session.user.role === 'admin' ||
-          session.user.role === 'super_admin' ? (
+    <>
+      <MapContainer
+        zoom={mapZoom}
+        center={mapCenter}
+        style={{ width: '100%', height: '100%', zIndex: 0 }}
+        placeholder={<MapPlaceHolder />}
+      >
+        <MapBoundsListener onBoundsChangeAction={onBoundsChangeAction} />
+        <MapFlyToController target={focus} onComplete={onFocusComplete} />
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        {stores.map((store) => (
+          <Marker key={store.id} position={[store.latitude, store.longitude]}>
             <Popup>
-              <Link
-                href={`/admin/stores/${store.id}`}
-                className="cursor-pointer"
+              <button
+                onClick={() => {
+                  setSelectedStore(store);
+                  setIsDetailsOpen(true);
+                }}
+                className="cursor-pointer text-left"
               >
                 {store.name}
                 <br />
                 {store.store_type}
-              </Link>
+              </button>
             </Popup>
-          ) : (
-            <Popup>
-              {store.name}
-              <br />
-              {store.store_type}
-            </Popup>
-          )}
-        </Marker>
-      ))}
-    </MapContainer>
+          </Marker>
+        ))}
+      </MapContainer>
+      <StoreDetailsDialog
+        open={isDetailsOpen}
+        onOpenChange={(open) => {
+          setIsDetailsOpen(open);
+          if (!open) setSelectedStore(null);
+        }}
+        store={selectedStore}
+      />
+    </>
   );
 }
