@@ -23,6 +23,7 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from '~/components/ui/context-menu';
+import StoreDetailsDialog from '~/components/store-dialog';
 
 const InteractiveMap = dynamic(() => import('~/components/map'), {
   ssr: false,
@@ -52,6 +53,8 @@ export default function Content({
   const [isPending, startTransition] = useTransition();
   const isPendingRef = useRef(isPending);
   const [isPendingAllStores, startTransitionAllStores] = useTransition();
+  const [isDetailsOpen, setIsDetailsOpen] = useState<boolean>(false);
+  const [selectedStore, setSelectedStore] = useState<StoreInterface | null>(null);
   const [focus, setFocus] = useState<{
     lat: number;
     lng: number;
@@ -412,10 +415,13 @@ export default function Content({
                         >
                           View on Map
                         </ContextMenuItem>
-                        <ContextMenuItem>
-                          <Link href={`/user/stores/${store.id}`}>
-                            View Store Details
-                          </Link>
+                        <ContextMenuItem
+                          onClick={() => {
+                            setSelectedStore(store);
+                            setIsDetailsOpen(true);
+                          }}
+                        >
+                          View Store Details
                         </ContextMenuItem>
                       </ContextMenuContent>
                     </ContextMenu>
@@ -444,6 +450,14 @@ export default function Content({
           ) : null}
         </div>
       </div>
+      <StoreDetailsDialog
+        open={isDetailsOpen}
+        onOpenChange={(open) => {
+          setIsDetailsOpen(open);
+          if (!open) setSelectedStore(null);
+        }}
+        store={selectedStore}
+      />
     </div>
   );
 }
