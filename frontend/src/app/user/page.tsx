@@ -1,14 +1,14 @@
 import { cache } from 'react';
 import Content from './content';
-import { auth } from '../(auth)/auth';
+import { auth } from '~/app/(auth)/auth';
 import { redirect } from 'next/navigation';
 
 const getSession = cache(() => auth());
 
-export default async function UserPage({
+export default async function UserMapPage({
   searchParams,
 }: {
-  searchParams: Promise<{ lat?: string; lng?: string }>;
+  searchParams: Promise<{ lat?: string; lng?: string; name?: string }>;
 }) {
   const session = await getSession();
 
@@ -22,10 +22,16 @@ export default async function UserPage({
   const hasValidCenter = Number.isFinite(latNum) && Number.isFinite(lngNum);
   const center = hasValidCenter ? { lat: latNum, lng: lngNum } : undefined;
   const zoom = hasValidCenter ? 18 : undefined;
+  const name = params?.name ?? '';
 
   return (
     <div className="h-full w-full">
-      <Content zoom={zoom} center={center} session={session} />
+      <Content
+        zoom={zoom}
+        center={center}
+        session={session}
+        initialName={name}
+      />
     </div>
   );
 }
