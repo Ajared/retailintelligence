@@ -1,33 +1,38 @@
 # Retailytics
 
-Retailytics provides a way to collect, analyze and share data about retail stores in a city.
+Retailytics is a data collection platform for gathering retail store information across different geographic areas.
 
-It solves the problem of having valuable local data for small and medium scale businesses to plan and research their market, by making it easy to crowdsource store data using enumerators across multiple local governments or districts.
+## Overview
 
-How It works
-    
-    - Admins can assign Enumerators to specific Local governments or districts.
-    - Enumerators capture details of retail businesses in their assigned areas.
-    - See reports and data on captured points of interest.
-    - To answer questions like how many barbers  are in a specific area.
+The platform enables data collection of retail businesses through a structured workflow:
+- Admins can assign enumerators to specific local governments or districts
+- Enumerators capture retail business details in their assigned areas  
+- Data is stored and can be viewed through the web interface
 
-What users benefit
-    
-    - Understand their competitors.
-    - Understand missing gaps in the market.
-    - Developers can extend to gather data about any other points of interest.
+## Current Features
 
-## Features
+**Data Collection**
+- Form-based store data entry with location coordinates
+- User role management (Admin/Enumerator)
+- Geographic assignment by states, districts, and local governments
 
-Form-based Data Collection: Intuitive interface for enumerators to input retail store information
+**Data Management** 
+- Secure PostgreSQL database storage
+- REST API for data operations
+- User authentication and session management
 
-Admin Dashboard: Manage users, view submissions, and monitor data quality
+**Visualization**
+- Map-based store location display
+- Basic store listing and search functionality
+- Separate analytics dashboard (Streamlit-based)
 
-Real-time Analytics: Visualize collected data through interactive dashboards
+## Technical Stack
 
-Database Integration: Secure storage and retrieval of all collected information
-
-Role-based Access: Different permissions for enumerators, supervisors, and administrators
+- **Frontend**: Next.js with TypeScript, Tailwind CSS
+- **Backend**: NestJS with TypeScript  
+- **Database**: PostgreSQL
+- **Analytics**: Streamlit (separate application)
+- **Authentication**: NextAuth.js
 
 ## Access
-Retailytics is available here: https://retailintelligence.ajared.ng/
+Production: https://retailintelligence.ajared.ng/
