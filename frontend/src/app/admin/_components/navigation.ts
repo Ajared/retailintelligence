@@ -7,11 +7,6 @@ export const navigationItems = [
     url: '/admin',
   },
   {
-    title: 'Map',
-    icon: MapPin,
-    url: '/admin/map',
-  },
-  {
     title: 'Users',
     icon: Users,
     url: '/admin/users',

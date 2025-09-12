@@ -14,11 +14,6 @@ export const navigationItems: NavigationItem[] = [
     url: '/user',
   },
   {
-    title: 'Map',
-    icon: MapPin,
-    url: '/user/map',
-  },
-  {
     title: 'Stores',
     icon: Store,
     url: '/user/stores',
