@@ -54,7 +54,9 @@ export default function Content({
   const isPendingRef = useRef(isPending);
   const [isPendingAllStores, startTransitionAllStores] = useTransition();
   const [isDetailsOpen, setIsDetailsOpen] = useState<boolean>(false);
-  const [selectedStore, setSelectedStore] = useState<StoreInterface | null>(null);
+  const [selectedStore, setSelectedStore] = useState<StoreInterface | null>(
+    null,
+  );
   const [focus, setFocus] = useState<{
     lat: number;
     lng: number;
