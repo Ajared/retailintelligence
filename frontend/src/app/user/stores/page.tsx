@@ -1,42 +1,37 @@
+import { cache } from 'react';
 import Content from './content';
-import { Suspense } from 'react';
-import EmptyState from '../_components/empty';
-import { getAllLocations } from '~/app/actions';
-import { getAllStoresForUser } from '../actions';
+import { auth } from '~/app/(auth)/auth';
+import { redirect } from 'next/navigation';
 
-export default async function StoresPage({
+const getSession = cache(() => auth());
+
+export default async function UserMapPage({
   searchParams,
 }: {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+  searchParams: Promise<{ lat?: string; lng?: string; name?: string }>;
 }) {
-  const params = await searchParams;
-  const page = Number(params.page) || 1;
-  const limit = Number(params.limit) || 20;
-  const sort = (params.sort as string) || 'ASC';
-  const stateId =
-    typeof params.stateId === 'string' ? params.stateId : undefined;
-  const localGovernmentId =
-    typeof params.localGovernmentId === 'string'
-      ? params.localGovernmentId
-      : undefined;
-  const name = typeof params.name === 'string' ? params.name : undefined;
+  const session = await getSession();
 
-  const [storesResponse, locationsResponse] = await Promise.all([
-    getAllStoresForUser(page, limit, sort, stateId, localGovernmentId, name),
-    getAllLocations(),
-  ]);
-
-  if ('error' in storesResponse || 'error' in locationsResponse) {
-    return <EmptyState />;
+  if (!session) {
+    redirect('/login');
   }
 
+  const params = await searchParams;
+  const latNum = parseFloat(params?.lat ?? '');
+  const lngNum = parseFloat(params?.lng ?? '');
+  const hasValidCenter = Number.isFinite(latNum) && Number.isFinite(lngNum);
+  const center = hasValidCenter ? { lat: latNum, lng: lngNum } : undefined;
+  const zoom = hasValidCenter ? 18 : undefined;
+  const name = params?.name ?? '';
+
   return (
-    <Suspense fallback={<EmptyState />}>
+    <div className="h-full w-full">
       <Content
-        stores={storesResponse.data}
-        pagination={storesResponse.meta}
-        states={locationsResponse.data}
+        zoom={zoom}
+        center={center}
+        session={session}
+        initialName={name}
       />
-    </Suspense>
+    </div>
   );
 }

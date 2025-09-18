@@ -9,11 +9,6 @@ interface NavigationItem {
 
 export const navigationItems: NavigationItem[] = [
   {
-    title: 'Home',
-    icon: Home,
-    url: '/user',
-  },
-  {
     title: 'Stores',
     icon: Store,
     url: '/user/stores',
