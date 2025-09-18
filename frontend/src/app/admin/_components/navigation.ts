@@ -2,11 +2,6 @@ import { Home, Users, Store, MapPin } from 'lucide-react';
 
 export const navigationItems = [
   {
-    title: 'Home',
-    icon: Home,
-    url: '/admin',
-  },
-  {
     title: 'Users',
     icon: Users,
     url: '/admin/users',

@@ -1,559 +1,473 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
-import { Input } from '~/components/ui/input';
-import { Button } from '~/components/ui/button';
-import {
-  Search,
-  Filter,
-  X,
-  ChevronLeft,
-  ChevronRight,
-  MoreHorizontal,
-  Loader2,
-} from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuCheckboxItem,
-} from '~/components/ui/dropdown-menu';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '~/components/ui/select';
-import { useIsMobile } from '~/hooks/use-mobile';
-import { UserInterface } from '~/types/user';
-import { StoreInterface } from '~/types/store';
-import { StateInterface } from '~/types/state';
-import { PaginationMeta } from '~/types/actions';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import dynamic from 'next/dynamic';
+import { Session } from 'next-auth';
+import { LatLngExpression } from 'leaflet';
+import { Store as StoreIcon, Search, Loader2 } from 'lucide-react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from 'react';
+import { getAdminMapData, getAllStores } from '../actions';
+import { StoreInterface } from '~/types/store';
+import { Button } from '~/components/ui/button';
+import { Input } from '~/components/ui/input';
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from '~/components/ui/context-menu';
+import StoreDetailsDialog from '~/components/store-dialog';
+
+const InteractiveMap = dynamic(() => import('~/components/map'), {
+  ssr: false,
+});
+
+type BoundsQuery = {
+  minLat: number;
+  maxLat: number;
+  minLng: number;
+  maxLng: number;
+};
 
 export default function Content({
-  stores,
-  pagination,
-  states,
+  session,
+  center,
+  zoom,
+  initialName,
 }: {
-  stores: StoreInterface[];
-  pagination: PaginationMeta;
-  states: StateInterface[];
+  session: Session;
+  center?: LatLngExpression;
+  zoom?: number;
+  initialName?: string;
 }) {
-  const isMobile = useIsMobile();
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  const [stores, setStores] = useState<StoreInterface[]>([]);
+  const [allStores, setAllStores] = useState<StoreInterface[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-  const [isSearchActive, setIsSearchActive] = useState(false);
-  const [filterSearch, setFilterSearch] = useState({
-    states: '',
-    lgs: '',
-    enumerators: '',
-  });
-  const [searchMode, setSearchMode] = useState({
-    states: false,
-    lgs: false,
-    enumerators: false,
-  });
+  const isPendingRef = useRef(isPending);
+  const [isPendingAllStores, startTransitionAllStores] = useTransition();
+  const [isDetailsOpen, setIsDetailsOpen] = useState<boolean>(false);
+  const [selectedStore, setSelectedStore] = useState<StoreInterface | null>(
+    null,
+  );
+  const [focus, setFocus] = useState<{
+    lat: number;
+    lng: number;
+    zoom?: number;
+  }>();
+  const [name, setName] = useState<string>(initialName ?? '');
 
-  const selectedStateId = searchParams.get('stateId') || undefined;
-  const selectedLocalGovernmentId =
-    searchParams.get('localGovernmentId') || undefined;
-  const selectedEnumeratorId = searchParams.get('enumeratorId') || undefined;
-  const initialName = searchParams.get('name') || '';
-  const [searchTerm, setSearchTerm] = useState(initialName);
+  const debounceTimerRef = useRef<number | null>(null);
+  const searchDebounceRef = useRef<number | null>(null);
+  const latestRequestIdRef = useRef(0);
+  const lastFetchedBoundsRef = useRef<BoundsQuery | null>(null);
+  const lastFetchedStoresRef = useRef<StoreInterface[] | null>(null);
+  const allStoresQueryKeyRef = useRef<string>('');
+  const listContainerRef = useRef<HTMLDivElement | null>(null);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
-  const isFirstRef = useRef(true);
-
-  const updateSearch = (
-    updates: Record<string, string | number | boolean | null>,
-  ) => {
-    const params = new URLSearchParams(searchParams.toString());
-    Object.entries(updates).forEach(([key, value]) => {
-      if (value === null) params.delete(key);
-      else params.set(key, value.toString());
-    });
-    startTransition(() => {
-      router.push(`?${params.toString()}`);
-    });
-  };
-
-  const toggleSearchMode = () => setIsSearchActive((prev) => !prev);
-
-  const toggleStateFilter = (stateId: string) => {
-    const newStateId = selectedStateId === stateId ? null : stateId;
-    updateSearch({ stateId: newStateId, localGovernmentId: null, page: 1 });
-  };
-
-  const toggleLocalGovernmentFilter = (lgId: string) => {
-    const newLgId = selectedLocalGovernmentId === lgId ? null : lgId;
-    updateSearch({ localGovernmentId: newLgId, page: 1 });
-  };
-
-  const toggleEnumeratorFilter = (enumeratorId: string) => {
-    const newEnumeratorId =
-      selectedEnumeratorId === enumeratorId ? null : enumeratorId;
-    updateSearch({ enumeratorId: newEnumeratorId, page: 1 });
-  };
-
-  const currentStateLGs = useMemo(() => {
-    if (!selectedStateId) return [];
-    const state = states.find((s) => s.id === selectedStateId);
-    return state?.local_governments || [];
-  }, [selectedStateId, states]);
-
-  const enumerators = useMemo(() => {
-    const enumeratorMap = new Map<string, UserInterface>();
-    stores.forEach((store) => {
-      if (store.enumerator?.id && !enumeratorMap.has(store.enumerator.id)) {
-        enumeratorMap.set(store.enumerator.id, store.enumerator);
-      }
-    });
-    return Array.from(enumeratorMap.values());
-  }, [stores]);
+  const [allStoresPage, setAllStoresPage] = useState<number>(0);
+  const [allStoresHasNext, setAllStoresHasNext] = useState<boolean>(true);
+  const MAX_CACHE_ENTRIES = 20;
+  const cacheRef = useRef<Map<string, StoreInterface[]>>(
+    new Map<string, StoreInterface[]>(),
+  );
 
   useEffect(() => {
-    if (isFirstRef.current) {
-      isFirstRef.current = false;
-      return;
+    isPendingRef.current = isPending;
+  }, [isPending]);
+
+  const normalizeBounds = useCallback((b: BoundsQuery): BoundsQuery => {
+    const round = (n: number) => Math.round(n * 10000) / 10000;
+    const rMinLat = round(b.minLat);
+    const rMaxLat = round(b.maxLat);
+    const rMinLng = round(b.minLng);
+    const rMaxLng = round(b.maxLng);
+
+    return {
+      minLat: Math.min(rMinLat, rMaxLat),
+      maxLat: Math.max(rMinLat, rMaxLat),
+      minLng: rMinLng,
+      maxLng: rMaxLng,
+    };
+  }, []);
+
+  const sanitizedName = useMemo(() => name.trim().toLowerCase(), [name]);
+
+  const boundsKey = useCallback(
+    (b: BoundsQuery, n: string) => {
+      const norm = normalizeBounds(b);
+      return `${norm.minLat}:${norm.maxLat}:${norm.minLng}:${norm.maxLng}:name=${n}`;
+    },
+    [normalizeBounds],
+  );
+
+  const isSubsetBounds = useCallback(
+    (inner: BoundsQuery, outer: BoundsQuery) => {
+      return (
+        inner.minLat >= outer.minLat &&
+        inner.maxLat <= outer.maxLat &&
+        inner.minLng >= outer.minLng &&
+        inner.maxLng <= outer.maxLng
+      );
+    },
+    [],
+  );
+
+  const filterStoresByBounds = useCallback(
+    (data: StoreInterface[], b: BoundsQuery): StoreInterface[] => {
+      return data.filter(
+        (s) =>
+          s.latitude >= b.minLat &&
+          s.latitude <= b.maxLat &&
+          s.longitude >= b.minLng &&
+          s.longitude <= b.maxLng,
+      );
+    },
+    [],
+  );
+
+  const setCache = useCallback((key: string, data: StoreInterface[]) => {
+    if (!(cacheRef.current instanceof Map)) {
+      cacheRef.current = new Map<string, StoreInterface[]>();
     }
-    const timeout = setTimeout(() => {
-      updateSearch({ name: searchTerm.trim() ? searchTerm : null, page: 1 });
+    const cache = cacheRef.current as Map<string, StoreInterface[]>;
+    if (cache.has(key)) cache.delete(key);
+    cache.set(key, data);
+    if (cache.size > MAX_CACHE_ENTRIES) {
+      const firstKey = cache.keys().next().value as string | undefined;
+      if (firstKey !== undefined) cache.delete(firstKey);
+    }
+  }, []);
+
+  const handleBoundsChange = useCallback(
+    (bounds: BoundsQuery) => {
+      if (debounceTimerRef.current) {
+        window.clearTimeout(debounceTimerRef.current);
+      }
+
+      const delay = isPendingRef.current ? 800 : 500;
+      debounceTimerRef.current = window.setTimeout(() => {
+        latestRequestIdRef.current += 1;
+        const requestId = latestRequestIdRef.current;
+        setError(null);
+
+        const key = boundsKey(bounds, sanitizedName);
+
+        if (lastFetchedBoundsRef.current && lastFetchedStoresRef.current) {
+          if (isSubsetBounds(bounds, lastFetchedBoundsRef.current)) {
+            const filtered = filterStoresByBounds(
+              lastFetchedStoresRef.current,
+              bounds,
+            );
+            setStores(filtered);
+            return;
+          }
+        }
+
+        if (!(cacheRef.current instanceof Map)) {
+          cacheRef.current = new Map<string, StoreInterface[]>();
+        }
+        const cached = cacheRef.current.get(key);
+        if (cached) {
+          setStores(cached);
+
+          lastFetchedBoundsRef.current = { ...bounds };
+          lastFetchedStoresRef.current = cached;
+
+          setCache(key, cached);
+
+          return;
+        }
+
+        startTransition(() => {
+          getAdminMapData(bounds, {
+            page: 1,
+            limit: 300,
+            sort: 'ASC',
+            name: sanitizedName,
+          })
+            .then((response) => {
+              if (requestId !== latestRequestIdRef.current) return;
+              if ('error' in response) {
+                setError(response.message ?? 'Failed to load data');
+                return;
+              }
+              setStores(response.data);
+              lastFetchedBoundsRef.current = { ...bounds };
+              lastFetchedStoresRef.current = response.data;
+              setCache(key, response.data);
+            })
+            .catch((err: unknown) => {
+              if (requestId !== latestRequestIdRef.current) return;
+              setError(
+                err instanceof Error ? err.message : 'Failed to load data',
+              );
+            });
+        });
+      }, delay);
+    },
+    [boundsKey, filterStoresByBounds, isSubsetBounds, setCache, sanitizedName],
+  );
+
+  const loadAllStoresPage = useCallback(
+    (params: { page: number; name?: string; append: boolean; key: string }) => {
+      const { page, name, append, key } = params;
+      startTransitionAllStores(() => {
+        const trimmed = name?.trim();
+        const nameParam = trimmed && trimmed.length > 0 ? trimmed : undefined;
+        getAllStores(
+          page,
+          50,
+          'ASC',
+          undefined,
+          undefined,
+          undefined,
+          nameParam,
+        )
+          .then((response) => {
+            if (allStoresQueryKeyRef.current !== key) return;
+            if ('error' in response) {
+              setError(response.message ?? 'Failed to load data');
+              return;
+            }
+            const hasNext = Boolean(response.meta?.has_next);
+            const incoming = response.data;
+            setAllStores((prev) => {
+              if (!append) return incoming;
+              const existingIds = new Set(prev.map((s) => s.id));
+              const deduped = incoming.filter((s) => !existingIds.has(s.id));
+              return prev.concat(deduped);
+            });
+            setAllStoresPage(page);
+            setAllStoresHasNext(hasNext);
+          })
+          .catch((err: unknown) => {
+            if (allStoresQueryKeyRef.current !== key) return;
+            setError(
+              err instanceof Error ? err.message : 'Failed to load data',
+            );
+          });
+      });
+    },
+    [],
+  );
+
+  const resetAndLoadAllStores = useCallback(
+    (queryName?: string) => {
+      const key = `${queryName ?? ''}:${Date.now()}`;
+      allStoresQueryKeyRef.current = key;
+      setAllStores([]);
+      setAllStoresPage(0);
+      setAllStoresHasNext(true);
+      loadAllStoresPage({ page: 1, name: queryName, append: false, key });
+    },
+    [loadAllStoresPage],
+  );
+
+  const loadNextAllStoresPage = useCallback(() => {
+    if (!allStoresHasNext || isPendingAllStores) return;
+    const key = allStoresQueryKeyRef.current;
+    loadAllStoresPage({ page: allStoresPage + 1, name, append: true, key });
+  }, [
+    allStoresHasNext,
+    isPendingAllStores,
+    allStoresPage,
+    loadAllStoresPage,
+    name,
+  ]);
+
+  useEffect(() => {
+    if (searchDebounceRef.current) {
+      window.clearTimeout(searchDebounceRef.current);
+    }
+    searchDebounceRef.current = window.setTimeout(() => {
+      if (lastFetchedBoundsRef.current) {
+        handleBoundsChange(lastFetchedBoundsRef.current);
+      }
+      resetAndLoadAllStores(name);
     }, 400);
-    return () => clearTimeout(timeout);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchTerm]);
+    return () => {
+      if (searchDebounceRef.current) {
+        window.clearTimeout(searchDebounceRef.current);
+      }
+    };
+  }, [name, handleBoundsChange, resetAndLoadAllStores]);
 
-  const handleSearch = (value: string) => {
-    setSearchTerm(value);
-  };
-
-  const filteredStates = useMemo(() => {
-    if (!filterSearch.states) return states;
-    return states.filter((state) =>
-      state.name.toLowerCase().includes(filterSearch.states.toLowerCase()),
+  useEffect(() => {
+    if (!sentinelRef.current || !listContainerRef.current) return;
+    const root = listContainerRef.current;
+    const sentinel = sentinelRef.current;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry.isIntersecting) {
+          loadNextAllStoresPage();
+        }
+      },
+      { root, rootMargin: '200px', threshold: 0 },
     );
-  }, [states, filterSearch.states]);
+    observer.observe(sentinel);
+    return () => {
+      observer.disconnect();
+    };
+  }, [loadNextAllStoresPage, allStoresHasNext]);
 
-  const filteredLGs = useMemo(() => {
-    if (!filterSearch.lgs) return currentStateLGs;
-    return currentStateLGs.filter((lg) =>
-      lg.name.toLowerCase().includes(filterSearch.lgs.toLowerCase()),
-    );
-  }, [currentStateLGs, filterSearch.lgs]);
-
-  const filteredEnumerators = useMemo(() => {
-    if (!filterSearch.enumerators) return enumerators;
-    return enumerators.filter((enumerator) =>
-      enumerator.email
-        .toLowerCase()
-        .includes(filterSearch.enumerators.toLowerCase()),
-    );
-  }, [enumerators, filterSearch.enumerators]);
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        window.clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
 
   return (
-    <div className="space-y-6 p-4 md:p-6">
-      <div className="flex items-center justify-between">
-        {isSearchActive ? (
-          <div className="flex items-center flex-1">
-            <Search className="h-5 w-5 mr-2 text-muted-foreground" />
-            <div className="relative flex-1">
-              <Input
-                type="text"
-                placeholder="Search stores..."
-                value={searchTerm}
-                onChange={(e) => handleSearch(e.target.value)}
-                className="border-0 border-b border-input rounded-none shadow-none focus-visible:ring-0 pl-0 pr-8 text-base bg-transparent focus:bg-transparent dark:bg-transparent dark:focus:bg-transparent"
-                autoFocus
-              />
-              {isPending && (
-                <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
-              )}
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleSearchMode}
-              className="ml-2"
-            >
-              <X className="h-5 w-5" />
-              <span className="sr-only">Clear search</span>
-            </Button>
-          </div>
-        ) : (
-          <div className="flex w-full items-center justify-between">
-            <h1 className="text-2xl font-bold tracking-tight">
-              Store Management
-            </h1>
-            {!isMobile && (
-              <div className="relative w-80 mx-4 hidden md:block">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Search stores..."
-                  value={searchTerm}
-                  onChange={(e) => handleSearch(e.target.value)}
-                  className="pl-10 pr-8"
-                />
-                {isPending && (
-                  <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        <div className="flex items-center space-x-2">
-          {isMobile && !isSearchActive && (
-            <Button variant="ghost" size="icon" onClick={toggleSearchMode}>
-              <Search className="h-5 w-5" />
-              <span className="sr-only">Search</span>
-            </Button>
-          )}
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Filter className="h-5 w-5" />
-                <span className="sr-only">Filter</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem className="font-medium" disabled>
-                Filter Stores
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-
-              <DropdownMenuItem className="font-medium flex items-center justify-between">
-                {searchMode.states ? (
-                  <Input
-                    autoFocus
-                    value={filterSearch.states}
-                    onChange={(e) =>
-                      setFilterSearch({
-                        ...filterSearch,
-                        states: e.target.value,
-                      })
-                    }
-                    placeholder="Search states..."
-                    className="h-7 text-xs px-2 py-1"
-                  />
-                ) : (
-                  <>
-                    <span>States</span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="ml-2 h-5 w-5 p-0"
-                      tabIndex={-1}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSearchMode({ ...searchMode, states: true });
-                      }}
-                    >
-                      <Search className="h-4 w-4" />
-                    </Button>
-                  </>
-                )}
-              </DropdownMenuItem>
-              {filteredStates.slice(0, 4).map((state) => (
-                <DropdownMenuCheckboxItem
-                  key={state.id}
-                  checked={!!state.id && selectedStateId === state.id}
-                  onCheckedChange={() =>
-                    state.id && toggleStateFilter(state.id)
-                  }
-                >
-                  {state.name}
-                </DropdownMenuCheckboxItem>
-              ))}
-
-              <DropdownMenuSeparator />
-
-              <DropdownMenuItem className="font-medium flex items-center justify-between">
-                {searchMode.lgs ? (
-                  <Input
-                    autoFocus
-                    value={filterSearch.lgs}
-                    onChange={(e) =>
-                      setFilterSearch({ ...filterSearch, lgs: e.target.value })
-                    }
-                    placeholder="Search LGAs..."
-                    className="h-7 text-xs px-2 py-1"
-                  />
-                ) : (
-                  <>
-                    <span>Local Governments</span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="ml-2 h-5 w-5 p-0"
-                      tabIndex={-1}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSearchMode({ ...searchMode, lgs: true });
-                      }}
-                    >
-                      <Search className="h-4 w-4" />
-                    </Button>
-                  </>
-                )}
-              </DropdownMenuItem>
-              {filteredLGs.slice(0, 4).map((lg) => (
-                <DropdownMenuCheckboxItem
-                  key={lg.id}
-                  checked={!!lg.id && selectedLocalGovernmentId === lg.id}
-                  onCheckedChange={() =>
-                    lg.id && toggleLocalGovernmentFilter(lg.id)
-                  }
-                >
-                  {lg.name}
-                </DropdownMenuCheckboxItem>
-              ))}
-
-              <DropdownMenuSeparator />
-
-              <DropdownMenuItem className="font-medium flex items-center justify-between">
-                {searchMode.enumerators ? (
-                  <Input
-                    autoFocus
-                    value={filterSearch.enumerators}
-                    onChange={(e) =>
-                      setFilterSearch({
-                        ...filterSearch,
-                        enumerators: e.target.value,
-                      })
-                    }
-                    placeholder="Search enumerators..."
-                    className="h-7 text-xs px-2 py-1"
-                  />
-                ) : (
-                  <>
-                    <span>Enumerators</span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="ml-2 h-5 w-5 p-0"
-                      tabIndex={-1}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSearchMode({ ...searchMode, enumerators: true });
-                      }}
-                    >
-                      <Search className="h-4 w-4" />
-                    </Button>
-                  </>
-                )}
-              </DropdownMenuItem>
-              {filteredEnumerators.slice(0, 4).map((enumerator) => (
-                <DropdownMenuCheckboxItem
-                  key={enumerator.id}
-                  checked={
-                    !!enumerator.id && selectedEnumeratorId === enumerator.id
-                  }
-                  onCheckedChange={() =>
-                    enumerator.id && toggleEnumeratorFilter(enumerator.id)
-                  }
-                >
-                  {enumerator.email}
-                </DropdownMenuCheckboxItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+    <div className="space-y-4 p-4 md:p-6">
+      <div className="flex w-full items-center justify-between gap-2">
+        <h1 className="text-2xl font-bold tracking-tight">Admin Map</h1>
+        <Button asChild className="cursor-pointer">
+          <Link href="/admin/stores">
+            <StoreIcon className="h-4 w-4" />
+            View Stores
+          </Link>
+        </Button>
       </div>
 
-      <div className="rounded-md border w-full">
-        <div className="w-full">
-          <div className="hidden md:grid grid-cols-[1.25fr_1fr_1fr_1fr_0.5fr_0.5fr] gap-4 p-4 border-b bg-muted/50 font-medium text-sm w-full overflow-x-auto">
-            <div>Name</div>
-            <div>Type</div>
-            <div>Address</div>
-            <div>Landmarks</div>
-            <div>Enumerator</div>
-            <div className="text-right">Actions</div>
-          </div>
-          <div className="md:hidden grid grid-cols-[1.5fr_1.25fr_0.5fr] gap-4 p-4 border-b bg-muted/50 font-medium text-sm">
-            <div>Name</div>
-            <div>Address</div>
-            <div className="text-right">Actions</div>
-          </div>
-
-          {stores.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              {stores.length === 0
-                ? 'No stores found.'
-                : 'No stores found matching your criteria.'}
-            </div>
-          ) : (
-            stores.map((store) => (
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+        <div className="relative lg:col-span-9" style={{ aspectRatio: '16/9' }}>
+          <InteractiveMap
+            stores={stores}
+            session={session}
+            center={center}
+            zoom={zoom}
+            onBoundsChangeAction={handleBoundsChange}
+            focus={focus}
+            onFocusComplete={() => setFocus(undefined)}
+          />
+          {isPending && (
+            <>
               <div
-                key={store.id}
-                className="hidden md:grid grid-cols-[1.25fr_1fr_1fr_1fr_0.5fr_0.5fr] gap-4 p-4 border-b items-center w-full overflow-x-auto"
-              >
-                <div className="font-medium truncate" title={store.name}>
-                  {store.name}
+                className="pointer-events-none absolute top-0 right-0 z-[1000]"
+                style={{
+                  width: '140px',
+                  height: '140px',
+                  background:
+                    'radial-gradient(circle at 100% 0%, rgba(0,0,0,0.14), rgba(0,0,0,0) 70%)',
+                }}
+                aria-hidden="true"
+              />
+              <div className="absolute top-4 right-4 z-[1001]">
+                <Loader2
+                  className="h-6 w-6 animate-spin text-black"
+                  aria-label="Loading"
+                />
+              </div>
+            </>
+          )}
+        </div>
+        <div className="lg:col-span-3">
+          <div className="rounded-lg border bg-background">
+            <div className="flex items-center gap-2 p-3 border-b">
+              <div className="relative w-full">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Search by name"
+                  className="pl-8"
+                />
+              </div>
+            </div>
+            <div
+              className="max-h-[420px] overflow-auto p-2"
+              ref={listContainerRef}
+            >
+              {allStores.length === 0 && !isPendingAllStores ? (
+                <div className="p-3 text-sm text-muted-foreground">
+                  No stores found.
                 </div>
-                <div className="truncate">{store.store_type}</div>
-                <div className="min-w-0">
-                  <div className="font-medium truncate" title={store.address}>
-                    {store.address}
-                  </div>
-                  <div className="text-xs text-muted-foreground truncate">{`${store?.state?.name}, ${store?.local_government?.name}`}</div>
-                </div>
-                <div className="truncate">{store.landmarks}</div>
-                <div className="truncate">{store.enumerator?.email}</div>
-                <div className="flex justify-end">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        className="h-8 w-8 p-0 cursor-pointer"
+              ) : (
+                <div className="space-y-1">
+                  {allStores.map((store) => (
+                    <ContextMenu key={store.id}>
+                      <ContextMenuTrigger
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setFocus({
+                            lat: store.latitude,
+                            lng: store.longitude,
+                            zoom: 18,
+                          });
+                        }}
+                        className="block rounded-md border p-2 hover:bg-muted cursor-pointer"
                       >
-                        <span className="sr-only">Open menu</span>
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        className="text-xs cursor-pointer"
-                        asChild
-                      >
-                        <Link href={`/admin/stores/${store.id}`}>
-                          View More
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        className="text-xs cursor-pointer"
-                        asChild
-                      >
-                        <Link
-                          href={`/admin?lat=${store.latitude}&lng=${store.longitude}`}
+                        <div className="font-medium truncate">{store.name}</div>
+                        <div className="text-xs text-muted-foreground truncate">
+                          {store.store_type}, {store.address}
+                        </div>
+                      </ContextMenuTrigger>
+                      <ContextMenuContent>
+                        <ContextMenuItem
+                          onClick={() => {
+                            setFocus({
+                              lat: store.latitude,
+                              lng: store.longitude,
+                              zoom: 18,
+                            });
+                          }}
                         >
                           View on Map
-                        </Link>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                        </ContextMenuItem>
+                        <ContextMenuItem
+                          onClick={() => {
+                            setSelectedStore(store);
+                            setIsDetailsOpen(true);
+                          }}
+                        >
+                          View Store Details
+                        </ContextMenuItem>
+                      </ContextMenuContent>
+                    </ContextMenu>
+                  ))}
+                  <div ref={sentinelRef} />
+                  {isPendingAllStores && (
+                    <div className="flex items-center justify-center py-2">
+                      <Loader2
+                        className="h-4 w-4 animate-spin text-muted-foreground"
+                        aria-label="Loading more"
+                      />
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))
-          )}
-
-          {stores.length > 0 &&
-            stores.map((store) => (
-              <div
-                key={store.id + '-mobile'}
-                className="md:hidden grid grid-cols-[1.5fr_1.25fr_0.5fr] gap-4 p-4 border-b bg-muted/50 font-medium text-sm"
-              >
-                <div className="min-w-0">
-                  <div className="font-medium truncate" title={store.name}>
-                    {store.name}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {store.store_type}
-                  </div>
-                </div>
-                <div className="min-w-0">
-                  <div
-                    className="font-medium capitalize truncate"
-                    title={store.address}
-                  >
-                    {store.address}
-                  </div>
-                  <div className="text-xs text-muted-foreground truncate">{`${store?.state?.name}, ${store?.local_government?.name}`}</div>
-                </div>
-                <div className="flex justify-end">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        className="h-8 w-8 p-0 cursor-pointer"
-                      >
-                        <span className="sr-only">Open menu</span>
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        className="text-xs cursor-pointer"
-                        asChild
-                      >
-                        <Link href={`/admin/stores/${store.id}`}>
-                          View More
-                        </Link>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </div>
-            ))}
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-4 items-center justify-center md:flex-row md:items-center md:justify-between">
-        <div className="flex gap-2 justify-between items-center w-full md:w-auto">
-          <p className="text-sm text-muted-foreground">
-            {pagination.total === 0 || stores.length === 0 ? (
-              <>No results found</>
-            ) : (
-              <>
-                Showing {(pagination.page - 1) * pagination.limit + 1} to{' '}
-                {Math.min(pagination.page * pagination.limit, pagination.total)}{' '}
-                of {pagination.total} results
-              </>
-            )}
-          </p>
-          {pagination.total !== 0 && stores.length !== 0 && (
-            <Select
-              value={pagination.limit.toString()}
-              onValueChange={(value) =>
-                updateSearch({ limit: Number(value), page: 1 })
-              }
-            >
-              <SelectTrigger className="h-8 w-[70px]">
-                <SelectValue placeholder={pagination.limit} />
-              </SelectTrigger>
-              <SelectContent side="top">
-                {[10, 20, 30, 40, 50].map((pageSize) => (
-                  <SelectItem key={pageSize} value={pageSize.toString()}>
-                    {pageSize}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        </div>
-
-        <div className="flex gap-2 items-center">
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => updateSearch({ page: pagination.page - 1 })}
-              disabled={!pagination.has_previous}
-            >
-              <ChevronLeft className="h-4 w-4" />
-              <span className="sr-only">Previous page</span>
-            </Button>
-            <div className="text-sm text-muted-foreground whitespace-nowrap">
-              Page {pagination.page} of {pagination.total_pages ?? 1}
+              )}
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => updateSearch({ page: pagination.page + 1 })}
-              disabled={!pagination.has_next}
-            >
-              <ChevronRight className="h-4 w-4" />
-              <span className="sr-only">Next page</span>
-            </Button>
           </div>
+          {error ? (
+            <div
+              className="mt-2 text-sm text-red-600"
+              role="status"
+              aria-live="polite"
+            >
+              {error}
+            </div>
+          ) : null}
         </div>
       </div>
+      <StoreDetailsDialog
+        open={isDetailsOpen}
+        onOpenChange={(open) => {
+          setIsDetailsOpen(open);
+          if (!open) setSelectedStore(null);
+        }}
+        store={selectedStore}
+      />
     </div>
   );
 }
