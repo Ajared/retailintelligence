@@ -323,7 +323,7 @@ export default function Content({
   return (
     <div className="space-y-4 p-4 md:p-6">
       <div className="flex w-full items-center justify-between gap-2">
-        <h1 className="text-2xl font-bold tracking-tight">User Map</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Stores</h1>
         <Button asChild className="cursor-pointer">
           <Link href="/user/stores/add">
             <PackagePlus className="h-4 w-4" />
