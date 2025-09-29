@@ -62,6 +62,9 @@ export default function Content({
     lng: number;
     zoom?: number;
   }>();
+  const [highlightStoreId, setHighlightStoreId] = useState<
+    string | undefined
+  >();
   const [name, setName] = useState<string>(initialName ?? '');
 
   const debounceTimerRef = useRef<number | null>(null);
@@ -342,6 +345,7 @@ export default function Content({
             onBoundsChangeAction={handleBoundsChange}
             focus={focus}
             onFocusComplete={() => setFocus(undefined)}
+            highlightStoreId={highlightStoreId}
           />
           {isPending && (
             <>
@@ -397,6 +401,7 @@ export default function Content({
                             lng: store.longitude,
                             zoom: 18,
                           });
+                          setHighlightStoreId(store.id);
                         }}
                         className="block rounded-md border p-2 hover:bg-muted cursor-pointer"
                       >
@@ -413,6 +418,7 @@ export default function Content({
                               lng: store.longitude,
                               zoom: 18,
                             });
+                            setHighlightStoreId(store.id);
                           }}
                         >
                           View on Map
