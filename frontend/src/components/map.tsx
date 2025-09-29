@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import 'leaflet/dist/leaflet.css';
 import { Session } from 'next-auth';
 import 'leaflet-defaulticon-compatibility';
-import { LatLngExpression } from 'leaflet';
+import L, { LatLngExpression } from 'leaflet';
 
 import { StoreInterface } from '~/types/store';
 import {
@@ -114,6 +114,7 @@ export default function AppMap({
   onBoundsChangeAction,
   focus,
   onFocusComplete,
+  highlightStoreId,
 }: {
   stores: StoreInterface[];
   session: Session;
@@ -127,6 +128,7 @@ export default function AppMap({
   }) => void;
   focus?: { lat: number; lng: number; zoom?: number };
   onFocusComplete?: () => void;
+  highlightStoreId?: string;
 }) {
   const mapZoom = zoom ?? 15;
   const mapCenter = center ?? {
@@ -138,6 +140,26 @@ export default function AppMap({
   const [selectedStore, setSelectedStore] = useState<StoreInterface | null>(
     null,
   );
+
+  const defaultIcon = useMemo(() => {
+    return new L.Icon.Default();
+  }, []);
+
+  const highlightIcon = useMemo(() => {
+    // Use a red variant of the default Leaflet marker icon
+    return new L.Icon({
+      iconUrl:
+        'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+      iconRetinaUrl:
+        'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+      shadowUrl:
+        'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41],
+    });
+  }, []);
 
   return (
     <>
@@ -153,23 +175,33 @@ export default function AppMap({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        {stores.map((store) => (
-          <Marker key={store.id} position={[store.latitude, store.longitude]}>
-            <Popup>
-              <button
-                onClick={() => {
-                  setSelectedStore(store);
-                  setIsDetailsOpen(true);
-                }}
-                className="cursor-pointer text-left"
-              >
-                {store.name}
-                <br />
-                {store.store_type}
-              </button>
-            </Popup>
-          </Marker>
-        ))}
+        {stores.map((store) => {
+          const isHighlighted = highlightStoreId === store.id;
+          const markerProps = isHighlighted
+            ? { icon: highlightIcon, zIndexOffset: 1000 as number }
+            : { icon: defaultIcon, zIndexOffset: 0 as number };
+          return (
+            <Marker
+              key={store.id}
+              position={[store.latitude, store.longitude]}
+              {...markerProps}
+            >
+              <Popup>
+                <button
+                  onClick={() => {
+                    setSelectedStore(store);
+                    setIsDetailsOpen(true);
+                  }}
+                  className="cursor-pointer text-left"
+                >
+                  {store.name}
+                  <br />
+                  {store.store_type}
+                </button>
+              </Popup>
+            </Marker>
+          );
+        })}
       </MapContainer>
       <StoreDetailsDialog
         open={isDetailsOpen}
