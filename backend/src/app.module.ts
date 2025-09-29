@@ -126,34 +126,30 @@ import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConne
           const tempDataSource = new DataSource({
             ...pgOptions,
             database: 'postgres',
-            username: 'postgres',
             migrationsRun: false,
             synchronize: false,
           });
 
-          await tempDataSource
-            .initialize()
-            .then(() => logger.log('Connected to postgres database'))
-            .catch((error) => {
-              logger.error('Connection to postgres failed', error);
-              throw error;
-            });
-
-          await tempDataSource
-            .query(
+          try {
+            await tempDataSource.initialize();
+            logger.log('Connected to postgres database for database creation');
+            
+            await tempDataSource.query(
               `CREATE DATABASE "${pgOptions.database}" OWNER "${pgOptions.username}"`,
-            )
-            .then(() => logger.log(`Database ${pgOptions.database} created`))
-            .catch((error) => {
-              logger.error('Database creation failed', error);
-              throw error;
-            })
-            .finally(() => tempDataSource.destroy().catch(() => {}));
-
-          return mainDataSource.initialize().then((ds) => {
-            logger.log('Main Data Source initialized after creation');
-            return ds;
-          });
+            );
+            logger.log(`Database ${pgOptions.database} created successfully`);
+            
+            await tempDataSource.destroy();
+            
+            return mainDataSource.initialize().then((ds) => {
+              logger.log('Main Data Source initialized after database creation');
+              return ds;
+            });
+          } catch (error) {
+            logger.error('Database creation failed', error);
+            await tempDataSource.destroy().catch(() => {});
+            throw error;
+          }
         }
         logger.error('Database initialization failed', initResult.error);
         throw initResult.error;
