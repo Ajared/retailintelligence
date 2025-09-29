@@ -1,5 +1,5 @@
 @import 'tailwindcss';
-@import "tw-animate-css";
+@import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -15,38 +15,43 @@
   --secondary: hsl(0 0% 99.2157%);
   --secondary-foreground: hsl(0 0% 9.0196%);
   --muted: hsl(0 0% 92.9412%);
-  --muted-foreground: hsl(0 0% 12.5490%);
+  --muted-foreground: hsl(0 0% 12.549%);
   --accent: hsl(0 0% 92.9412%);
-  --accent-foreground: hsl(0 0% 12.5490%);
-  --destructive: hsl(9.8901 81.9820% 43.5294%);
+  --accent-foreground: hsl(0 0% 12.549%);
+  --destructive: hsl(9.8901 81.982% 43.5294%);
   --destructive-foreground: hsl(0 100% 99.4118%);
-  --border: hsl(0 0% 87.4510%);
+  --border: hsl(0 0% 87.451%);
   --input: hsl(0 0% 96.4706%);
   --primary: hsl(139.6552 52.7273% 43.1373%);
   --chart-1: hsl(151.3274 66.8639% 66.8627%);
   --chart-2: hsl(217.2193 91.2195% 59.8039%);
   --chart-3: hsl(258.3117 89.5349% 66.2745%);
-  --chart-4: hsl(37.6923 92.1260% 50.1961%);
+  --chart-4: hsl(37.6923 92.126% 50.1961%);
   --chart-5: hsl(160.1183 84.0796% 39.4118%);
   --sidebar: hsl(0 0% 98.8235%);
   --sidebar-foreground: hsl(0 0% 43.9216%);
   --sidebar-primary: hsl(139.6552 52.7273% 43.1373%);
   --sidebar-primary-foreground: hsl(0 0% 100%);
   --sidebar-accent: hsl(0 0% 92.9412%);
-  --sidebar-accent-foreground: hsl(0 0% 12.5490%);
-  --sidebar-border: hsl(0 0% 87.4510%);
+  --sidebar-accent-foreground: hsl(0 0% 12.549%);
+  --sidebar-border: hsl(0 0% 87.451%);
   --sidebar-ring: hsl(139.6552 52.7273% 43.1373%);
   --font-sans: Outfit, sans-serif;
-  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-serif: ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
   --font-mono: monospace;
   --radius: 0.5rem;
   --shadow-2xs: 0px 1px 3px 0px hsl(0 0% 0% / 0.09);
   --shadow-xs: 0px 1px 3px 0px hsl(0 0% 0% / 0.09);
-  --shadow-sm: 0px 1px 3px 0px hsl(0 0% 0% / 0.17), 0px 1px 2px -1px hsl(0 0% 0% / 0.17);
-  --shadow: 0px 1px 3px 0px hsl(0 0% 0% / 0.17), 0px 1px 2px -1px hsl(0 0% 0% / 0.17);
-  --shadow-md: 0px 1px 3px 0px hsl(0 0% 0% / 0.17), 0px 2px 4px -1px hsl(0 0% 0% / 0.17);
-  --shadow-lg: 0px 1px 3px 0px hsl(0 0% 0% / 0.17), 0px 4px 6px -1px hsl(0 0% 0% / 0.17);
-  --shadow-xl: 0px 1px 3px 0px hsl(0 0% 0% / 0.17), 0px 8px 10px -1px hsl(0 0% 0% / 0.17);
+  --shadow-sm:
+    0px 1px 3px 0px hsl(0 0% 0% / 0.17), 0px 1px 2px -1px hsl(0 0% 0% / 0.17);
+  --shadow:
+    0px 1px 3px 0px hsl(0 0% 0% / 0.17), 0px 1px 2px -1px hsl(0 0% 0% / 0.17);
+  --shadow-md:
+    0px 1px 3px 0px hsl(0 0% 0% / 0.17), 0px 2px 4px -1px hsl(0 0% 0% / 0.17);
+  --shadow-lg:
+    0px 1px 3px 0px hsl(0 0% 0% / 0.17), 0px 4px 6px -1px hsl(0 0% 0% / 0.17);
+  --shadow-xl:
+    0px 1px 3px 0px hsl(0 0% 0% / 0.17), 0px 8px 10px -1px hsl(0 0% 0% / 0.17);
   --shadow-2xl: 0px 1px 3px 0px hsl(0 0% 0% / 0.43);
   --tracking-normal: 0.025em;
 }
@@ -66,8 +71,8 @@
   --muted-foreground: hsl(0 0% 63.5294%);
   --accent: hsl(0 0% 19.2157%);
   --accent-foreground: hsl(0 0% 98.0392%);
-  --destructive: hsl(6.6667 60.0000% 20.5882%);
-  --destructive-foreground: hsl(12.0000 12.1951% 91.9608%);
+  --destructive: hsl(6.6667 60% 20.5882%);
+  --destructive-foreground: hsl(12 12.1951% 91.9608%);
   --border: hsl(0 0% 16.0784%);
   --input: hsl(0 0% 14.1176%);
   --ring: hsl(155, 41%, 64%);
@@ -85,16 +90,21 @@
   --sidebar-border: hsl(0 0% 16.0784%);
   --sidebar-ring: hsl(155, 41%, 64%);
   --font-sans: Outfit, sans-serif;
-  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-serif: ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
   --font-mono: monospace;
   --radius: 0.5rem;
   --shadow-2xs: 0px 1px 3px 0px hsl(0 0% 0% / 0.09);
   --shadow-xs: 0px 1px 3px 0px hsl(0 0% 0% / 0.09);
-  --shadow-sm: 0px 1px 3px 0px hsl(0 0% 0% / 0.17), 0px 1px 2px -1px hsl(0 0% 0% / 0.17);
-  --shadow: 0px 1px 3px 0px hsl(0 0% 0% / 0.17), 0px 1px 2px -1px hsl(0 0% 0% / 0.17);
-  --shadow-md: 0px 1px 3px 0px hsl(0 0% 0% / 0.17), 0px 2px 4px -1px hsl(0 0% 0% / 0.17);
-  --shadow-lg: 0px 1px 3px 0px hsl(0 0% 0% / 0.17), 0px 4px 6px -1px hsl(0 0% 0% / 0.17);
-  --shadow-xl: 0px 1px 3px 0px hsl(0 0% 0% / 0.17), 0px 8px 10px -1px hsl(0 0% 0% / 0.17);
+  --shadow-sm:
+    0px 1px 3px 0px hsl(0 0% 0% / 0.17), 0px 1px 2px -1px hsl(0 0% 0% / 0.17);
+  --shadow:
+    0px 1px 3px 0px hsl(0 0% 0% / 0.17), 0px 1px 2px -1px hsl(0 0% 0% / 0.17);
+  --shadow-md:
+    0px 1px 3px 0px hsl(0 0% 0% / 0.17), 0px 2px 4px -1px hsl(0 0% 0% / 0.17);
+  --shadow-lg:
+    0px 1px 3px 0px hsl(0 0% 0% / 0.17), 0px 4px 6px -1px hsl(0 0% 0% / 0.17);
+  --shadow-xl:
+    0px 1px 3px 0px hsl(0 0% 0% / 0.17), 0px 8px 10px -1px hsl(0 0% 0% / 0.17);
   --shadow-2xl: 0px 1px 3px 0px hsl(0 0% 0% / 0.43);
 }
 
@@ -269,4 +279,8 @@ body {
     transform: translateY(66%) scale(0.65);
     opacity: 0.8;
   }
+}
+
+.highlight-marker {
+  filter: hue-rotate(150deg) saturate(5);
 }
