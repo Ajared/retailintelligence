@@ -411,6 +411,10 @@ export default function Content({
                         </div>
                       </ContextMenuTrigger>
                       <ContextMenuContent>
+                        {/* Edit store modal */}
+                        <ContextMenuItem>
+                          Edit Store
+                        </ContextMenuItem>
                         <ContextMenuItem
                           onClick={() => {
                             setFocus({
