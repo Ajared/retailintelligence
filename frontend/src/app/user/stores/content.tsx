@@ -413,7 +413,7 @@ export default function Content({
                       <ContextMenuContent>
                         {/* Edit store modal */}
                         <ContextMenuItem>
-                          Edit Store
+                          <Link href={`/user/stores/edit/${store.id}`}>Edit Store</Link>
                         </ContextMenuItem>
                         <ContextMenuItem
                           onClick={() => {
