@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import 'leaflet/dist/leaflet.css';
-import { Session } from 'next-auth';
 import 'leaflet-defaulticon-compatibility';
 import L, { LatLngExpression } from 'leaflet';
 
@@ -108,7 +107,6 @@ const MapFlyToController = ({
 
 export default function AppMap({
   stores,
-  session,
   center,
   zoom,
   onBoundsChangeAction,
@@ -117,7 +115,6 @@ export default function AppMap({
   highlightStoreId,
 }: {
   stores: StoreInterface[];
-  session: Session;
   center?: LatLngExpression;
   zoom?: number;
   onBoundsChangeAction?: (bounds: {

@@ -99,7 +99,6 @@ export default function StoreDetailsDialog({
                       key={idx}
                       className="relative w-28 h-28 flex-shrink-0 overflow-hidden rounded border"
                     >
-                      {/* Intentionally using next/image for optimized rendering */}
                       <Image
                         src={src}
                         alt={`${store.name} photo ${idx + 1}`}

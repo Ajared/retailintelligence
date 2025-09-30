@@ -1,25 +1,39 @@
 'use client';
-
+import { Label } from '@radix-ui/react-label';
 import {
+  CheckCircle2,
+  ChevronLeft,
+  ImageIcon,
+  Loader2,
+  MapPin,
+  Plus,
+  X,
+} from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
+import React, {
+  startTransition,
   useActionState,
-  useRef,
-  useState,
+  useCallback,
   useEffect,
   useMemo,
-  useCallback,
-  startTransition,
+  useRef,
+  useState,
 } from 'react';
-import { Input } from '~/components/ui/input';
-import { Label } from '~/components/ui/label';
+import { toast } from 'sonner';
+import { editStore } from '~/app/user/actions';
+import { AddStoreFormData, EditStoreFormData } from '~/app/user/schema';
+import { Alert, AlertDescription } from '~/components/ui/alert';
 import { Button } from '~/components/ui/button';
 import {
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
   CardDescription,
   CardFooter,
+  CardHeader,
+  CardTitle,
 } from '~/components/ui/card';
+import { Input } from '~/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -27,25 +41,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '~/components/ui/select';
-import { addStore } from '../../actions';
-import type { Response } from '~/types/actions';
-import { Alert, AlertDescription } from '~/components/ui/alert';
-import {
-  CheckCircle2,
-  Loader2,
-  MapPin,
-  ImageIcon,
-  X,
-  Plus,
-  ChevronLeft,
-} from 'lucide-react';
-import type { StoreInterface } from '~/types/store';
-import type { StateInterface } from '~/types/state';
-import { AddStoreFormData } from '../../schema';
-import Link from 'next/link';
-import { toast } from 'sonner';
-import Image from 'next/image';
-import type { PhaseInterface } from '~/types/phase';
+import { Response } from '~/types/actions';
+import { PhaseInterface } from '~/types/phase';
+import { StateInterface } from '~/types/state';
+import { StoreInterface } from '~/types/store';
 import { UserInterface } from '~/types/user';
 
 function ImagePreview({
@@ -111,55 +110,73 @@ function ImagePreview({
   );
 }
 
-export function AddStoreForm({
+const EditStoreForm = ({
   phases,
   locations,
   user,
+  store,
 }: {
   phases: PhaseInterface[];
   locations: StateInterface[];
   user?: UserInterface;
-}) {
+  store: Response<StoreInterface>;
+}) => {
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
-  const [selectedStateId, setSelectedStateId] = useState<string | undefined>(
-    user?.assigned_state_id || '',
-  );
-  const [selectedPhaseId, setSelectedPhaseId] = useState<string | undefined>(
-    user?.assigned_phase_id || '',
-  );
-  const [selectedDistrictId, setSelectedDistrictId] = useState<
-    string | undefined
-  >(user?.assigned_district_id || '');
-  const [isGettingLocation, setIsGettingLocation] = useState(false);
-  const latitudeRef = useRef<HTMLInputElement>(null);
-  const longitudeRef = useRef<HTMLInputElement>(null);
+
+  const defaultData =
+    'data' in store ? store.data : (undefined as StoreInterface | undefined);
 
   const initialState: Response<StoreInterface> & {
-    inputs: AddStoreFormData;
+    inputs: EditStoreFormData;
   } = {
     error: '',
     message: '',
     timestamp: '',
     inputs: {
-      name: '',
-      state_id: '',
-      local_government_id: '',
-      address: '',
-      store_type: '',
-      latitude: 0,
-      longitude: 0,
-      landmarks: '',
-      photos: [],
+      id: defaultData?.id ?? '',
+      name: defaultData?.name ?? '',
+      state_id: defaultData?.state_id ?? '',
+      local_government_id: defaultData?.local_government_id ?? '',
+      phase_id: defaultData?.phase_id ?? undefined,
+      district_id: defaultData?.district_id ?? undefined,
+      address: defaultData?.address ?? '',
+      store_type: defaultData?.store_type ?? '',
+      latitude: defaultData?.latitude ?? 0,
+      longitude: defaultData?.longitude ?? 0,
+      landmarks: defaultData?.landmarks ?? '',
+      photos: defaultData?.photos ?? [],
     },
   };
-
-  const [state, action, isPending] = useActionState(addStore, initialState);
-
+  const [selectedStateId, setSelectedStateId] = useState<string | undefined>(
+    user?.assigned_state_id || defaultData?.state_id || '',
+  );
+  const [selectedPhaseId, setSelectedPhaseId] = useState<string | undefined>(
+    user?.assigned_phase_id ||
+      (defaultData as Partial<StoreInterface> & { phase_id?: string })
+        .phase_id ||
+      '',
+  );
+  const [selectedDistrictId, setSelectedDistrictId] = useState<
+    string | undefined
+  >(
+    user?.assigned_district_id ||
+      (defaultData as Partial<StoreInterface> & { district_id?: string })
+        .district_id ||
+      defaultData?.local_government_id ||
+      '',
+  );
+  const [state, action, isPending] = useActionState(editStore, initialState);
   const selectedState = useMemo(() => {
     return locations.find((state) => state.id === selectedStateId);
   }, [selectedStateId, locations]);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const latitudeRef = useRef<HTMLInputElement>(null);
+  const longitudeRef = useRef<HTMLInputElement>(null);
+  const [keptExistingPhotos, setKeptExistingPhotos] = useState<string[]>(
+    Array.isArray(defaultData?.photos) ? defaultData.photos : [],
+  );
 
   const showPhaseAndDistrict = useMemo(() => {
     if (!selectedState) return false;
@@ -168,11 +185,21 @@ export function AddStoreForm({
       selectedState.id === phases[0]?.state_id
     );
   }, [selectedState, phases]);
-
-  const filteredLocalGovernments = useMemo(() => {
-    if (!selectedStateId) return [];
-    return selectedState?.local_governments || [];
-  }, [selectedStateId, selectedState]);
+  const getInputValue = useCallback(
+    (key: keyof AddStoreFormData): string => {
+      if (
+        state &&
+        typeof state === 'object' &&
+        'inputs' in state &&
+        state.inputs &&
+        state.inputs[key] !== undefined
+      ) {
+        return String(state.inputs[key]);
+      }
+      return '';
+    },
+    [state],
+  );
 
   const filteredDistricts = useMemo(() => {
     if (!showPhaseAndDistrict || !selectedPhaseId) return [];
@@ -209,21 +236,19 @@ export function AddStoreForm({
     );
   }, []);
 
-  const getInputValue = useCallback(
-    (key: keyof AddStoreFormData): string => {
-      if (
-        state &&
-        typeof state === 'object' &&
-        'inputs' in state &&
-        state.inputs &&
-        state.inputs[key] !== undefined
-      ) {
-        return String(state.inputs[key]);
-      }
-      return '';
-    },
-    [state],
-  );
+  const filteredLocalGovernments = useMemo(() => {
+    if (!selectedStateId) return [];
+    return selectedState?.local_governments || [];
+  }, [selectedStateId, selectedState]);
+
+  const handlePhaseChange = useCallback((value: string) => {
+    setSelectedPhaseId(value);
+    setSelectedDistrictId('');
+  }, []);
+
+  const handleDistrictChange = useCallback((value: string) => {
+    setSelectedDistrictId(value);
+  }, []);
 
   const handleImageSelect = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -285,26 +310,6 @@ export function AddStoreForm({
     fileInputRef.current?.click();
   }, []);
 
-  const handleSubmit = useCallback(
-    (event: React.FormEvent<HTMLFormElement>) => {
-      event.preventDefault();
-      const formData = new FormData(event.currentTarget);
-      const latInput = latitudeRef.current?.value ?? '';
-      const lngInput = longitudeRef.current?.value ?? '';
-      if (latInput.trim().length > 0) formData.set('latitude', latInput.trim());
-      if (lngInput.trim().length > 0)
-        formData.set('longitude', lngInput.trim());
-      formData.delete('photos');
-      selectedImages.forEach((file) => {
-        formData.append('photos', file);
-      });
-      startTransition(() => {
-        action(formData);
-      });
-    },
-    [action, selectedImages],
-  );
-
   const handleStateChange = useCallback(
     (value: string) => {
       setSelectedStateId(value);
@@ -330,23 +335,35 @@ export function AddStoreForm({
     [locations, phases],
   );
 
-  const handlePhaseChange = useCallback((value: string) => {
-    setSelectedPhaseId(value);
-    setSelectedDistrictId('');
-  }, []);
-
-  const handleDistrictChange = useCallback((value: string) => {
-    setSelectedDistrictId(value);
-  }, []);
+  const handleSubmit = useCallback(
+    (event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      const formData = new FormData(event.currentTarget);
+      const latInput = latitudeRef.current?.value ?? '';
+      const lngInput = longitudeRef.current?.value ?? '';
+      if (latInput.trim().length > 0) formData.set('latitude', latInput.trim());
+      if (lngInput.trim().length > 0)
+        formData.set('longitude', lngInput.trim());
+      keptExistingPhotos.forEach((url) =>
+        formData.append('existing_photos', url),
+      );
+      formData.delete('photos');
+      selectedImages.forEach((file) => {
+        formData.append('photos', file);
+      });
+      startTransition(() => {
+        action(formData);
+      });
+    },
+    [action, selectedImages, keptExistingPhotos],
+  );
 
   return (
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader className="flex flex-row justify-between items-center">
         <div className="flex flex-col gap-2">
-          <CardTitle>Add Store</CardTitle>
-          <CardDescription>
-            Fill in the details to add a new store.
-          </CardDescription>
+          <CardTitle>Edit Store</CardTitle>
+          <CardDescription>Update the details of this store.</CardDescription>
         </div>
         <Button asChild variant="outline">
           <Link href="/user/stores" className="flex items-center gap-2">
@@ -357,11 +374,13 @@ export function AddStoreForm({
         </Button>
       </CardHeader>
       <form
-        ref={formRef}
-        onSubmit={handleSubmit}
+        action=""
         className="flex flex-col gap-4"
+        onSubmit={handleSubmit}
+        ref={formRef}
       >
         <CardContent className="space-y-4">
+          <input type="hidden" name="id" value={initialState.inputs.id} />
           <div className="space-y-2">
             <Label htmlFor="name">Store Name *</Label>
             <Input
@@ -603,6 +622,43 @@ export function AddStoreForm({
 
           <div className="space-y-4">
             <Label>Photos</Label>
+
+            {keptExistingPhotos.length > 0 ? (
+              <div className="space-y-2">
+                <div className="text-sm text-muted-foreground">
+                  Existing Photos
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  {keptExistingPhotos.map((url, index) => (
+                    <div key={`${url}-${index}`} className="relative group">
+                      <div className="w-20 h-20 rounded-lg overflow-hidden border bg-gray-50">
+                        <Image
+                          src={url}
+                          alt={`Photo ${index + 1}`}
+                          width={80}
+                          height={80}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        type="button"
+                        onClick={() =>
+                          setKeptExistingPhotos((prev) =>
+                            prev.filter((u) => u !== url),
+                          )
+                        }
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 w-6 h-6 dark:bg-red-600 dark:hover:bg-red-700"
+                        aria-label={`Remove existing photo ${index + 1}`}
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
             <input
               ref={fileInputRef}
               type="file"
@@ -666,7 +722,6 @@ export function AddStoreForm({
               JPG, PNG, GIF, WebP • Max 4MB each • Up to 10 images
             </p>
           </div>
-
           {state?.message && (
             <Alert variant={'data' in state ? 'default' : 'destructive'}>
               {'data' in state && <CheckCircle2 className="h-4 w-4" />}
@@ -698,10 +753,12 @@ export function AddStoreForm({
             disabled={isPending}
           >
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isPending ? 'Processing' : 'Add Store'}
+            {isPending ? 'Processing' : 'Edit Store'}
           </Button>
         </CardFooter>
       </form>
     </Card>
   );
-}
+};
+
+export default EditStoreForm;

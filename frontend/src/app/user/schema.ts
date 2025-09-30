@@ -16,7 +16,7 @@ export const addStoreFormSchema = z.object({
 
 export type AddStoreFormData = z.infer<typeof addStoreFormSchema>;
 
-export const editStoreFormSchema = addStoreFormSchema.extend({
+export const editStoreFormSchema = addStoreFormSchema.partial().extend({
   id: z.string().min(1, 'Store ID is required'),
 });
 

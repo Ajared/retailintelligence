@@ -11,6 +11,8 @@ export function UserHeader() {
   let title: string;
   if (pathname.startsWith('/user/stores/add')) {
     title = 'Add Store';
+  } else if (pathname.startsWith('/user/stores/edit')) {
+    title = 'Edit Store';
   } else {
     const matched = navigationItems.find((item) =>
       pathname.startsWith(item.url),

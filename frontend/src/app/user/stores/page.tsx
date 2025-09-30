@@ -26,12 +26,7 @@ export default async function UserMapPage({
 
   return (
     <div className="h-full w-full">
-      <Content
-        zoom={zoom}
-        center={center}
-        session={session}
-        initialName={name}
-      />
+      <Content zoom={zoom} center={center} initialName={name} />
     </div>
   );
 }
