@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { Session } from 'next-auth';
 import { LatLngExpression } from 'leaflet';
 import { PackagePlus, Search, Loader2 } from 'lucide-react';
 import {
@@ -29,6 +28,8 @@ const InteractiveMap = dynamic(() => import('~/components/map'), {
   ssr: false,
 });
 
+console.log(getAllStoresForUser);
+
 type BoundsQuery = {
   minLat: number;
   maxLat: number;
@@ -37,12 +38,10 @@ type BoundsQuery = {
 };
 
 export default function Content({
-  session,
   center,
   zoom,
   initialName,
 }: {
-  session: Session;
   center?: LatLngExpression;
   zoom?: number;
   initialName?: string;
@@ -339,7 +338,6 @@ export default function Content({
         <div className="relative lg:col-span-9" style={{ aspectRatio: '16/9' }}>
           <InteractiveMap
             stores={stores}
-            session={session}
             center={center}
             zoom={zoom}
             onBoundsChangeAction={handleBoundsChange}
@@ -413,7 +411,9 @@ export default function Content({
                       <ContextMenuContent>
                         {/* Edit store modal */}
                         <ContextMenuItem>
-                          <Link href={`/user/stores/edit/${store.id}`}>Edit Store</Link>
+                          <Link href={`/user/stores/edit/${store.id}`}>
+                            Edit Store
+                          </Link>
                         </ContextMenuItem>
                         <ContextMenuItem
                           onClick={() => {

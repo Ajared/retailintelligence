@@ -1,4 +1,4 @@
-import { Home, Users, Store, MapPin } from 'lucide-react';
+import { Users, Store } from 'lucide-react';
 
 export const navigationItems = [
   {

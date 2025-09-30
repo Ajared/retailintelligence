@@ -5,7 +5,12 @@ import { utapi } from '~/lib/uploadthing';
 import { StoreInterface } from '~/types/store';
 import { customFetch } from '~/lib/custom-fetch';
 import { collectErrorMessages } from '~/lib/utils';
-import { AddStoreFormData, addStoreFormSchema } from './schema';
+import {
+  AddStoreFormData,
+  addStoreFormSchema,
+  EditStoreFormData,
+  editStoreFormSchema,
+} from './schema';
 import type {
   Response,
   ErrorResponse,
@@ -209,6 +214,169 @@ export const addStore = async (
       message: errorMessage,
       timestamp: new Date().toISOString(),
     } as ErrorResponse & { inputs: AddStoreFormData };
+  }
+};
+
+export const editStore = async (
+  _: Response<StoreInterface | null>,
+  formData: FormData,
+) => {
+  let rawData: EditStoreFormData | null = null;
+
+  try {
+    const getOptionalString = (key: string): string | undefined => {
+      const val = formData.get(key);
+      if (typeof val !== 'string') return undefined;
+      const s = val.trim();
+      return s.length > 0 ? s : undefined;
+    };
+    const getRequiredString = (key: string): string => {
+      const val = formData.get(key);
+      if (typeof val !== 'string') return '';
+      return val;
+    };
+    const getOptionalNumber = (key: string): number | undefined => {
+      const val = formData.get(key);
+      if (typeof val !== 'string') return undefined;
+      const s = val.trim();
+      if (s.length === 0) return undefined;
+      const n = Number(s);
+      return Number.isNaN(n) ? undefined : n;
+    };
+
+    rawData = {
+      id: getRequiredString('id'),
+      name: getRequiredString('name'),
+      state_id: getRequiredString('state_id'),
+      local_government_id: getRequiredString('local_government_id'),
+      phase_id: getOptionalString('phase_id'),
+      district_id: getOptionalString('district_id'),
+      address: getRequiredString('address'),
+      store_type: getRequiredString('store_type'),
+      latitude: getOptionalNumber('latitude') ?? 0,
+      longitude: getOptionalNumber('longitude') ?? 0,
+      landmarks: getOptionalString('landmarks') ?? '',
+      photos: [],
+    } as EditStoreFormData;
+
+    const validatedData = editStoreFormSchema
+      .omit({ photos: true })
+      .safeParse(rawData);
+
+    if (!validatedData.success) {
+      const messages = collectErrorMessages(
+        z.treeifyError(validatedData.error),
+      );
+
+      return {
+        inputs: rawData,
+        message: 'Invalid form data',
+        timestamp: new Date().toISOString(),
+        error: messages,
+      } as ErrorResponse & { inputs: EditStoreFormData };
+    }
+
+    const existingPhotoUrls = (
+      formData.getAll('existing_photos') as string[]
+    ).filter(Boolean);
+    let uploadedPhotoUrls: string[] = [];
+    const photoFiles = formData.getAll('photos') as File[];
+    const validPhotoFiles = photoFiles.filter((file) => file.size > 0);
+
+    if (validPhotoFiles.length > 0) {
+      try {
+        const uploadResults = await utapi.uploadFiles(validPhotoFiles, {
+          concurrency: validPhotoFiles.length,
+        });
+
+        uploadedPhotoUrls = uploadResults
+          .filter((result) => result.data !== null)
+          .map((result) => result.data!.ufsUrl);
+      } catch {
+        return {
+          inputs: rawData,
+          message: 'Failed to upload photos. Please try again.',
+          timestamp: new Date().toISOString(),
+          error: 'Photo upload failed',
+        };
+      }
+    }
+
+    rawData.photos = [...existingPhotoUrls, ...uploadedPhotoUrls];
+    const finalValidation = editStoreFormSchema.safeParse(rawData);
+
+    if (!finalValidation.success) {
+      const messages = collectErrorMessages(
+        z.treeifyError(finalValidation.error),
+      );
+      return {
+        inputs: rawData,
+        message: 'Invalid form data after photo upload',
+        timestamp: new Date().toISOString(),
+        error: messages,
+      };
+    }
+
+    const response = await customFetch.patch<StoreInterface>(
+      `/stores/${rawData.id}`,
+      {
+        name: rawData.name,
+        stateId: rawData.state_id,
+        localGovernmentId: rawData.local_government_id,
+        address: rawData.address,
+        storeType: rawData.store_type,
+        latitude: rawData.latitude,
+        longitude: rawData.longitude,
+        landmarks: rawData.landmarks,
+        photos: rawData.photos,
+        ...(rawData.phase_id && { phaseId: rawData.phase_id }),
+        ...(rawData.district_id && { districtId: rawData.district_id }),
+      },
+    );
+
+    if (!('data' in response)) {
+      if (uploadedPhotoUrls.length > 0) {
+        try {
+          const fileIds = uploadedPhotoUrls
+            .map((url) => {
+              try {
+                const urlObj = new URL(url);
+                const pathname = urlObj.pathname.replace(/\/$/, '');
+                const segments = pathname.split('/');
+                return segments[segments.length - 1];
+              } catch {
+                return null;
+              }
+            })
+            .filter((id): id is string => id !== null);
+
+          if (fileIds.length > 0) {
+            await utapi.deleteFiles(fileIds);
+          }
+        } catch {
+          return {
+            ...response,
+            inputs: rawData,
+          } as ErrorResponse & { inputs: EditStoreFormData };
+        }
+      }
+
+      return {
+        ...response,
+        inputs: rawData,
+      } as ErrorResponse & { inputs: EditStoreFormData };
+    }
+
+    return response;
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : 'Something went wrong';
+    return {
+      inputs: rawData,
+      error: errorMessage,
+      message: errorMessage,
+      timestamp: new Date().toISOString(),
+    } as ErrorResponse & { inputs: EditStoreFormData };
   }
 };
 

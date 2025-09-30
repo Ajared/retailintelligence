@@ -1,10 +1,8 @@
 'use client';
 
-import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { Session } from 'next-auth';
 import { LatLngExpression } from 'leaflet';
-import { Store as StoreIcon, Search, Loader2 } from 'lucide-react';
+import { Search, Loader2 } from 'lucide-react';
 import {
   useCallback,
   useEffect,
@@ -15,7 +13,6 @@ import {
 } from 'react';
 import { getAdminMapData, getAllStores } from '../actions';
 import { StoreInterface } from '~/types/store';
-import { Button } from '~/components/ui/button';
 import { Input } from '~/components/ui/input';
 import {
   ContextMenu,
@@ -37,12 +34,10 @@ type BoundsQuery = {
 };
 
 export default function Content({
-  session,
   center,
   zoom,
   initialName,
 }: {
-  session: Session;
   center?: LatLngExpression;
   zoom?: number;
   initialName?: string;
@@ -347,7 +342,6 @@ export default function Content({
         <div className="relative lg:col-span-9" style={{ aspectRatio: '16/9' }}>
           <InteractiveMap
             stores={stores}
-            session={session}
             center={center}
             zoom={zoom}
             onBoundsChangeAction={handleBoundsChange}

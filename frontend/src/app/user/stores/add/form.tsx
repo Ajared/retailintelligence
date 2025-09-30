@@ -133,10 +133,8 @@ export function AddStoreForm({
     string | undefined
   >(user?.assigned_district_id || '');
   const [isGettingLocation, setIsGettingLocation] = useState(false);
-  const [locationData, setLocationData] = useState<{
-    latitude: number;
-    longitude: number;
-  } | null>(null);
+  const latitudeRef = useRef<HTMLInputElement>(null);
+  const longitudeRef = useRef<HTMLInputElement>(null);
 
   const initialState: Response<StoreInterface> & {
     inputs: AddStoreFormData;
@@ -191,7 +189,12 @@ export function AddStoreForm({
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
-        setLocationData({ latitude, longitude });
+        if (latitudeRef.current) {
+          latitudeRef.current.value = latitude.toString();
+        }
+        if (longitudeRef.current) {
+          longitudeRef.current.value = longitude.toString();
+        }
         setIsGettingLocation(false);
       },
       (error) => {
@@ -286,17 +289,11 @@ export function AddStoreForm({
     (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault();
       const formData = new FormData(event.currentTarget);
-
-      if (
-        !locationData ||
-        (locationData.latitude === 0 && locationData.longitude === 0)
-      ) {
-        toast.warning('Please attach your current location');
-        return;
-      }
-
-      formData.set('latitude', locationData.latitude.toString());
-      formData.set('longitude', locationData.longitude.toString());
+      const latInput = latitudeRef.current?.value ?? '';
+      const lngInput = longitudeRef.current?.value ?? '';
+      if (latInput.trim().length > 0) formData.set('latitude', latInput.trim());
+      if (lngInput.trim().length > 0)
+        formData.set('longitude', lngInput.trim());
       formData.delete('photos');
       selectedImages.forEach((file) => {
         formData.append('photos', file);
@@ -305,7 +302,7 @@ export function AddStoreForm({
         action(formData);
       });
     },
-    [action, selectedImages, locationData],
+    [action, selectedImages],
   );
 
   const handleStateChange = useCallback(
@@ -536,47 +533,46 @@ export function AddStoreForm({
 
           <div className="flex flex-row gap-4 w-full">
             <div className="space-y-2 w-full">
-              <Label>Location *</Label>
-              <div className="flex items-center gap-4">
-                <Button
-                  type="button"
-                  onClick={handleGetLocation}
-                  disabled={isGettingLocation}
-                  variant="outline"
-                  className="flex items-center justify-start gap-2 w-full"
-                >
-                  {isGettingLocation ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <MapPin className="h-4 w-4" />
-                  )}
-                  {isGettingLocation
-                    ? 'Getting Location...'
-                    : locationData
-                      ? `Location Captured (${locationData.latitude.toFixed(4)}, ${locationData.longitude.toFixed(4)})`
-                      : 'Attach Current Location'}
-                </Button>
-              </div>
-              <input
-                type="hidden"
+              <Label htmlFor="latitude">Latitude *</Label>
+              <Input
+                id="latitude"
                 name="latitude"
-                value={String(
-                  locationData?.latitude !== undefined
-                    ? locationData.latitude
-                    : getInputValue('latitude') || '',
-                )}
-                required
+                defaultValue={String(getInputValue('latitude') || '')}
+                placeholder="e.g. 4.8156"
+                inputMode="decimal"
+                ref={latitudeRef}
               />
-              <input
-                type="hidden"
+            </div>
+            <div className="space-y-2 w-full">
+              <Label htmlFor="longitude">Longitude *</Label>
+              <Input
+                id="longitude"
                 name="longitude"
-                value={String(
-                  locationData?.longitude !== undefined
-                    ? locationData.longitude
-                    : getInputValue('longitude') || '',
-                )}
-                required
+                defaultValue={String(getInputValue('longitude') || '')}
+                placeholder="e.g. 7.0333"
+                inputMode="decimal"
+                ref={longitudeRef}
               />
+            </div>
+          </div>
+
+          <div className="flex flex-row gap-4 w-full">
+            <div className="space-y-2 w-full">
+              <Label>Quick Action</Label>
+              <Button
+                type="button"
+                onClick={handleGetLocation}
+                disabled={isGettingLocation}
+                variant="outline"
+                className="flex items-center justify-start gap-2 w-full"
+              >
+                {isGettingLocation ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <MapPin className="h-4 w-4" />
+                )}
+                Use Current Location
+              </Button>
             </div>
 
             <div className="space-y-2 w-full">

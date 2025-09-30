@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { Home, Store, MapPin } from 'lucide-react';
+import { Store } from 'lucide-react';
 
 interface NavigationItem {
   title: string;
