@@ -344,7 +344,6 @@ const EditStoreForm = ({
       if (latInput.trim().length > 0) formData.set('latitude', latInput.trim());
       if (lngInput.trim().length > 0)
         formData.set('longitude', lngInput.trim());
-      // Keep selected existing photos
       keptExistingPhotos.forEach((url) =>
         formData.append('existing_photos', url),
       );

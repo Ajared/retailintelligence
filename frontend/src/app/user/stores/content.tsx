@@ -409,7 +409,6 @@ export default function Content({
                         </div>
                       </ContextMenuTrigger>
                       <ContextMenuContent>
-                        {/* Edit store modal */}
                         <ContextMenuItem>
                           <Link href={`/user/stores/edit/${store.id}`}>
                             Edit Store
