@@ -23,7 +23,10 @@ export function isValidUUID(value: unknown): value is string {
  * @param fieldName - The name of the field for error message
  * @throws CustomHttpException if validation fails
  */
-export function validateUUID(value: unknown, fieldName: string): asserts value is string {
+export function validateUUID(
+  value: unknown,
+  fieldName: string,
+): asserts value is string {
   if (!isValidUUID(value)) {
     throw new CustomHttpException(
       SYS_MSG.INVALID_PARAMETER(fieldName),
@@ -33,7 +36,10 @@ export function validateUUID(value: unknown, fieldName: string): asserts value i
 }
 
 /**
- * Validates that a value is not null or undefined
+ 
+
+    // Fetch the updated record using only the primary identifier (id)
+    // Extract 'id' from identifierOptions if it exists* Validates that a value is not null or undefined
  * @param value - The value to validate
  * @param fieldName - The name of the field for error message
  * @throws CustomHttpException if validation fails
