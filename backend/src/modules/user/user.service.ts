@@ -217,6 +217,12 @@ export class UserService {
     const listUserRecordOptions: ListUserRecordOptions = {
       paginationPayload,
       filterRecordOptions,
+      relations: {
+        assignedState: true,
+        assignedLocalGovernment: true,
+        assignedPhase: true,
+        assignedDistrict: true,
+      },
     };
 
     const [error, data] = await trySafe(() =>

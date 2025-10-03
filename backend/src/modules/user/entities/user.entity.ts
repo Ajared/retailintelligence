@@ -30,7 +30,7 @@ export class User extends AbstractBaseEntity {
   })
   status: UserStatus;
 
-  @Column({ nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   deactivatedAt?: Date | null;
 
   @Column({
@@ -43,7 +43,7 @@ export class User extends AbstractBaseEntity {
   @Column({ nullable: true })
   resetPasswordToken?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   resetPasswordExpires?: Date;
 
   @Column({ nullable: true })
