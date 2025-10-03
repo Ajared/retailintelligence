@@ -36,10 +36,6 @@ export function validateUUID(
 }
 
 /**
- 
-
-    // Fetch the updated record using only the primary identifier (id)
-    // Extract 'id' from identifierOptions if it exists* Validates that a value is not null or undefined
  * @param value - The value to validate
  * @param fieldName - The name of the field for error message
  * @throws CustomHttpException if validation fails
