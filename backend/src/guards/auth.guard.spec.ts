@@ -126,7 +126,7 @@ describe('AuthGuard', () => {
     it('should return true if token is valid and user is active', async () => {
       jest.spyOn(mockReflector, 'getAllAndOverride').mockReturnValue(false);
       const mockToken = 'valid-token';
-      const mockUserId = 'user-123';
+      const mockUserId = '123e4567-e89b-42d3-a456-426614174000';
       mockTokenService.extractTokenFromHeader.mockReturnValue(mockToken);
       mockTokenService.verifyToken.mockResolvedValue({
         request: { ...mockRequest, user: { sub: mockUserId } } as Request,
@@ -148,7 +148,7 @@ describe('AuthGuard', () => {
     it('should throw Forbidden CustomHttpException if user is deactivated', async () => {
       jest.spyOn(mockReflector, 'getAllAndOverride').mockReturnValue(false);
       const mockToken = 'valid-token';
-      const mockUserId = 'user-123';
+      const mockUserId = '123e4567-e89b-42d3-a456-426614174001';
       mockTokenService.extractTokenFromHeader.mockReturnValue(mockToken);
       mockTokenService.verifyToken.mockResolvedValue({
         request: { ...mockRequest, user: { sub: mockUserId } } as Request,
@@ -181,7 +181,7 @@ describe('AuthGuard', () => {
         .mockReturnValueOnce(false)
         .mockReturnValueOnce(false);
       const mockToken = 'valid-token';
-      const mockUserId = 'user-123';
+      const mockUserId = '123e4567-e89b-42d3-a456-426614174002';
       mockTokenService.extractTokenFromHeader.mockReturnValue(mockToken);
       mockTokenService.verifyToken.mockResolvedValue({
         request: { ...mockRequest, user: { sub: mockUserId } } as Request,
@@ -201,7 +201,7 @@ describe('AuthGuard', () => {
         .mockReturnValueOnce(false)
         .mockReturnValueOnce(true);
       const mockToken = 'valid-token';
-      const mockUserId = 'user-123';
+      const mockUserId = '123e4567-e89b-42d3-a456-426614174003';
       mockTokenService.extractTokenFromHeader.mockReturnValue(mockToken);
       mockTokenService.verifyToken.mockResolvedValue({
         request: { ...mockRequest, user: { sub: mockUserId } } as Request,
@@ -228,7 +228,7 @@ describe('AuthGuard', () => {
     it('should throw InternalServerError CustomHttpException if user fetch fails', async () => {
       jest.spyOn(mockReflector, 'getAllAndOverride').mockReturnValue(false);
       const mockToken = 'valid-token';
-      const mockUserId = 'user-123';
+      const mockUserId = '123e4567-e89b-42d3-a456-426614174004';
       mockTokenService.extractTokenFromHeader.mockReturnValue(mockToken);
       mockTokenService.verifyToken.mockResolvedValue({
         request: { ...mockRequest, user: { sub: mockUserId } } as Request,

@@ -65,6 +65,12 @@ describe('UserService', () => {
           limit: 20,
         },
         filterRecordOptions: {},
+        relations: {
+          assignedState: true,
+          assignedLocalGovernment: true,
+          assignedPhase: true,
+          assignedDistrict: true,
+        },
       };
 
       const result = await service.listUsers(queryOptions);
@@ -89,6 +95,12 @@ describe('UserService', () => {
           limit: 10,
         },
         filterRecordOptions: {},
+        relations: {
+          assignedState: true,
+          assignedLocalGovernment: true,
+          assignedPhase: true,
+          assignedDistrict: true,
+        },
       };
 
       const result = await service.listUsers(queryOptions);
@@ -113,6 +125,12 @@ describe('UserService', () => {
           limit: 10,
         },
         filterRecordOptions: {},
+        relations: {
+          assignedState: true,
+          assignedLocalGovernment: true,
+          assignedPhase: true,
+          assignedDistrict: true,
+        },
       };
 
       const result = await service.listUsers(queryOptions);
@@ -140,6 +158,12 @@ describe('UserService', () => {
           limit: 15,
         },
         filterRecordOptions: {},
+        relations: {
+          assignedState: true,
+          assignedLocalGovernment: true,
+          assignedPhase: true,
+          assignedDistrict: true,
+        },
       };
 
       const result = await service.listUsers(queryOptions);
@@ -167,6 +191,12 @@ describe('UserService', () => {
           limit: 10,
         },
         filterRecordOptions: {},
+        relations: {
+          assignedState: true,
+          assignedLocalGovernment: true,
+          assignedPhase: true,
+          assignedDistrict: true,
+        },
       };
 
       const result = await service.listUsers(queryOptions);

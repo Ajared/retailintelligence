@@ -35,8 +35,8 @@ export class UserService {
 
     if (userError || !user) {
       throw new CustomHttpException(
-        SYS_MSG.RESOURCE_NOT_FOUND('User'),
-        HttpStatus.NOT_FOUND,
+        SYS_MSG.RESOURCE_OPERATION_FAILED('Location Assignment'),
+        HttpStatus.BAD_REQUEST,
       );
     }
 
@@ -275,8 +275,8 @@ export class UserService {
 
     if (userError || deactivatedByError) {
       throw new CustomHttpException(
-        SYS_MSG.RESOURCE_NOT_FOUND('User'),
-        HttpStatus.NOT_FOUND,
+        SYS_MSG.RESOURCE_OPERATION_FAILED('User Deactivation'),
+        HttpStatus.BAD_REQUEST,
       );
     }
 
@@ -346,8 +346,8 @@ export class UserService {
 
     if (userError || reactivatedByError) {
       throw new CustomHttpException(
-        SYS_MSG.RESOURCE_NOT_FOUND('User'),
-        HttpStatus.NOT_FOUND,
+        SYS_MSG.RESOURCE_OPERATION_FAILED('User Reactivation'),
+        HttpStatus.BAD_REQUEST,
       );
     }
 
@@ -417,8 +417,8 @@ export class UserService {
 
     if (userError || verifiedByError) {
       throw new CustomHttpException(
-        SYS_MSG.RESOURCE_NOT_FOUND('User'),
-        HttpStatus.NOT_FOUND,
+        SYS_MSG.RESOURCE_OPERATION_FAILED('User Verification'),
+        HttpStatus.BAD_REQUEST,
       );
     }
 
