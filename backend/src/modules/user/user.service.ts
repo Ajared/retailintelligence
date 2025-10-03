@@ -13,6 +13,7 @@ import {
   UserQueryOptions,
   ListUserRecordOptions,
 } from './types/list-user.type';
+import { validateUUID } from '~/helpers/validation.helper';
 
 @Injectable()
 export class UserService {
@@ -25,6 +26,8 @@ export class UserService {
     userId: string,
     assignLocationDto: AssignLocationDto,
   ) {
+    validateUUID(userId, 'userId');
+    
     const { stateId, localGovernmentId, phaseId, districtId } =
       assignLocationDto;
 
@@ -156,6 +159,8 @@ export class UserService {
     queryOptions?: Record<string, unknown>,
     relations?: Record<string, unknown>,
   ) {
+    validateUUID(id, 'id');
+    
     const [error, data] = await trySafe(() =>
       this.userModelAction.get({ id }, queryOptions, relations),
     );
@@ -254,6 +259,9 @@ export class UserService {
   }
 
   async deactivateUser(id: string, deactivatedBy: string) {
+    validateUUID(id, 'id');
+    validateUUID(deactivatedBy, 'deactivatedBy');
+    
     const [userError, user] = await trySafe(() => this.getUserById(id));
     const [deactivatedByError, deactivatedByUser] = await trySafe(() =>
       this.getUserById(deactivatedBy),
@@ -322,6 +330,9 @@ export class UserService {
   }
 
   async reactivateUser(id: string, reactivatedBy: string) {
+    validateUUID(id, 'id');
+    validateUUID(reactivatedBy, 'reactivatedBy');
+    
     const [userError, user] = await trySafe(() => this.getUserById(id));
     const [reactivatedByError, reactivatedByUser] = await trySafe(() =>
       this.getUserById(reactivatedBy),
@@ -390,6 +401,9 @@ export class UserService {
   }
 
   async verifyUser(id: string, verifiedBy: string) {
+    validateUUID(id, 'id');
+    validateUUID(verifiedBy, 'verifiedBy');
+    
     const [userError, user] = await trySafe(() => this.getUserById(id));
     const [verifiedByError, verifiedByUser] = await trySafe(() =>
       this.getUserById(verifiedBy),

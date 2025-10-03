@@ -9,6 +9,7 @@ import { Reflector } from '@nestjs/core';
 import { trySafe } from '~/helpers/try-safe';
 import * as SYS_MSG from '~/helpers/system-messages';
 import { UserService } from '~/modules/user/user.service';
+import { isValidUUID } from '~/helpers/validation.helper';
 import { TokenService } from '~/modules/token/token.service';
 import { CustomHttpException } from '~/helpers/custom.exception';
 import { IS_PUBLIC_KEY } from '~/decorators/skip-auth.decorator';
@@ -60,8 +61,16 @@ export class AuthGuard implements CanActivate {
           );
     }
 
+    const userId = verifyResult.request.user?.sub;
+    if (!userId || !isValidUUID(userId)) {
+      throw new CustomHttpException(
+        SYS_MSG.TOKEN_INVALID('User ID'),
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
     const [userError, user] = await trySafe(() =>
-      this.userService.getUserById(verifyResult.request.user?.sub as string),
+      this.userService.getUserById(userId),
     );
 
     if (userError) {
