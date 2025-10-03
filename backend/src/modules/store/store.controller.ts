@@ -14,6 +14,7 @@ import {
 import { Request, Response } from 'express';
 import { StoreService } from './store.service';
 import { SkipThrottle } from '@nestjs/throttler';
+import { Mutation } from '~/decorators/mutation.decorator';
 import { QueryValidator } from '~/helpers/query.helper';
 import { StoreDto, StoreQueryValidator } from './dto/store.dto';
 
@@ -21,6 +22,7 @@ import { StoreDto, StoreQueryValidator } from './dto/store.dto';
 export class StoreController {
   constructor(private readonly storeService: StoreService) {}
 
+  @Mutation()
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async createStore(
@@ -58,6 +60,7 @@ export class StoreController {
     await this.storeService.exportStores(response, queryOptions, req.user.sub);
   }
 
+  @Mutation()
   @Patch(':id')
   @HttpCode(HttpStatus.OK)
   async updateStore(

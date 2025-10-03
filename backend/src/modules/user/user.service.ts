@@ -13,6 +13,7 @@ import {
   UserQueryOptions,
   ListUserRecordOptions,
 } from './types/list-user.type';
+import { validateUUID } from '~/helpers/validation.helper';
 
 @Injectable()
 export class UserService {
@@ -25,6 +26,8 @@ export class UserService {
     userId: string,
     assignLocationDto: AssignLocationDto,
   ) {
+    validateUUID(userId, 'userId');
+
     const { stateId, localGovernmentId, phaseId, districtId } =
       assignLocationDto;
 
@@ -32,8 +35,8 @@ export class UserService {
 
     if (userError || !user) {
       throw new CustomHttpException(
-        SYS_MSG.RESOURCE_NOT_FOUND('User'),
-        HttpStatus.NOT_FOUND,
+        SYS_MSG.RESOURCE_OPERATION_FAILED('Location Assignment'),
+        HttpStatus.BAD_REQUEST,
       );
     }
 
@@ -156,6 +159,8 @@ export class UserService {
     queryOptions?: Record<string, unknown>,
     relations?: Record<string, unknown>,
   ) {
+    validateUUID(id, 'id');
+
     const [error, data] = await trySafe(() =>
       this.userModelAction.get({ id }, queryOptions, relations),
     );
@@ -212,6 +217,12 @@ export class UserService {
     const listUserRecordOptions: ListUserRecordOptions = {
       paginationPayload,
       filterRecordOptions,
+      relations: {
+        assignedState: true,
+        assignedLocalGovernment: true,
+        assignedPhase: true,
+        assignedDistrict: true,
+      },
     };
 
     const [error, data] = await trySafe(() =>
@@ -254,6 +265,9 @@ export class UserService {
   }
 
   async deactivateUser(id: string, deactivatedBy: string) {
+    validateUUID(id, 'id');
+    validateUUID(deactivatedBy, 'deactivatedBy');
+
     const [userError, user] = await trySafe(() => this.getUserById(id));
     const [deactivatedByError, deactivatedByUser] = await trySafe(() =>
       this.getUserById(deactivatedBy),
@@ -261,12 +275,12 @@ export class UserService {
 
     if (userError || deactivatedByError) {
       throw new CustomHttpException(
-        SYS_MSG.RESOURCE_NOT_FOUND('User'),
-        HttpStatus.NOT_FOUND,
+        SYS_MSG.RESOURCE_OPERATION_FAILED('User Deactivation'),
+        HttpStatus.BAD_REQUEST,
       );
     }
 
-    if (user.status === UserStatus.INACTIVE) {
+    if (user.deactivatedAt) {
       throw new CustomHttpException(
         SYS_MSG.RESOURCE_OPERATION_FAILED('User Deactivation'),
         HttpStatus.BAD_REQUEST,
@@ -298,7 +312,7 @@ export class UserService {
 
     const payload: UpdateUserRecordOptions = {
       identifierOptions: { id },
-      updatePayload: { status: UserStatus.INACTIVE },
+      updatePayload: { deactivatedAt: new Date() },
       transactionOptions: {
         useTransaction: false,
       },
@@ -322,6 +336,9 @@ export class UserService {
   }
 
   async reactivateUser(id: string, reactivatedBy: string) {
+    validateUUID(id, 'id');
+    validateUUID(reactivatedBy, 'reactivatedBy');
+
     const [userError, user] = await trySafe(() => this.getUserById(id));
     const [reactivatedByError, reactivatedByUser] = await trySafe(() =>
       this.getUserById(reactivatedBy),
@@ -329,12 +346,12 @@ export class UserService {
 
     if (userError || reactivatedByError) {
       throw new CustomHttpException(
-        SYS_MSG.RESOURCE_NOT_FOUND('User'),
-        HttpStatus.NOT_FOUND,
+        SYS_MSG.RESOURCE_OPERATION_FAILED('User Reactivation'),
+        HttpStatus.BAD_REQUEST,
       );
     }
 
-    if (user.status === UserStatus.ACTIVE) {
+    if (!user.deactivatedAt) {
       throw new CustomHttpException(
         SYS_MSG.RESOURCE_OPERATION_FAILED('User Reactivation'),
         HttpStatus.BAD_REQUEST,
@@ -366,7 +383,7 @@ export class UserService {
 
     const payload: UpdateUserRecordOptions = {
       identifierOptions: { id },
-      updatePayload: { status: UserStatus.ACTIVE },
+      updatePayload: { deactivatedAt: null },
       transactionOptions: {
         useTransaction: false,
       },
@@ -385,6 +402,68 @@ export class UserService {
 
     return {
       message: SYS_MSG.RESOURCE_OPERATION_SUCCESSFUL('User Reactivation'),
+      data,
+    };
+  }
+
+  async verifyUser(id: string, verifiedBy: string) {
+    validateUUID(id, 'id');
+    validateUUID(verifiedBy, 'verifiedBy');
+
+    const [userError] = await trySafe(() => this.getUserById(id));
+    const [verifiedByError, verifiedByUser] = await trySafe(() =>
+      this.getUserById(verifiedBy),
+    );
+
+    if (userError || verifiedByError) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_OPERATION_FAILED('User Verification'),
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const verifiedByRole = verifiedByUser.role;
+
+    if (
+      verifiedByRole !== UserRole.SUPER_ADMIN &&
+      verifiedByRole !== UserRole.ADMIN
+    ) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_OPERATION_FAILED('User Verification'),
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
+    const payload: UpdateUserRecordOptions = {
+      identifierOptions: {
+        id,
+        status: UserStatus.UNVERIFIED,
+      },
+      updatePayload: { status: UserStatus.VERIFIED },
+      transactionOptions: {
+        useTransaction: false,
+      },
+    };
+
+    const [error, data] = await trySafe(() =>
+      this.userModelAction.update(payload),
+    );
+
+    if (error) {
+      if (error instanceof NullishValueError) {
+        throw new CustomHttpException(
+          SYS_MSG.RESOURCE_ALREADY_VERIFIED('User'),
+          HttpStatus.CONFLICT,
+        );
+      }
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_OPERATION_FAILED('User Verification'),
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    return {
+      message: SYS_MSG.RESOURCE_OPERATION_SUCCESSFUL('User Verification'),
       data,
     };
   }

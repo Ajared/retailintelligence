@@ -8,6 +8,7 @@ export interface UserInterface extends AbstractBaseInterface {
   role: UserRole;
   status: UserStatus;
   authProvider: AuthProvider;
+  deactivatedAt?: Date | null;
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
   assignedStateId?: string;

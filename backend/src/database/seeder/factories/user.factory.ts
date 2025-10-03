@@ -16,7 +16,7 @@ class UserFactoryClass {
 
   async createUser(): Promise<User> {
     const user = new User();
-    user.status = UserStatus.ACTIVE;
+    user.status = UserStatus.VERIFIED;
     user.role = UserRole.SUPER_ADMIN;
     user.email = this.email.toLowerCase();
     user.authProvider = AuthProvider.LOCAL;

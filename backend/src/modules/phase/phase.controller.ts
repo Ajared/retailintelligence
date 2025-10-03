@@ -13,6 +13,7 @@ import {
 import { RoleGuard } from '~/guards/role.guard';
 import { PhaseDto, PhaseQueryValidator } from './dto/phase.dto';
 import { Roles } from '~/decorators/role.decorator';
+import { Mutation } from '~/decorators/mutation.decorator';
 import { PhaseService } from './phase.service';
 import { UserRole } from '~/modules/user/constants/user.constant';
 
@@ -20,6 +21,7 @@ import { UserRole } from '~/modules/user/constants/user.constant';
 export class PhaseController {
   constructor(private readonly phaseService: PhaseService) {}
 
+  @Mutation()
   @Post()
   @UseGuards(RoleGuard)
   @HttpCode(HttpStatus.CREATED)
@@ -40,6 +42,7 @@ export class PhaseController {
     return this.phaseService.listPhases(queryOptions);
   }
 
+  @Mutation()
   @Patch(':id')
   @UseGuards(RoleGuard)
   @HttpCode(HttpStatus.OK)

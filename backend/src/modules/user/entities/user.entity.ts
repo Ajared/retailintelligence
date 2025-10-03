@@ -26,9 +26,12 @@ export class User extends AbstractBaseEntity {
   @Column({
     type: 'enum',
     enum: UserStatus,
-    default: UserStatus.ACTIVE,
+    default: UserStatus.UNVERIFIED,
   })
   status: UserStatus;
+
+  @Column({ type: 'timestamp', nullable: true })
+  deactivatedAt?: Date | null;
 
   @Column({
     type: 'enum',
@@ -40,7 +43,7 @@ export class User extends AbstractBaseEntity {
   @Column({ nullable: true })
   resetPasswordToken?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   resetPasswordExpires?: Date;
 
   @Column({ nullable: true })

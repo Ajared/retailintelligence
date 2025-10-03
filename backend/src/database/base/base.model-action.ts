@@ -58,8 +58,22 @@ export abstract class AbstractModelAction<T extends ObjectLiteral> {
       ? transactionOptions.transaction.getRepository(this.model)
       : this.repository;
 
-    await modelRepository.update(identifierOptions, updatePayload);
-    return await modelRepository.findOne({ where: identifierOptions });
+    const updateResult = await modelRepository.update(
+      identifierOptions,
+      updatePayload,
+    );
+
+    if (updateResult.affected === 0) {
+      return null;
+    }
+
+    const idField =
+      'id' in identifierOptions
+        ? { id: identifierOptions.id }
+        : identifierOptions;
+    return await modelRepository.findOne({
+      where: idField as FindOptionsWhere<T>,
+    });
   }
 
   async delete(deleteRecordOptions: DeleteGenericRecord<FindOptionsWhere<T>>) {
