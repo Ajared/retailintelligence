@@ -65,7 +65,7 @@ const mockUser: UserInterface = {
   resetPasswordToken: undefined,
   resetPasswordExpires: undefined,
   role: UserRole.USER,
-  status: UserStatus.ACTIVE,
+  status: UserStatus.VERIFIED,
 };
 
 const mockUserOldUpdate: UserInterface = {
@@ -102,7 +102,7 @@ const mockGoogleUser: UserInterface = {
   resetPasswordToken: undefined,
   resetPasswordExpires: undefined,
   role: UserRole.USER,
-  status: UserStatus.ACTIVE,
+  status: UserStatus.VERIFIED,
 };
 
 const mockFetchResponse = (
@@ -209,7 +209,7 @@ describe('AuthService', () => {
         password: testHashedPassword,
         authProvider: AuthProvider.LOCAL,
         role: UserRole.USER,
-        status: UserStatus.ACTIVE,
+        status: UserStatus.VERIFIED,
       },
       transactionOptions: { useTransaction: false },
     };
@@ -333,7 +333,7 @@ describe('AuthService', () => {
       expect(userService.createUser).toHaveBeenCalledWith({
         createPayload: {
           email: testEmail.toLowerCase(),
-          status: UserStatus.ACTIVE,
+          status: UserStatus.VERIFIED,
           role: UserRole.USER,
           authProvider: AuthProvider.GOOGLE,
         },

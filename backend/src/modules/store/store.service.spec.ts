@@ -78,7 +78,7 @@ describe('StoreService', () => {
       email: 'test@example.com',
       password: 'password',
       role: UserRole.USER,
-      status: UserStatus.ACTIVE,
+      status: UserStatus.VERIFIED,
       authProvider: AuthProvider.LOCAL,
       stores: [],
       id: '1',

@@ -132,7 +132,7 @@ describe('AuthGuard', () => {
         request: { ...mockRequest, user: { sub: mockUserId } } as Request,
       });
       mockUserService.getUserById.mockResolvedValue({
-        status: UserStatus.ACTIVE,
+        status: UserStatus.VERIFIED,
       });
 
       const result = await guard.canActivate(mockExecutionContext);
@@ -145,7 +145,7 @@ describe('AuthGuard', () => {
       expect(mockUserService.getUserById).toHaveBeenCalledWith(mockUserId);
     });
 
-    it('should throw Forbidden CustomHttpException if user is not active', async () => {
+    it('should throw Forbidden CustomHttpException if user is deactivated', async () => {
       jest.spyOn(mockReflector, 'getAllAndOverride').mockReturnValue(false);
       const mockToken = 'valid-token';
       const mockUserId = 'user-123';
@@ -154,10 +154,11 @@ describe('AuthGuard', () => {
         request: { ...mockRequest, user: { sub: mockUserId } } as Request,
       });
       mockUserService.getUserById.mockResolvedValue({
-        status: UserStatus.INACTIVE,
-      });
-
-      const expectedResourceName = `MockControllerName[mockHandlerName]`;
+        id: mockUserId,
+        email: 'test@example.com',
+        status: UserStatus.VERIFIED,
+        deactivatedAt: new Date(),
+      } as any);
 
       await expect(guard.canActivate(mockExecutionContext)).rejects.toThrow(
         CustomHttpException,
@@ -168,7 +169,57 @@ describe('AuthGuard', () => {
       } catch (error) {
         const customError = error as CustomHttpException;
         expect(customError.getResponse()).toMatchObject({
-          message: SYS_MSG.RESOURCE_CURRENTLY_UNAVAILABLE(expectedResourceName),
+          message: SYS_MSG.RESOURCE_NOT_ACTIVE('User'),
+        });
+        expect(customError.getStatus()).toBe(HttpStatus.FORBIDDEN);
+      }
+    });
+
+    it('should allow unverified users for non-mutation endpoints', async () => {
+      jest
+        .spyOn(mockReflector, 'getAllAndOverride')
+        .mockReturnValueOnce(false)
+        .mockReturnValueOnce(false);
+      const mockToken = 'valid-token';
+      const mockUserId = 'user-123';
+      mockTokenService.extractTokenFromHeader.mockReturnValue(mockToken);
+      mockTokenService.verifyToken.mockResolvedValue({
+        request: { ...mockRequest, user: { sub: mockUserId } } as Request,
+      });
+      mockUserService.getUserById.mockResolvedValue({
+        status: UserStatus.UNVERIFIED,
+      });
+
+      const result = await guard.canActivate(mockExecutionContext);
+
+      expect(result).toBe(true);
+    });
+
+    it('should block unverified users from mutation endpoints', async () => {
+      jest
+        .spyOn(mockReflector, 'getAllAndOverride')
+        .mockReturnValueOnce(false)
+        .mockReturnValueOnce(true);
+      const mockToken = 'valid-token';
+      const mockUserId = 'user-123';
+      mockTokenService.extractTokenFromHeader.mockReturnValue(mockToken);
+      mockTokenService.verifyToken.mockResolvedValue({
+        request: { ...mockRequest, user: { sub: mockUserId } } as Request,
+      });
+      mockUserService.getUserById.mockResolvedValue({
+        status: UserStatus.UNVERIFIED,
+      });
+
+      await expect(guard.canActivate(mockExecutionContext)).rejects.toThrow(
+        CustomHttpException,
+      );
+
+      try {
+        await guard.canActivate(mockExecutionContext);
+      } catch (error) {
+        const customError = error as CustomHttpException;
+        expect(customError.getResponse()).toMatchObject({
+          message: SYS_MSG.RESOURCE_NOT_VERIFIED('User'),
         });
         expect(customError.getStatus()).toBe(HttpStatus.FORBIDDEN);
       }
@@ -208,8 +259,6 @@ describe('AuthGuard', () => {
       const originalError = new Error('Token verification failed');
       mockTokenService.verifyToken.mockRejectedValue(originalError);
 
-      const expectedResourceName = `MockControllerName[mockHandlerName]`;
-
       await expect(guard.canActivate(mockExecutionContext)).rejects.toThrow(
         CustomHttpException,
       );
@@ -220,7 +269,9 @@ describe('AuthGuard', () => {
         const customError = error as CustomHttpException;
         expect(customError.getResponse()).toMatchObject({
           message: SYS_MSG.FORBIDDEN_ACTION,
-          error: SYS_MSG.RESOURCE_CURRENTLY_UNAVAILABLE(expectedResourceName),
+          error: SYS_MSG.RESOURCE_CURRENTLY_UNAVAILABLE(
+            'MockControllerName[mockHandlerName]',
+          ),
         });
       }
     });

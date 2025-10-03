@@ -3,6 +3,7 @@ import { Request, Response } from 'express';
 import { RoleGuard } from '~/guards/role.guard';
 import { UserService } from '../user/user.service';
 import { Roles } from '~/decorators/role.decorator';
+import { Mutation } from '~/decorators/mutation.decorator';
 import { UserRole } from '~/modules/user/constants/user.constant';
 import {
   Body,
@@ -31,6 +32,7 @@ export class AdminController {
     private readonly adminService: AdminService,
   ) {}
 
+  @Mutation()
   @HttpCode(HttpStatus.OK)
   @Post('users/:userId/assign-location')
   async assignLocation(
@@ -40,6 +42,7 @@ export class AdminController {
     return this.userService.assignLocationToUser(userId, assignLocationDto);
   }
 
+  @Mutation()
   @HttpCode(HttpStatus.OK)
   @Post('users/:userId/deactivate')
   async deactivateUser(
@@ -49,6 +52,7 @@ export class AdminController {
     return this.userService.deactivateUser(userId, req.user.sub);
   }
 
+  @Mutation()
   @HttpCode(HttpStatus.OK)
   @Post('users/:userId/reactivate')
   async reactivateUser(
@@ -56,6 +60,16 @@ export class AdminController {
     @Req() req: Request & { user: { sub: string } },
   ) {
     return this.userService.reactivateUser(userId, req.user.sub);
+  }
+
+  @Mutation()
+  @HttpCode(HttpStatus.OK)
+  @Post('users/:userId/verify')
+  async verifyUser(
+    @Param('userId') userId: string,
+    @Req() req: Request & { user: { sub: string } },
+  ) {
+    return this.userService.verifyUser(userId, req.user.sub);
   }
 
   @Get('users')

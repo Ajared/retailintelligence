@@ -3,7 +3,6 @@ import { Controller, Get, Query } from '@nestjs/common';
 import { SkipAuth } from './decorators/skip-auth.decorator';
 import { StateQueryValidator } from './modules/state/dto/state.dto';
 import { PhaseQueryValidator } from './modules/phase/dto/phase.dto';
-import { StoreQueryValidator } from './modules/store/dto/store.dto';
 
 @Controller()
 export class AppController {
@@ -29,10 +28,5 @@ export class AppController {
   @Get('phases')
   async getPhases(@Query() queryOptions: PhaseQueryValidator) {
     return this.appService.getPhases(queryOptions);
-  }
-
-  @Get('dashboard')
-  async getDashboardData(@Query() queryOptions: StoreQueryValidator) {
-    return this.appService.getDashboardData(queryOptions);
   }
 }

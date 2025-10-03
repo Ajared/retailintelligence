@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { RoleGuard } from '~/guards/role.guard';
 import { Roles } from '~/decorators/role.decorator';
+import { Mutation } from '~/decorators/mutation.decorator';
 import { DistrictDto, DistrictQueryValidator } from './dto/district.dto';
 import { UserRole } from '~/modules/user/constants/user.constant';
 import { DistrictService } from './district.service';
@@ -20,6 +21,7 @@ import { DistrictService } from './district.service';
 export class DistrictController {
   constructor(private readonly districtService: DistrictService) {}
 
+  @Mutation()
   @Post()
   @UseGuards(RoleGuard)
   @HttpCode(HttpStatus.CREATED)
@@ -40,6 +42,7 @@ export class DistrictController {
     return this.districtService.listDistricts(queryOptions);
   }
 
+  @Mutation()
   @Patch(':id')
   @UseGuards(RoleGuard)
   @HttpCode(HttpStatus.OK)

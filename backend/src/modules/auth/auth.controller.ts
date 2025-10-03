@@ -1,6 +1,7 @@
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { SkipAuth } from '~/decorators/skip-auth.decorator';
+import { Mutation } from '~/decorators/mutation.decorator';
 import {
   Req,
   Post,
@@ -27,6 +28,7 @@ import { UserRole } from '~/modules/user/constants/user.constant';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Mutation()
   @Post('invite')
   @HttpCode(HttpStatus.CREATED)
   @UseGuards(AuthGuard, RoleGuard)

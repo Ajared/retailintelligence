@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { RoleGuard } from '~/guards/role.guard';
 import { Roles } from '~/decorators/role.decorator';
+import { Mutation } from '~/decorators/mutation.decorator';
 import {
   LocalGovernmentDto,
   LocalGovernmentQueryValidator,
@@ -25,6 +26,7 @@ export class LocalGovernmentController {
     private readonly localGovernmentService: LocalGovernmentService,
   ) {}
 
+  @Mutation()
   @Post()
   @UseGuards(RoleGuard)
   @HttpCode(HttpStatus.CREATED)
@@ -49,6 +51,7 @@ export class LocalGovernmentController {
     return this.localGovernmentService.listLocalGovernments(queryOptions);
   }
 
+  @Mutation()
   @Patch(':id')
   @UseGuards(RoleGuard)
   @HttpCode(HttpStatus.OK)

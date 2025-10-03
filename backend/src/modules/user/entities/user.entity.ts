@@ -26,9 +26,12 @@ export class User extends AbstractBaseEntity {
   @Column({
     type: 'enum',
     enum: UserStatus,
-    default: UserStatus.ACTIVE,
+    default: UserStatus.UNVERIFIED,
   })
   status: UserStatus;
+
+  @Column({ nullable: true })
+  deactivatedAt?: Date;
 
   @Column({
     type: 'enum',

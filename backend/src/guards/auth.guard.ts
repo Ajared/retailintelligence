@@ -12,6 +12,7 @@ import { UserService } from '~/modules/user/user.service';
 import { TokenService } from '~/modules/token/token.service';
 import { CustomHttpException } from '~/helpers/custom.exception';
 import { IS_PUBLIC_KEY } from '~/decorators/skip-auth.decorator';
+import { IS_MUTATION_KEY } from '~/decorators/mutation.decorator';
 import { UserStatus } from '~/modules/user/constants/user.constant';
 
 @Injectable()
@@ -70,9 +71,21 @@ export class AuthGuard implements CanActivate {
       );
     }
 
-    if (user.status !== UserStatus.ACTIVE) {
+    if (user.deactivatedAt) {
       throw new CustomHttpException(
-        SYS_MSG.RESOURCE_CURRENTLY_UNAVAILABLE(resourceName),
+        SYS_MSG.RESOURCE_NOT_ACTIVE('User'),
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
+    const isMutation = this.reflector.getAllAndOverride<boolean>(
+      IS_MUTATION_KEY,
+      [handler, controller],
+    );
+
+    if (isMutation && user.status === UserStatus.UNVERIFIED) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_NOT_VERIFIED('User'),
         HttpStatus.FORBIDDEN,
       );
     }

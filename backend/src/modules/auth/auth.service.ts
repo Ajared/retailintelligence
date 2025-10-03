@@ -35,36 +35,7 @@ export class AuthService {
     authDto: AuthDto,
     inviteToken?: string,
   ): Promise<AbstractResponseDto<UserInterface>> {
-    if (!inviteToken) {
-      throw new CustomHttpException(
-        SYS_MSG.MISSING_REQUIRED_PARAMETER('Invite Token'),
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
-    const [error, decoded] = await trySafe(() =>
-      this.tokenService.verifyToken(inviteToken),
-    );
-
-    if (error || !decoded.email || !decoded.role) {
-      throw new CustomHttpException(
-        SYS_MSG.TOKEN_INVALID('Invite'),
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
     const { email, password } = authDto;
-    const { email: decodedEmail, role: decodedRole } = decoded;
-
-    if (
-      typeof decodedEmail !== 'string' ||
-      decodedEmail.toLowerCase() !== email.toLowerCase()
-    ) {
-      throw new CustomHttpException(
-        SYS_MSG.INVALID_CREDENTIALS(['Email']),
-        HttpStatus.BAD_REQUEST,
-      );
-    }
 
     const existingUser = await this.userService.getUserByEmail(
       email.toLowerCase(),
@@ -75,6 +46,37 @@ export class AuthService {
         SYS_MSG.RESOURCE_ALREADY_EXISTS('User'),
         HttpStatus.CONFLICT,
       );
+    }
+
+    let userRole = UserRole.USER;
+    let userStatus = UserStatus.UNVERIFIED;
+
+    if (inviteToken) {
+      const [error, decoded] = await trySafe(() =>
+        this.tokenService.verifyToken(inviteToken),
+      );
+
+      if (error || !decoded.email || !decoded.role) {
+        throw new CustomHttpException(
+          SYS_MSG.TOKEN_INVALID('Invite'),
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const { email: decodedEmail, role: decodedRole } = decoded;
+
+      if (
+        typeof decodedEmail !== 'string' ||
+        decodedEmail.toLowerCase() !== email.toLowerCase()
+      ) {
+        throw new CustomHttpException(
+          SYS_MSG.INVALID_CREDENTIALS(['Email']),
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      userRole = decodedRole as UserRole;
+      userStatus = UserStatus.VERIFIED;
     }
 
     const [hashError, hashedPassword] = await trySafe(() => hash(password, 10));
@@ -90,8 +92,8 @@ export class AuthService {
       createPayload: {
         email: email.toLowerCase(),
         password: hashedPassword,
-        status: UserStatus.ACTIVE,
-        role: decodedRole as UserRole,
+        status: userStatus,
+        role: userRole,
         authProvider: AuthProvider.LOCAL,
       },
       transactionOptions: { useTransaction: false },
@@ -132,41 +134,42 @@ export class AuthService {
     const user = await this.userService.getUserByEmail(email.toLowerCase());
 
     if (!user) {
-      if (!inviteToken) {
-        throw new CustomHttpException(
-          SYS_MSG.MISSING_REQUIRED_PARAMETER('Invite Token'),
-          HttpStatus.BAD_REQUEST,
+      let userRole = UserRole.USER;
+      let userStatus = UserStatus.UNVERIFIED;
+
+      if (inviteToken) {
+        const [error, decoded] = await trySafe(() =>
+          this.tokenService.verifyToken(inviteToken),
         );
-      }
 
-      const [error, decoded] = await trySafe(() =>
-        this.tokenService.verifyToken(inviteToken),
-      );
+        if (error || !decoded.email || !decoded.role) {
+          throw new CustomHttpException(
+            SYS_MSG.TOKEN_INVALID('Invite'),
+            HttpStatus.BAD_REQUEST,
+          );
+        }
 
-      if (error || !decoded.email || !decoded.role) {
-        throw new CustomHttpException(
-          SYS_MSG.TOKEN_INVALID('Invite'),
-          HttpStatus.BAD_REQUEST,
-        );
-      }
+        const { email: decodedEmail, role: decodedRole } = decoded;
 
-      const { email: decodedEmail, role: decodedRole } = decoded;
+        if (
+          typeof decodedEmail !== 'string' ||
+          decodedEmail.toLowerCase() !== email.toLowerCase()
+        ) {
+          throw new CustomHttpException(
+            SYS_MSG.INVALID_CREDENTIALS(['Email']),
+            HttpStatus.BAD_REQUEST,
+          );
+        }
 
-      if (
-        typeof decodedEmail !== 'string' ||
-        decodedEmail.toLowerCase() !== email.toLowerCase()
-      ) {
-        throw new CustomHttpException(
-          SYS_MSG.INVALID_CREDENTIALS(['Email']),
-          HttpStatus.BAD_REQUEST,
-        );
+        userRole = decodedRole as UserRole;
+        userStatus = UserStatus.VERIFIED;
       }
 
       const createdUser = await this.userService.createUser({
         createPayload: {
           email: email.toLowerCase(),
-          status: UserStatus.ACTIVE,
-          role: decodedRole as UserRole,
+          status: userStatus,
+          role: userRole,
           authProvider: AuthProvider.GOOGLE,
         },
         transactionOptions: { useTransaction: false },
@@ -194,10 +197,10 @@ export class AuthService {
       };
     }
 
-    if (user.status !== UserStatus.ACTIVE) {
+    if (user.deactivatedAt) {
       throw new CustomHttpException(
         SYS_MSG.RESOURCE_NOT_ACTIVE('User'),
-        HttpStatus.UNAUTHORIZED,
+        HttpStatus.FORBIDDEN,
       );
     }
 
@@ -220,10 +223,10 @@ export class AuthService {
     const { email, password } = authDto;
     const user = await this.validateLocalUser(email);
 
-    if (user.status !== UserStatus.ACTIVE) {
+    if (user.deactivatedAt) {
       throw new CustomHttpException(
         SYS_MSG.RESOURCE_NOT_ACTIVE('User'),
-        HttpStatus.UNAUTHORIZED,
+        HttpStatus.FORBIDDEN,
       );
     }
 
@@ -307,10 +310,7 @@ export class AuthService {
       );
     }
 
-    if (
-      user?.authProvider !== AuthProvider.LOCAL ||
-      user.status !== UserStatus.ACTIVE
-    ) {
+    if (user?.authProvider !== AuthProvider.LOCAL || user.deactivatedAt) {
       throw new CustomHttpException(
         SYS_MSG.FORBIDDEN_ACTION,
         HttpStatus.FORBIDDEN,
@@ -464,10 +464,7 @@ export class AuthService {
       );
     }
 
-    if (
-      user?.authProvider !== AuthProvider.LOCAL ||
-      user.status !== UserStatus.ACTIVE
-    ) {
+    if (user?.authProvider !== AuthProvider.LOCAL || user.deactivatedAt) {
       throw new CustomHttpException(
         SYS_MSG.FORBIDDEN_ACTION,
         HttpStatus.FORBIDDEN,

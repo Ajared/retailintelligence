@@ -13,6 +13,7 @@ import {
 import { RoleGuard } from '~/guards/role.guard';
 import { StateDto, StateQueryValidator } from './dto/state.dto';
 import { Roles } from '~/decorators/role.decorator';
+import { Mutation } from '~/decorators/mutation.decorator';
 import { StateService } from './state.service';
 import { UserRole } from '~/modules/user/constants/user.constant';
 
@@ -20,6 +21,7 @@ import { UserRole } from '~/modules/user/constants/user.constant';
 export class StateController {
   constructor(private readonly stateService: StateService) {}
 
+  @Mutation()
   @Post()
   @UseGuards(RoleGuard)
   @HttpCode(HttpStatus.CREATED)
@@ -40,6 +42,7 @@ export class StateController {
     return this.stateService.listStates(queryOptions);
   }
 
+  @Mutation()
   @Patch(':id')
   @UseGuards(RoleGuard)
   @HttpCode(HttpStatus.OK)

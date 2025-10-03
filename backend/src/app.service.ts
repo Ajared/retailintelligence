@@ -145,7 +145,7 @@ export class AppService {
     };
   }
 
-  async getDashboardData(
+  async dgetDashboardData(
     queryOptions: StoreQueryOptions,
   ): Promise<AbstractResponseDto<StoreInterface[]>> {
     const { page, limit, ...filterOptions } = queryOptions;

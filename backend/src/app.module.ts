@@ -133,16 +133,18 @@ import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConne
           try {
             await tempDataSource.initialize();
             logger.log('Connected to postgres database for database creation');
-            
+
             await tempDataSource.query(
               `CREATE DATABASE "${pgOptions.database}" OWNER "${pgOptions.username}"`,
             );
             logger.log(`Database ${pgOptions.database} created successfully`);
-            
+
             await tempDataSource.destroy();
-            
+
             return mainDataSource.initialize().then((ds) => {
-              logger.log('Main Data Source initialized after database creation');
+              logger.log(
+                'Main Data Source initialized after database creation',
+              );
               return ds;
             });
           } catch (error) {

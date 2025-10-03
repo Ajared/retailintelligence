@@ -266,7 +266,7 @@ export class UserService {
       );
     }
 
-    if (user.status === UserStatus.INACTIVE) {
+    if (user.deactivatedAt) {
       throw new CustomHttpException(
         SYS_MSG.RESOURCE_OPERATION_FAILED('User Deactivation'),
         HttpStatus.BAD_REQUEST,
@@ -298,7 +298,7 @@ export class UserService {
 
     const payload: UpdateUserRecordOptions = {
       identifierOptions: { id },
-      updatePayload: { status: UserStatus.INACTIVE },
+      updatePayload: { deactivatedAt: new Date() },
       transactionOptions: {
         useTransaction: false,
       },
@@ -334,7 +334,7 @@ export class UserService {
       );
     }
 
-    if (user.status === UserStatus.ACTIVE) {
+    if (!user.deactivatedAt) {
       throw new CustomHttpException(
         SYS_MSG.RESOURCE_OPERATION_FAILED('User Reactivation'),
         HttpStatus.BAD_REQUEST,
@@ -366,7 +366,7 @@ export class UserService {
 
     const payload: UpdateUserRecordOptions = {
       identifierOptions: { id },
-      updatePayload: { status: UserStatus.ACTIVE },
+      updatePayload: { deactivatedAt: undefined },
       transactionOptions: {
         useTransaction: false,
       },
@@ -385,6 +385,63 @@ export class UserService {
 
     return {
       message: SYS_MSG.RESOURCE_OPERATION_SUCCESSFUL('User Reactivation'),
+      data,
+    };
+  }
+
+  async verifyUser(id: string, verifiedBy: string) {
+    const [userError, user] = await trySafe(() => this.getUserById(id));
+    const [verifiedByError, verifiedByUser] = await trySafe(() =>
+      this.getUserById(verifiedBy),
+    );
+
+    if (userError || verifiedByError) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_NOT_FOUND('User'),
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    if (user.status === UserStatus.VERIFIED) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_OPERATION_FAILED('User Verification'),
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const verifiedByRole = verifiedByUser.role;
+
+    if (
+      verifiedByRole !== UserRole.SUPER_ADMIN &&
+      verifiedByRole !== UserRole.ADMIN
+    ) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_OPERATION_FAILED('User Verification'),
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
+    const payload: UpdateUserRecordOptions = {
+      identifierOptions: { id },
+      updatePayload: { status: UserStatus.VERIFIED },
+      transactionOptions: {
+        useTransaction: false,
+      },
+    };
+
+    const [error, data] = await trySafe(() =>
+      this.userModelAction.update(payload),
+    );
+
+    if (error) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_OPERATION_FAILED('User Verification'),
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    return {
+      message: SYS_MSG.RESOURCE_OPERATION_SUCCESSFUL('User Verification'),
       data,
     };
   }
