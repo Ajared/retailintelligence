@@ -366,7 +366,7 @@ export class UserService {
 
     const payload: UpdateUserRecordOptions = {
       identifierOptions: { id },
-      updatePayload: { deactivatedAt: undefined },
+      updatePayload: { deactivatedAt: null },
       transactionOptions: {
         useTransaction: false,
       },

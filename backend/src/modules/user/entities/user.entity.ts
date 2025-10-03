@@ -31,7 +31,7 @@ export class User extends AbstractBaseEntity {
   status: UserStatus;
 
   @Column({ nullable: true })
-  deactivatedAt?: Date;
+  deactivatedAt?: Date | null;
 
   @Column({
     type: 'enum',
