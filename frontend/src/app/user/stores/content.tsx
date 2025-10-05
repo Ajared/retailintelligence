@@ -28,8 +28,6 @@ const InteractiveMap = dynamic(() => import('~/components/map'), {
   ssr: false,
 });
 
-console.log(getAllStoresForUser);
-
 type BoundsQuery = {
   minLat: number;
   maxLat: number;

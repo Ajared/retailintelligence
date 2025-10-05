@@ -103,8 +103,6 @@ export const getAllUsers = async (
       throw new Error(response.message);
     }
 
-    console.log(response);
-
     return response;
   } catch (error) {
     const errorMessage =
@@ -126,7 +124,6 @@ export const deactivateUser = async (
     );
 
     if (!('data' in response)) {
-      console.log(response);
       throw new Error(response.message);
     }
 
