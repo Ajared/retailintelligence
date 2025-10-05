@@ -7,8 +7,8 @@ export enum UserRole {
 }
 
 export enum UserStatus {
-  ACTIVE = 'active',
-  INACTIVE = 'inactive',
+  VERIFIED = 'verified',
+  UNVERIFIED = 'unverified',
 }
 
 export enum AuthProvider {
@@ -23,7 +23,8 @@ export interface UserInterface extends AbstractBaseInterface {
   status: UserStatus;
   auth_provider: AuthProvider;
   reset_password_token?: string;
-  reset_password_expires?: Date;
+  reset_password_expires?: Date | string;
+  deactivated_at?: Date | string | null;
   assigned_state_id?: string;
   assigned_local_government_id?: string;
   assigned_phase_id?: string;

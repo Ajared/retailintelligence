@@ -52,7 +52,7 @@ export const registerUser = async (
     const response = await customFetch.post<UserInterface>(
       '/auth/register',
       { email, password },
-      { headers: { 'invite-token': inviteToken } },
+      inviteToken ? { headers: { 'invite-token': inviteToken } } : undefined,
     );
 
     if (!('data' in response)) {

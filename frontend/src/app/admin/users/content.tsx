@@ -317,16 +317,16 @@ export default function Content({
                 Status
               </DropdownMenuItem>
               <DropdownMenuCheckboxItem
-                checked={filterOptions.status.active}
-                onCheckedChange={() => toggleStatusFilter('active')}
+                checked={filterOptions.status.verified}
+                onCheckedChange={() => toggleStatusFilter('verified')}
               >
-                Active
+                Verified
               </DropdownMenuCheckboxItem>
               <DropdownMenuCheckboxItem
-                checked={filterOptions.status.inactive}
-                onCheckedChange={() => toggleStatusFilter('inactive')}
+                checked={filterOptions.status.unverified}
+                onCheckedChange={() => toggleStatusFilter('unverified')}
               >
-                Inactive
+                Unverified
               </DropdownMenuCheckboxItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -433,72 +433,88 @@ export default function Content({
             <TableBody>
               {filteredUsers.length === 0
                 ? renderEmptyState()
-                : filteredUsers.map((user) => (
-                    <TableRow
-                      key={user.id}
-                      className={`cursor-pointer ${
-                        user.status === 'inactive' ? 'bg-muted/30' : ''
-                      }`}
-                    >
-                      <TableCell className="font-medium">
-                        <span
-                          className={
-                            user.status === 'inactive'
-                              ? 'line-through opacity-70'
-                              : ''
-                          }
-                        >
-                          {user.email}
-                        </span>
-                      </TableCell>
-                      <TableCell className="capitalize">{user.role}</TableCell>
-                      <TableCell className="capitalize">
-                        {user.status}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              className="h-8 w-8 p-0 cursor-pointer"
-                            >
-                              <span className="sr-only">Open menu</span>
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            {user.status === 'active' ? (
-                              <>
+                : filteredUsers.map((user) => {
+                    const isDeactivated = user.deactivated_at != null;
+                    const isUnverified = user.status === 'unverified';
+
+                    return (
+                      <TableRow
+                        key={user.id}
+                        className={`cursor-pointer ${
+                          isDeactivated || isUnverified ? 'bg-muted/30' : ''
+                        }`}
+                      >
+                        <TableCell className="font-medium">
+                          <span
+                            className={
+                              isDeactivated || isUnverified
+                                ? 'line-through opacity-70'
+                                : ''
+                            }
+                          >
+                            {user.email}
+                          </span>
+                        </TableCell>
+                        <TableCell className="capitalize">
+                          {user.role}
+                        </TableCell>
+                        <TableCell className="capitalize">
+                          {isDeactivated ? 'Deactivated' : user.status}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                className="h-8 w-8 p-0 cursor-pointer"
+                              >
+                                <span className="sr-only">Open menu</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              {isUnverified ? (
                                 <DropdownMenuItem
                                   onClick={() =>
-                                    handleStatusChange(user, 'deactivate')
+                                    handleStatusChange(user, 'verify')
                                   }
                                   className="cursor-pointer"
                                 >
-                                  Deactivate User
+                                  Verify User
                                 </DropdownMenuItem>
+                              ) : isDeactivated ? (
                                 <DropdownMenuItem
-                                  onClick={() => openAssignDialog(user)}
+                                  onClick={() =>
+                                    handleStatusChange(user, 'reactivate')
+                                  }
                                   className="cursor-pointer"
                                 >
-                                  Assign Location
+                                  Reactivate User
                                 </DropdownMenuItem>
-                              </>
-                            ) : (
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  handleStatusChange(user, 'activate')
-                                }
-                                className="cursor-pointer"
-                              >
-                                Reactivate User
-                              </DropdownMenuItem>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                              ) : (
+                                <>
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      handleStatusChange(user, 'deactivate')
+                                    }
+                                    className="cursor-pointer"
+                                  >
+                                    Deactivate User
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => openAssignDialog(user)}
+                                    className="cursor-pointer"
+                                  >
+                                    Assign Location
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
             </TableBody>
           </Table>
         </div>
@@ -517,72 +533,86 @@ export default function Content({
                 : 'No users found matching your criteria.'}
             </div>
           ) : (
-            filteredUsers.map((user) => (
-              <div
-                key={user.id}
-                className={`grid grid-cols-[2fr_1fr_0.5fr] gap-4 p-4 border-b items-center ${
-                  user.status === 'inactive' ? 'bg-muted/30' : ''
-                }`}
-              >
-                <div className="min-w-0">
-                  <div
-                    className={`font-medium truncate ${user.status === 'inactive' ? 'line-through opacity-70' : ''}`}
-                    title={user.email}
-                  >
-                    {user.email}
+            filteredUsers.map((user) => {
+              const isDeactivated = user.deactivated_at != null;
+              const isUnverified = user.status === 'unverified';
+
+              return (
+                <div
+                  key={user.id}
+                  className={`grid grid-cols-[2fr_1fr_0.5fr] gap-4 p-4 border-b items-center ${
+                    isDeactivated || isUnverified ? 'bg-muted/30' : ''
+                  }`}
+                >
+                  <div className="min-w-0">
+                    <div
+                      className={`font-medium truncate ${isDeactivated || isUnverified ? 'line-through opacity-70' : ''}`}
+                      title={user.email}
+                    >
+                      {user.email}
+                    </div>
                   </div>
-                </div>
 
-                <div className="min-w-0">
-                  <div className="text-xs">{user.role}</div>
-                </div>
+                  <div className="min-w-0">
+                    <div className="text-xs">{user.role}</div>
+                  </div>
 
-                <div className="flex justify-end">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        className="h-8 w-8 p-0 cursor-pointer"
-                      >
-                        <span className="sr-only">Open menu</span>
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem disabled className="text-xs">
-                        Status: {user.status}
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      {user.status === 'active' ? (
-                        <>
+                  <div className="flex justify-end">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          className="h-8 w-8 p-0 cursor-pointer"
+                        >
+                          <span className="sr-only">Open menu</span>
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem disabled className="text-xs">
+                          Status: {isDeactivated ? 'Deactivated' : user.status}
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        {isUnverified ? (
+                          <DropdownMenuItem
+                            onClick={() => handleStatusChange(user, 'verify')}
+                            className="cursor-pointer"
+                          >
+                            Verify User
+                          </DropdownMenuItem>
+                        ) : isDeactivated ? (
                           <DropdownMenuItem
                             onClick={() =>
-                              handleStatusChange(user, 'deactivate')
+                              handleStatusChange(user, 'reactivate')
                             }
                             className="cursor-pointer"
                           >
-                            Deactivate User
+                            Reactivate User
                           </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => openAssignDialog(user)}
-                            className="cursor-pointer"
-                          >
-                            Assign Location
-                          </DropdownMenuItem>
-                        </>
-                      ) : (
-                        <DropdownMenuItem
-                          onClick={() => handleStatusChange(user, 'activate')}
-                          className="cursor-pointer"
-                        >
-                          Reactivate User
-                        </DropdownMenuItem>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                        ) : (
+                          <>
+                            <DropdownMenuItem
+                              onClick={() =>
+                                handleStatusChange(user, 'deactivate')
+                              }
+                              className="cursor-pointer"
+                            >
+                              Deactivate User
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => openAssignDialog(user)}
+                              className="cursor-pointer"
+                            >
+                              Assign Location
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
@@ -650,15 +680,21 @@ export default function Content({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {actionType === 'activate' ? 'Reactivate' : 'Deactivate'} User
+              {actionType === 'verify' && 'Verify User'}
+              {actionType === 'deactivate' && 'Deactivate User'}
+              {actionType === 'reactivate' && 'Reactivate User'}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to{' '}
-              {actionType === 'activate' ? 'reactivate' : 'deactivate'}{' '}
+              Are you sure you want to {actionType === 'verify' && 'verify'}
+              {actionType === 'deactivate' && 'deactivate'}
+              {actionType === 'reactivate' && 'reactivate'}{' '}
               <span className="font-medium">{selectedUser?.email}</span>?{' '}
-              {actionType === 'deactivate'
-                ? 'This will prevent the user from accessing their account.'
-                : "This will restore the user's access to their account."}
+              {actionType === 'verify' &&
+                'This will verify the user and grant them full access to their account.'}
+              {actionType === 'deactivate' &&
+                'This will deactivate the user and restrict their access.'}
+              {actionType === 'reactivate' &&
+                "This will restore the user's access to their account."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -678,7 +714,9 @@ export default function Content({
               }`}
               disabled={isPending}
             >
-              {actionType === 'activate' ? 'Reactivate' : 'Deactivate'}
+              {actionType === 'verify' && 'Verify'}
+              {actionType === 'deactivate' && 'Deactivate'}
+              {actionType === 'reactivate' && 'Reactivate'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

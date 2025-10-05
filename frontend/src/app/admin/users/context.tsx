@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { UserRole } from '~/types/user';
 import { UserInterface } from '~/types/user';
 import { PaginationMeta } from '~/types/actions';
-import { deactivateUser, reactivateUser } from '../actions';
+import { deactivateUser, reactivateUser, verifyUser } from '../actions';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createContext, useContext, useCallback, useState } from 'react';
 
@@ -15,22 +15,22 @@ interface UsersContextType {
   filterOptions: {
     roles: Record<UserRole, boolean>;
     status: {
-      active: boolean;
-      inactive: boolean;
+      verified: boolean;
+      unverified: boolean;
     };
   };
   toggleRoleFilter: (role: UserRole) => void;
-  toggleStatusFilter: (status: 'active' | 'inactive') => void;
+  toggleStatusFilter: (status: 'verified' | 'unverified') => void;
   handleStatusChange: (
     user: UserInterface,
-    action: 'activate' | 'deactivate',
+    action: 'verify' | 'deactivate' | 'reactivate',
   ) => void;
   isSearchActive: boolean;
   toggleSearchMode: () => void;
   showDialog: boolean;
   setShowDialog: (show: boolean) => void;
   selectedUser: UserInterface | null;
-  actionType: 'activate' | 'deactivate' | null;
+  actionType: 'verify' | 'deactivate' | 'reactivate' | null;
   confirmStatusChange: () => void;
   isPending: boolean;
   pagination: PaginationMeta;
@@ -60,7 +60,7 @@ export function UsersProvider({
   const [showDialog, setShowDialogState] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserInterface | null>(null);
   const [actionType, setActionType] = useState<
-    'activate' | 'deactivate' | null
+    'verify' | 'deactivate' | 'reactivate' | null
   >(null);
   const [isPending, setIsPending] = useState(false);
 
@@ -88,8 +88,8 @@ export function UsersProvider({
       [UserRole.USER]: currentRole === UserRole.USER,
     },
     status: {
-      active: currentStatus === 'active',
-      inactive: currentStatus === 'inactive',
+      verified: currentStatus === 'verified',
+      unverified: currentStatus === 'unverified',
     },
   };
 
@@ -110,7 +110,7 @@ export function UsersProvider({
   );
 
   const toggleStatusFilter = useCallback(
-    (status: 'active' | 'inactive') => {
+    (status: 'verified' | 'unverified') => {
       const newStatus = filterOptions.status[status] ? null : status;
       updateSearchParams({ status: newStatus });
     },
@@ -118,7 +118,7 @@ export function UsersProvider({
   );
 
   const handleStatusChange = useCallback(
-    (user: UserInterface, action: 'activate' | 'deactivate') => {
+    (user: UserInterface, action: 'verify' | 'deactivate' | 'reactivate') => {
       if (!user.id) return;
       setSelectedUser(user);
       setActionType(action);
@@ -140,25 +140,43 @@ export function UsersProvider({
     if (!selectedUser?.id || !actionType) return;
 
     setIsPending(true);
-    const toastId = toast.loading(
-      `${actionType === 'activate' ? 'Reactivating' : 'Deactivating'} user...`,
-    );
+    const actionMessages = {
+      verify: {
+        loading: 'Verifying user...',
+        success: 'User verified successfully',
+      },
+      deactivate: {
+        loading: 'Deactivating user...',
+        success: 'User deactivated successfully',
+      },
+      reactivate: {
+        loading: 'Reactivating user...',
+        success: 'User reactivated successfully',
+      },
+    };
+
+    const toastId = toast.loading(actionMessages[actionType].loading);
 
     try {
-      const response =
-        actionType === 'activate'
-          ? await reactivateUser(selectedUser.id)
-          : await deactivateUser(selectedUser.id);
+      let response;
+      switch (actionType) {
+        case 'verify':
+          response = await verifyUser(selectedUser.id);
+          break;
+        case 'deactivate':
+          response = await deactivateUser(selectedUser.id);
+          break;
+        case 'reactivate':
+          response = await reactivateUser(selectedUser.id);
+          break;
+      }
 
       if ('error' in response) {
         toast.error(response.message, { id: toastId });
         return;
       }
 
-      toast.success(
-        `User ${actionType === 'activate' ? 'reactivated' : 'deactivated'} successfully`,
-        { id: toastId },
-      );
+      toast.success(actionMessages[actionType].success, { id: toastId });
 
       router.refresh();
       setShowDialog(false);
