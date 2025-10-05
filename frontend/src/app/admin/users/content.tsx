@@ -436,9 +436,7 @@ export default function Content({
                 : filteredUsers.map((user) => {
                     const isDeactivated = user.deactivated_at != null;
                     const isUnverified = user.status === 'unverified';
-                    const isVerifiedActive =
-                      user.status === 'verified' && !isDeactivated;
-
+                    
                     return (
                       <TableRow
                         key={user.id}
