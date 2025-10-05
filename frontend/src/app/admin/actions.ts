@@ -103,6 +103,8 @@ export const getAllUsers = async (
       throw new Error(response.message);
     }
 
+    console.log(response);
+
     return response;
   } catch (error) {
     const errorMessage =
@@ -124,6 +126,7 @@ export const deactivateUser = async (
     );
 
     if (!('data' in response)) {
+      console.log(response);
       throw new Error(response.message);
     }
 
@@ -145,6 +148,30 @@ export const reactivateUser = async (
   try {
     const response = await customFetch.post<UserInterface>(
       `/admin/users/${userId}/reactivate`,
+    );
+
+    if (!('data' in response)) {
+      throw new Error(response.message);
+    }
+
+    return response;
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : 'Something went wrong';
+    return {
+      error: errorMessage,
+      message: errorMessage,
+      timestamp: new Date().toISOString(),
+    } as ErrorResponse;
+  }
+};
+
+export const verifyUser = async (
+  userId: string,
+): Promise<Response<UserInterface>> => {
+  try {
+    const response = await customFetch.post<UserInterface>(
+      `/admin/users/${userId}/verify`,
     );
 
     if (!('data' in response)) {

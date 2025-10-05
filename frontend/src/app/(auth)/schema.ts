@@ -3,7 +3,10 @@ import { z } from 'zod/v4';
 const registerFormSchema = z
   .object({
     email: z.email(),
-    inviteToken: z.jwt({ error: 'Invalid invite token' }),
+    inviteToken: z.preprocess(
+      (val) => (val === '' ? undefined : val),
+      z.jwt({ error: 'Invalid invite token' }).optional(),
+    ),
     password: z
       .string()
       .min(6, { error: 'Password must be at least 6 characters' }),

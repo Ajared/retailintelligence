@@ -27,6 +27,8 @@ async function RegisterFormWrapper({
       if (decoded.exp && decoded.exp < Date.now() / 1000) {
         isValidToken = false;
       }
+    } else {
+      isValidToken = true;
     }
   } catch {
     isValidToken = false;

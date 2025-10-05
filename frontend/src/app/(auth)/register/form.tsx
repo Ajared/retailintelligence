@@ -45,7 +45,7 @@ export function RegisterForm({
 
   const [state, action, isPending] = useActionState(registerUser, initialState);
 
-  if (!isValidToken || !inviteToken) {
+  if (inviteToken && !isValidToken) {
     return (
       <Card className="w-full max-w-md">
         <CardHeader>
@@ -68,7 +68,9 @@ export function RegisterForm({
       <CardHeader>
         <CardTitle>Create an account</CardTitle>
         <CardDescription>
-          Enter your password to get started with your account
+          {email
+            ? 'Enter your password to get started with your account'
+            : 'Enter your details to create a new account'}
         </CardDescription>
       </CardHeader>
       <form action={action} autoComplete="on" className="flex flex-col gap-5">
@@ -83,11 +85,12 @@ export function RegisterForm({
               defaultValue={
                 email || ('inputs' in state && state.inputs?.email) || ''
               }
+              autoFocus
               readOnly={!!email}
               required
-              tabIndex={-1}
-              style={{ userSelect: 'none' }}
-              onFocus={(e) => e.target.blur()}
+              tabIndex={email ? -1 : undefined}
+              style={email ? { userSelect: 'none' } : undefined}
+              onFocus={email ? (e) => e.target.blur() : undefined}
             />
           </div>
           <div className="space-y-2">
