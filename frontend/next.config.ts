@@ -3,7 +3,6 @@
  * for Docker builds.
  */
 import './src/env.ts';
-import { env } from './src/env';
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
@@ -16,7 +15,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: `${env.UPLOADTHING_APP_ID}.ufs.sh`,
+        hostname: '9k8m7lvkfx.ufs.sh',
         pathname: '/f/**',
       },
     ],
