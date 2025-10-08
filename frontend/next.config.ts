@@ -21,8 +21,14 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  typedRoutes: true,
+  reactCompiler: true,
   experimental: {
     ppr: true,
+    typedEnv: true,
+    browserDebugInfoInTerminal: true,
+    turbopackPersistentCachingForDev: true,
+    turbopackPersistentCachingForBuild: true,
     serverActions: {
       bodySizeLimit: '25mb',
     },
