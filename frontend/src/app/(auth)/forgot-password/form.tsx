@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from '~/components/ui/card';
 import Link from 'next/link';
-import { useActionState } from 'react';
+import { useActionState, useRef, useEffect } from 'react';
 import { Response } from '~/types/actions';
 import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
@@ -18,6 +18,8 @@ import { forgotPasswordAction } from '../actions';
 import { ForgotPasswordFormData } from '../schema';
 import { CheckCircle2, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription } from '~/components/ui/alert';
+import createGlobe from 'cobe';
+import { useSpring } from '@react-spring/web';
 
 export function ForgotPasswordForm() {
   const initialState: Response<{ email: string }> & {
