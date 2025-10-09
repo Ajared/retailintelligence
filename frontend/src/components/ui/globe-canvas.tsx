@@ -20,16 +20,21 @@ export function GlobeCanvas() {
 
   useEffect(() => {
     if (!canvasRef.current) return;
+
     let phi = 0;
+    const dpr = window.devicePixelRatio || 1;
+    const mapSamples = dpr > 1 ? 60000 : 30000;
+    const effectiveDevicePixelRatio = Math.min(dpr, 2);
+
     const globe = createGlobe(canvasRef.current, {
-      devicePixelRatio: 2,
+      devicePixelRatio: effectiveDevicePixelRatio,
       width: 1200,
       height: 1200,
       phi: 0,
       theta: 0.1,
       dark: 1,
       diffuse: 1.8,
-      mapSamples: 60000,
+      mapSamples: mapSamples,
       mapBrightness: 6,
       baseColor: [0.3, 0.3, 0.3],
       markerColor: [0.1, 0.8, 1],
