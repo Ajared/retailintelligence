@@ -146,84 +146,94 @@ export function ResetPasswordForm() {
                   className="flex flex-col gap-8"
                 >
                   <CardContent className="space-y-4 p-0">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="name@example.com"
-              defaultValue={('inputs' in state && state.inputs?.email) || ''}
-              required
-            />
-          </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email</Label>
+                      <Input
+                        id="email"
+                        name="email"
+                        type="email"
+                        placeholder="name@example.com"
+                        defaultValue={
+                          ('inputs' in state && state.inputs?.email) || ''
+                        }
+                        required
+                      />
+                    </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              required
-              id="password"
-              minLength={6}
-              name="password"
-              type={showPassword ? 'text' : 'password'}
-              placeholder="Enter your new password"
-              defaultValue={('inputs' in state && state.inputs?.password) || ''}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirm Password</Label>
-            <div className="relative">
-              <Input
-                required
-                id="confirmPassword"
-                minLength={6}
-                name="confirmPassword"
-                type={showPassword ? 'text' : 'password'}
-                placeholder="Confirm your new password"
-                defaultValue={
-                  ('inputs' in state && state.inputs?.confirmPassword) || ''
-                }
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="absolute right-0 top-0 h-full px-3 !bg-transparent !hover:bg-transparent cursor-pointer"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                <span className="sr-only">
-                  {showPassword ? 'Hide password' : 'Show password'}
-                </span>
-              </Button>
-            </div>
-          </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="password">Password</Label>
+                      <Input
+                        required
+                        id="password"
+                        minLength={6}
+                        name="password"
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="Enter your new password"
+                        defaultValue={
+                          ('inputs' in state && state.inputs?.password) || ''
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmPassword">Confirm Password</Label>
+                      <div className="relative">
+                        <Input
+                          required
+                          id="confirmPassword"
+                          minLength={6}
+                          name="confirmPassword"
+                          type={showPassword ? 'text' : 'password'}
+                          placeholder="Confirm your new password"
+                          defaultValue={
+                            ('inputs' in state &&
+                              state.inputs?.confirmPassword) ||
+                            ''
+                          }
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-0 top-0 h-full px-3 !bg-transparent !hover:bg-transparent cursor-pointer"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? (
+                            <EyeOff size={16} />
+                          ) : (
+                            <Eye size={16} />
+                          )}
+                          <span className="sr-only">
+                            {showPassword ? 'Hide password' : 'Show password'}
+                          </span>
+                        </Button>
+                      </div>
+                    </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="token">One-Time Password</Label>
-            <InputOTP
-              required
-              id="token"
-              name="token"
-              maxLength={8}
-              className="w-full"
-              pattern={REGEXP_ONLY_DIGITS_AND_CHARS}
-            >
-              <InputOTPGroup className="w-full">
-                <InputOTPSlot className="w-full h-12" index={0} />
-                <InputOTPSlot className="w-full h-12" index={1} />
-                <InputOTPSlot className="w-full h-12" index={2} />
-                <InputOTPSlot className="w-full h-12" index={3} />
-              </InputOTPGroup>
-              <InputOTPSeparator />
-              <InputOTPGroup className="w-full">
-                <InputOTPSlot className="w-full h-12" index={4} />
-                <InputOTPSlot className="w-full h-12" index={5} />
-                <InputOTPSlot className="w-full h-12" index={6} />
-                <InputOTPSlot className="w-full h-12" index={7} />
-              </InputOTPGroup>
-            </InputOTP>
-          </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="token">One-Time Password</Label>
+                      <InputOTP
+                        required
+                        id="token"
+                        name="token"
+                        maxLength={8}
+                        className="w-full"
+                        pattern={REGEXP_ONLY_DIGITS_AND_CHARS}
+                      >
+                        <InputOTPGroup className="w-full">
+                          <InputOTPSlot className="w-full h-12" index={0} />
+                          <InputOTPSlot className="w-full h-12" index={1} />
+                          <InputOTPSlot className="w-full h-12" index={2} />
+                          <InputOTPSlot className="w-full h-12" index={3} />
+                        </InputOTPGroup>
+                        <InputOTPSeparator />
+                        <InputOTPGroup className="w-full">
+                          <InputOTPSlot className="w-full h-12" index={4} />
+                          <InputOTPSlot className="w-full h-12" index={5} />
+                          <InputOTPSlot className="w-full h-12" index={6} />
+                          <InputOTPSlot className="w-full h-12" index={7} />
+                        </InputOTPGroup>
+                      </InputOTP>
+                    </div>
 
                     {state?.message && (
                       <Alert
@@ -246,14 +256,16 @@ export function ResetPasswordForm() {
                     )}
                   </CardContent>
                   <CardFooter className="flex flex-col gap-2 p-0">
-          <Button
-            type="submit"
-            className="w-full cursor-pointer"
-            disabled={isPending}
-          >
-            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isPending ? 'Processing' : 'Change Password'}
-          </Button>
+                    <Button
+                      type="submit"
+                      className="w-full cursor-pointer"
+                      disabled={isPending}
+                    >
+                      {isPending && (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      )}
+                      {isPending ? 'Processing' : 'Change Password'}
+                    </Button>
                     <div className="text-center text-sm">
                       Remember your password?{' '}
                       <Button

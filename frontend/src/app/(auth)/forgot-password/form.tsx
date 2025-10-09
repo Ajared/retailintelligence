@@ -133,17 +133,19 @@ export function ForgotPasswordForm() {
                   className="flex flex-col gap-8"
                 >
                   <CardContent className="space-y-4 p-0">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="name@example.com"
-              defaultValue={('inputs' in state && state.inputs?.email) || ''}
-              required
-            />
-          </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email</Label>
+                      <Input
+                        id="email"
+                        name="email"
+                        type="email"
+                        placeholder="name@example.com"
+                        defaultValue={
+                          ('inputs' in state && state.inputs?.email) || ''
+                        }
+                        required
+                      />
+                    </div>
 
                     {state?.message && (
                       <Alert
@@ -176,14 +178,16 @@ export function ForgotPasswordForm() {
                     )}
                   </p>
                   <CardFooter className="flex flex-col gap-2 p-0">
-          <Button
-            type="submit"
-            className="w-full cursor-pointer"
-            disabled={isPending}
-          >
-            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isPending ? 'Processing' : 'Reset Password'}
-          </Button>
+                    <Button
+                      type="submit"
+                      className="w-full cursor-pointer"
+                      disabled={isPending}
+                    >
+                      {isPending && (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      )}
+                      {isPending ? 'Processing' : 'Reset Password'}
+                    </Button>
                     <div className="text-center text-sm">
                       Remember your password?{' '}
                       <Button

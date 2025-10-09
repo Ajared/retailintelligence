@@ -134,45 +134,51 @@ export function LoginForm() {
                   className="flex flex-col gap-8"
                 >
                   <CardContent className="space-y-4 p-0">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="name@example.com"
-              defaultValue={('inputs' in state && state.inputs?.email) || ''}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <div className="relative">
-              <Input
-                id="password"
-                name="password"
-                type={showPassword ? 'text' : 'password'}
-                placeholder="••••••••"
-                required
-                minLength={6}
-                defaultValue={
-                  ('inputs' in state && state.inputs?.password) || ''
-                }
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="absolute right-0 top-0 h-full px-3 !bg-transparent !hover:bg-transparent cursor-pointer"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                <span className="sr-only">
-                  {showPassword ? 'Hide password' : 'Show password'}
-                </span>
-              </Button>
-            </div>
-          </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email</Label>
+                      <Input
+                        id="email"
+                        name="email"
+                        type="email"
+                        placeholder="name@example.com"
+                        defaultValue={
+                          ('inputs' in state && state.inputs?.email) || ''
+                        }
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="password">Password</Label>
+                      <div className="relative">
+                        <Input
+                          id="password"
+                          name="password"
+                          type={showPassword ? 'text' : 'password'}
+                          placeholder="••••••••"
+                          required
+                          minLength={6}
+                          defaultValue={
+                            ('inputs' in state && state.inputs?.password) || ''
+                          }
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-0 top-0 h-full px-3 !bg-transparent !hover:bg-transparent cursor-pointer"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? (
+                            <EyeOff size={16} />
+                          ) : (
+                            <Eye size={16} />
+                          )}
+                          <span className="sr-only">
+                            {showPassword ? 'Hide password' : 'Show password'}
+                          </span>
+                        </Button>
+                      </div>
+                    </div>
 
                     {state?.message && (
                       <Alert
@@ -196,39 +202,41 @@ export function LoginForm() {
                   </CardContent>
 
                   <CardFooter className="flex flex-col space-y-4 p-0">
-          <Button
-            type="submit"
-            className="w-full cursor-pointer"
-            disabled={isPending}
-          >
-            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isPending ? 'Processing' : 'Sign In'}
-          </Button>
-          <div className="flex flex-col">
-            <div className="text-center text-sm">
-              Don&apos;t have an account?{' '}
-              <Button
-                asChild
-                type="button"
-                variant="link"
-                className="px-0 cursor-pointer"
-              >
-                <Link href="/register">Register Here</Link>
-              </Button>
-            </div>
-            <div className="text-center text-sm">
-              <Button
-                asChild
-                type="button"
-                variant="link"
-                className="px-0 cursor-pointer"
-              >
-                <Link href="/forgot-password">Reset Password</Link>
-              </Button>
-              </div>
-            </div>
-          </CardFooter>
-        </form>
+                    <Button
+                      type="submit"
+                      className="w-full cursor-pointer"
+                      disabled={isPending}
+                    >
+                      {isPending && (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      )}
+                      {isPending ? 'Processing' : 'Sign In'}
+                    </Button>
+                    <div className="flex flex-col">
+                      <div className="text-center text-sm">
+                        Don&apos;t have an account?{' '}
+                        <Button
+                          asChild
+                          type="button"
+                          variant="link"
+                          className="px-0 cursor-pointer"
+                        >
+                          <Link href="/register">Register Here</Link>
+                        </Button>
+                      </div>
+                      <div className="text-center text-sm">
+                        <Button
+                          asChild
+                          type="button"
+                          variant="link"
+                          className="px-0 cursor-pointer"
+                        >
+                          <Link href="/forgot-password">Reset Password</Link>
+                        </Button>
+                      </div>
+                    </div>
+                  </CardFooter>
+                </form>
               </div>
             </div>
           </div>
