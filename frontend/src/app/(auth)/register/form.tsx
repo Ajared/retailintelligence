@@ -9,18 +9,18 @@ import {
   CardTitle,
 } from '~/components/ui/card';
 import Link from 'next/link';
+import createGlobe from 'cobe';
 import { registerUser } from '../actions';
 import { Response } from '~/types/actions';
 import { UserInterface } from '~/types/user';
 import { RegisterFormData } from '../schema';
 import { Input } from '~/components/ui/input';
+import { useSpring } from '@react-spring/web';
 import { Label } from '~/components/ui/label';
 import { Button } from '~/components/ui/button';
 import { useActionState, useState, useRef, useEffect } from 'react';
 import { Alert, AlertDescription } from '~/components/ui/alert';
 import { CheckCircle2, Eye, EyeOff, Loader2 } from 'lucide-react';
-import createGlobe from 'cobe';
-import { useSpring } from '@react-spring/web';
 
 export function RegisterForm({
   email,
