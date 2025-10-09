@@ -59,10 +59,7 @@ export default async function RegisterPage({
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center p-4">
-      <Link href="/" className="mb-8 text-center cursor-pointer">
-        <h1 className="text-3xl font-bold">Retail Intelligence</h1>
-      </Link>
+    <div className="bg-background flex min-h-screen items-center justify-center p-4">
       <Suspense fallback={<Loader />}>
         <RegisterFormWrapper searchParams={searchParams} />
       </Suspense>
