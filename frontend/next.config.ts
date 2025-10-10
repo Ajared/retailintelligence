@@ -26,8 +26,8 @@ const nextConfig: NextConfig = {
     ppr: true,
     typedEnv: true,
     browserDebugInfoInTerminal: true,
-    turbopackPersistentCachingForDev: true,
-    turbopackPersistentCachingForBuild: true,
+    turbopackFileSystemCacheForDev: true,
+    turbopackFileSystemCacheForBuild: true,
     serverActions: {
       bodySizeLimit: '25mb',
     },
