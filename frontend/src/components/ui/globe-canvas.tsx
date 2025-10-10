@@ -29,8 +29,8 @@ export function GlobeCanvas({
 
     let phi = 0;
     const dpr = window.devicePixelRatio || 1;
-    const mapSamples = window.innerWidth < 768 ? 20000 :
-                      dpr > 1 ? 60000 : 30000;
+    const mapSamples =
+      window.innerWidth < 768 ? 20000 : dpr > 1 ? 60000 : 30000;
     const effectiveDevicePixelRatio = Math.min(dpr, 2);
 
     const globe = createGlobe(canvasRef.current, {
