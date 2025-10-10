@@ -23,8 +23,8 @@ const nextConfig: NextConfig = {
   typedRoutes: true,
   reactCompiler: true,
   experimental: {
-    ppr: true,
     typedEnv: true,
+    cacheComponents: true,
     browserDebugInfoInTerminal: true,
     turbopackFileSystemCacheForDev: true,
     turbopackFileSystemCacheForBuild: true,
