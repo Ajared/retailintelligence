@@ -4,7 +4,13 @@ import createGlobe from 'cobe';
 import { useRef, useEffect } from 'react';
 import { useSpring } from '@react-spring/web';
 
-export function GlobeCanvas() {
+export function GlobeCanvas({
+  defaultOffsetX,
+  defaultOffsetY,
+}: {
+  defaultOffsetX?: number;
+  defaultOffsetY?: number;
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const pointerInteracting = useRef<number | null>(null);
   const pointerInteractionMovement = useRef(0);
@@ -28,8 +34,8 @@ export function GlobeCanvas() {
 
     const globe = createGlobe(canvasRef.current, {
       devicePixelRatio: effectiveDevicePixelRatio,
-      width: 1200,
-      height: 1200,
+      width: 780,
+      height: 780,
       phi: 0,
       theta: 0.1,
       dark: 1,
@@ -39,8 +45,8 @@ export function GlobeCanvas() {
       baseColor: [0.3, 0.3, 0.3],
       markerColor: [0.1, 0.8, 1],
       glowColor: [0.2, 0.2, 0.2],
-      scale: 1.35,
-      offset: [241.5, 176.9],
+      // scale: 0.65,
+      offset: [defaultOffsetX || 0, defaultOffsetY || 300],
       markers: [
         { location: [37.7595, -122.4367], size: 0.03 },
         { location: [40.7128, -74.006], size: 0.03 },
@@ -84,6 +90,7 @@ export function GlobeCanvas() {
   return (
     <div className="relative hidden lg:flex flex-col items-center justify-center h-full border-l">
       <canvas
+        className="w-full h-full flex items-center justify-center"
         ref={canvasRef}
         onPointerDown={(e) => {
           pointerInteracting.current =

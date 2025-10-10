@@ -100,7 +100,9 @@ export function ForgotPasswordForm() {
                       </Alert>
                     )}
                   </CardContent>
-                  <p className="text-center text-sm">
+                  <p
+                    className={`${'data' in state && state.data?.email ? 'text-center text-sm' : 'hidden'}`}
+                  >
                     {'data' in state && state.data?.email ? (
                       <span>
                         We&apos;ve sent an email to{' '}
@@ -137,7 +139,11 @@ export function ForgotPasswordForm() {
               </div>
             </div>
           </div>
-          <Suspense fallback={<div className="relative hidden lg:flex flex-col items-center justify-center h-full border-l" />}>
+          <Suspense
+            fallback={
+              <div className="relative hidden lg:flex flex-col items-center justify-center h-full border-l" />
+            }
+          >
             <GlobeCanvas />
           </Suspense>
         </div>

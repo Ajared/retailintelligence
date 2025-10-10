@@ -228,7 +228,7 @@ export function RegisterForm({
               <div className="relative hidden lg:flex flex-col items-center justify-center h-full border-l" />
             }
           >
-            <GlobeCanvas />
+            <GlobeCanvas defaultOffsetY={265} />
           </Suspense>
         </div>
       </Card>
