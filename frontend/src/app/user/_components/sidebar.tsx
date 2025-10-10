@@ -68,11 +68,7 @@ export function AppSidebar({ session }: { session: Session | null }) {
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild
-                    isActive={
-                      item.url === '/user'
-                        ? pathname === item.url
-                        : pathname.startsWith(item.url)
-                    }
+                    isActive={pathname.startsWith(item.url)}
                     className="data-[state=active]:bg-sidebar-accent data-[state=active]:text-sidebar-accent-foreground"
                   >
                     <Link href={item.url} className="flex items-center gap-2">

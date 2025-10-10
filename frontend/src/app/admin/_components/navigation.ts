@@ -4,11 +4,11 @@ export const navigationItems = [
   {
     title: 'Users',
     icon: Users,
-    url: '/admin/users',
+    url: '/admin/users' as const,
   },
   {
     title: 'Stores',
     icon: Store,
-    url: '/admin/stores',
+    url: '/admin/stores' as const,
   },
-];
+] as const;

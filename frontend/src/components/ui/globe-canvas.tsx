@@ -46,7 +46,6 @@ export function GlobeCanvas({
       baseColor: [0.3, 0.3, 0.3],
       markerColor: [0.1, 0.8, 1],
       glowColor: [0.2, 0.2, 0.2],
-      // scale: 0.65,
       offset: [defaultOffsetX || 0, defaultOffsetY || 300],
       markers: [
         { location: [37.7595, -122.4367], size: 0.03 },
@@ -86,6 +85,8 @@ export function GlobeCanvas({
     return () => {
       globe.destroy();
     };
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [r]);
 
   return (

@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { auth } from '../auth';
 import { LoginForm } from './form';
 import { cache, Suspense } from 'react';

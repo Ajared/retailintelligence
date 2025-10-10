@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { Suspense } from 'react';
 import Loader from '~/components/loader';
 import { ForgotPasswordForm } from './form';

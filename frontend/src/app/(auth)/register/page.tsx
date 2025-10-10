@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { auth } from '../auth';
 import { decodeJwt } from 'jose';
 import { RegisterForm } from './form';
