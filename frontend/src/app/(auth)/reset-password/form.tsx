@@ -220,7 +220,7 @@ export function ResetPasswordForm() {
               <div className="relative hidden lg:flex flex-col items-center justify-center h-full border-l" />
             }
           >
-            <GlobeCanvas defaultOffsetY={205} />
+            <GlobeCanvas offset={[0, 205]} />
           </Suspense>
         </div>
       </Card>
