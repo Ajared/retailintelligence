@@ -1,9 +1,9 @@
 'use client';
 
-import createGlobe, { type COBEOptions, type Marker } from 'cobe';
+import { cn } from '~/lib/utils';
 import { useRef, useEffect } from 'react';
 import { useSpring } from '@react-spring/web';
-import { cn } from '~/lib/utils';
+import createGlobe, { type COBEOptions, type Marker } from 'cobe';
 
 export interface GlobeCanvasProps {
   width?: number;
