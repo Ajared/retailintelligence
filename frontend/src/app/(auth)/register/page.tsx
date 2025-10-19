@@ -58,7 +58,7 @@ export default async function RegisterPage({
   }
 
   return (
-    <div className="bg-background flex min-h-screen items-center justify-center p-4">
+    <div className="bg-background flex h-full w-full min-h-screen items-center justify-center p-4">
       <Suspense fallback={<Loader />}>
         <RegisterFormWrapper searchParams={searchParams} />
       </Suspense>
