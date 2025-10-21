@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Cobe } from './cobe';
 import { Button } from './ui/button';
 
@@ -9,11 +10,12 @@ export default function Hero() {
           Turn Local Data into Market Intelligence
         </h1>
         <p className="text-base sm:text-lg md:text-xl text-center max-w-3xl mx-auto px-4">
-          Retailytics is a platform that helps you analyze your retail data and
-          make better decisions.
+          Retailytics helps you gather, review, and understand relevant business
+          data across certain locations for making better and well informed
+          decisions.
         </p>
-        <Button className="w-fit mx-auto text-sm sm:text-base">
-          Get Started
+        <Button className="w-fit mx-auto text-sm sm:text-base" asChild>
+          <Link href="/register">Get Started</Link>
         </Button>
         <div className="w-full max-w-5xl mx-auto h-full">
           <Cobe />

@@ -29,7 +29,7 @@ export function CTA() {
               className="text-base group shadow-lg shadow-primary/20"
               asChild
             >
-              <Link href="https://retailintelligence.ajared.ng/">
+              <Link href="/register">
                 Get Started Now
                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Link>
