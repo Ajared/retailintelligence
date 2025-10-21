@@ -1,15 +1,10 @@
-import { cache } from 'react';
-import { auth } from './(auth)/auth';
+import CTA from '~/components/cta';
+import FAQ from '~/components/faq';
 import Hero from '~/components/hero';
-import { CTA } from '~/components/cta';
-import { FAQ } from '~/components/faq';
 import Footer from '~/components/footer';
-import { HowItWorks } from '~/components/how-it-works';
+import HowItWorks from '~/components/how-it-works';
 
-const getSession = cache(() => auth());
-export default async function Home() {
-  const session = await getSession();
-
+export default function Home() {
   return (
     <main className="w-full h-full flex flex-col">
       <Hero />

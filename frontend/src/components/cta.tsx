@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Button } from '~/components/ui/button';
 import { ArrowRight, Sparkles } from 'lucide-react';
 
-export function CTA() {
+export default function CTA() {
   return (
     <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-32">
       <div className="relative rounded-3xl border border-border/50 bg-gradient-to-br from-primary/10 via-background/50 to-accent/10 backdrop-blur-xl p-12 md:p-16 overflow-hidden shadow-2xl">

@@ -31,7 +31,7 @@ const steps = [
   },
 ];
 
-export function HowItWorks() {
+export default function HowItWorks() {
   return (
     <section
       id="how-it-works"
