@@ -71,9 +71,12 @@ export function RegisterForm({
 
   return (
     <div className="w-full max-w-4xl">
-      <h2 className="text-2xl font-bold text-center mb-8">
+      <Link
+        href="/"
+        className="flex items-center justify-center text-2xl font-bold text-center mb-8"
+      >
         Retail Intelligence
-      </h2>
+      </Link>
       <Card className="bg-card overflow-hidden rounded-lg border shadow-2xl p-0">
         <div className="grid min-h-[360px] lg:min-h-[480px] lg:grid-cols-2">
           <div className="flex flex-col justify-center p-6 sm:p-8 lg:p-10 xl:p-12">
