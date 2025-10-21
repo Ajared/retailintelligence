@@ -1,18 +1,17 @@
-import { cache } from 'react';
-import { auth } from './(auth)/auth';
-import { redirect } from 'next/navigation';
+import CTA from '~/components/cta';
+import FAQ from '~/components/faq';
+import Hero from '~/components/hero';
+import Footer from '~/components/footer';
+import HowItWorks from '~/components/how-it-works';
 
-const getSession = cache(() => auth());
-export default async function Home() {
-  const session = await getSession();
-
-  if (!session || !('user' in session)) {
-    redirect('/login');
-  }
-
-  if (session.user.role === 'user') {
-    redirect('/user');
-  }
-
-  redirect('/admin');
+export default function Home() {
+  return (
+    <main className="w-full h-full flex flex-col">
+      <Hero />
+      <HowItWorks />
+      <FAQ />
+      <CTA />
+      <Footer />
+    </main>
+  );
 }
