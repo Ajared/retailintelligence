@@ -3,6 +3,7 @@
 import createGlobe from 'cobe';
 import { useEffect, useRef } from 'react';
 import { useSpring } from '@react-spring/web';
+import { DEFAULT_MARKERS } from './ui/globe-canvas';
 
 export function Cobe() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -21,12 +22,13 @@ export function Cobe() {
   useEffect(() => {
     if (!canvasRef.current) return;
 
-    let width = 0;
     let phi = 0;
+    let width = 0;
     const onResize = () =>
       canvasRef.current && (width = canvasRef.current.offsetWidth);
     window.addEventListener('resize', onResize);
     onResize();
+
     const globe = createGlobe(canvasRef.current, {
       devicePixelRatio: 2,
       width: width * 2,
@@ -34,15 +36,17 @@ export function Cobe() {
       phi: 0,
       theta: 0.3,
       dark: 1,
-      diffuse: 3,
+      diffuse: 0,
       mapSamples: 16000,
-      mapBrightness: 1.2,
-      baseColor: [0.3, 0.3, 0.3],
+      mapBrightness: 2,
+      mapBaseBrightness: 0.02,
+      baseColor: [77 / 255, 77 / 255, 77 / 255],
       markerColor: [251 / 255, 100 / 255, 21 / 255],
-      glowColor: [0.2, 1, 0.2],
-      markers: [],
+      glowColor: [60 / 255, 60 / 255, 60 / 255],
+      markers: DEFAULT_MARKERS,
+      opacity: 1,
       scale: 2.5,
-      offset: [0, width * 2 * 0.4 * 0.6],
+      offset: [0, width * 2 * 0.4 * 0.5],
       onRender: (state) => {
         state.width = width * 2;
         state.height = width * 2 * 0.4;
@@ -64,7 +68,7 @@ export function Cobe() {
       globe.destroy();
       window.removeEventListener('resize', onResize);
     };
-  }, []);
+  }, [r]);
 
   return (
     <div

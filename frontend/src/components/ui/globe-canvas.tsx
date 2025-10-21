@@ -29,7 +29,7 @@ export interface GlobeCanvasProps {
   containerClassName?: string;
 }
 
-const DEFAULT_MARKERS: Marker[] = [
+export const DEFAULT_MARKERS: Marker[] = [
   { location: [37.7595, -122.4367], size: 0.03 },
   { location: [40.7128, -74.006], size: 0.03 },
   { location: [34.0522, -118.2437], size: 0.03 },
