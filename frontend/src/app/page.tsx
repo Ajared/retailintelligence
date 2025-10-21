@@ -1,18 +1,14 @@
 import { cache } from 'react';
 import { auth } from './(auth)/auth';
-import { redirect } from 'next/navigation';
+import Hero from '~/components/hero';
 
 const getSession = cache(() => auth());
 export default async function Home() {
   const session = await getSession();
-
-  if (!session || !('user' in session)) {
-    redirect('/login');
-  }
-
-  if (session.user.role === 'user') {
-    redirect('/user');
-  }
-
-  redirect('/admin');
+  console.log(session);
+  return (
+    <main className="w-full h-full">
+      <Hero />
+    </main>
+  );
 }
