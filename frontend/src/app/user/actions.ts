@@ -97,7 +97,10 @@ export const addStore = async (
       const value = formData.get(key);
       if (!value) return 0;
       const num = Number(value);
-      return isNaN(num) ? 0 : num;
+      if (isNaN(num)) {
+        throw new Error(`Invalid number value for ${key}: ${value}`);
+      }
+      return num;
     };
 
     rawData = {
