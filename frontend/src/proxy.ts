@@ -4,14 +4,35 @@ import type { NextRequest } from 'next/server';
 
 export async function proxy(request: NextRequest) {
   const session = await auth();
+  const { pathname } = request.nextUrl;
 
-  if (!session || !('user' in session)) {
-    return NextResponse.redirect(new URL('/login', request.url));
+  if (pathname === '/') {
+    if (session && session.user) {
+      if (session.user.role === 'admin') {
+        return NextResponse.redirect(new URL('/admin', request.url));
+      } else if (session.user.role === 'user') {
+        return NextResponse.redirect(new URL('/user', request.url));
+      }
+    }
+    return NextResponse.next();
+  }
+
+  if (pathname.startsWith('/admin') || pathname.startsWith('/user')) {
+    if (!session || !('user' in session)) {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
+
+    if (pathname.startsWith('/admin') && session.user.role !== 'admin') {
+      return NextResponse.redirect(new URL('/user', request.url));
+    }
+    if (pathname.startsWith('/user') && session.user.role !== 'user') {
+      return NextResponse.redirect(new URL('/admin', request.url));
+    }
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/user/:path*'],
+  matcher: ['/', '/admin/:path*', '/user/:path*'],
 };
