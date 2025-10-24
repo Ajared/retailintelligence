@@ -3,8 +3,13 @@ import { getAllLocations, getPhases } from '~/app/actions';
 import EditStoreForm from './form';
 import { getStoreById } from '~/app/user/actions';
 
-const EditStorePage = async ({ params }: { params: { id: string } }) => {
-  const { id } = params;
+const EditStorePage = async ({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) => {
+  const { id } = await params;
+
   const phasesRes = await getPhases();
   const locationsRes = await getAllLocations();
   const phases = 'data' in phasesRes ? phasesRes.data : [];
