@@ -124,48 +124,51 @@ const EditStoreForm = ({
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
-  const defaultData =
-    'data' in store ? store.data : (undefined as StoreInterface | undefined);
+  const defaultData = useMemo(() => {
+    if (!store || 'error' in store) {
+      return undefined;
+    }
+    return 'data' in store ? store.data : undefined;
+  }, [store]);
 
   const [selectedStoreType, setSelectedStoreType] = useState<string>('');
 
   const initialState: Response<StoreInterface> & {
     inputs: EditStoreFormData;
-  } = {
-    error: '',
-    message: '',
-    timestamp: '',
-    inputs: {
-      id: defaultData?.id ?? '',
-      name: defaultData?.name ?? '',
-      state_id: defaultData?.state_id ?? '',
-      local_government_id: defaultData?.local_government_id ?? '',
-      phase_id: defaultData?.phase_id ?? undefined,
-      district_id: defaultData?.district_id ?? undefined,
-      address: defaultData?.address ?? '',
-      store_type: defaultData?.store_type ?? '',
-      store_type_description: defaultData?.store_type_description ?? '',
-      latitude: defaultData?.latitude ?? 0,
-      longitude: defaultData?.longitude ?? 0,
-      landmarks: defaultData?.landmarks ?? '',
-      photos: defaultData?.photos ?? [],
-    },
-  };
+  } = useMemo(
+    () => ({
+      error: '',
+      message: '',
+      timestamp: '',
+      inputs: {
+        id: defaultData?.id ?? '',
+        name: defaultData?.name ?? '',
+        state_id: defaultData?.state_id ?? '',
+        local_government_id: defaultData?.local_government_id ?? '',
+        phase_id: defaultData?.phase_id ?? undefined,
+        district_id: defaultData?.district_id ?? undefined,
+        address: defaultData?.address ?? '',
+        store_type: defaultData?.store_type ?? '',
+        store_type_description: defaultData?.store_type_description ?? '',
+        latitude: defaultData?.latitude ?? 0,
+        longitude: defaultData?.longitude ?? 0,
+        landmarks: defaultData?.landmarks ?? '',
+        photos: defaultData?.photos ?? [],
+      },
+    }),
+    [defaultData],
+  );
   const [selectedStateId, setSelectedStateId] = useState<string | undefined>(
     user?.assigned_state_id || defaultData?.state_id || '',
   );
   const [selectedPhaseId, setSelectedPhaseId] = useState<string | undefined>(
-    user?.assigned_phase_id ||
-      (defaultData as Partial<StoreInterface> & { phase_id?: string })
-        .phase_id ||
-      '',
+    user?.assigned_phase_id || defaultData?.phase_id || '',
   );
   const [selectedDistrictId, setSelectedDistrictId] = useState<
     string | undefined
   >(
     user?.assigned_district_id ||
-      (defaultData as Partial<StoreInterface> & { district_id?: string })
-        .district_id ||
+      defaultData?.district_id ||
       defaultData?.local_government_id ||
       '',
   );
@@ -202,7 +205,8 @@ const EditStoreForm = ({
         typeof state === 'object' &&
         'inputs' in state &&
         state.inputs &&
-        state.inputs[key] !== undefined
+        state.inputs[key] !== undefined &&
+        state.inputs[key] !== null
       ) {
         return String(state.inputs[key]);
       }
@@ -247,8 +251,8 @@ const EditStoreForm = ({
   }, []);
 
   const filteredLocalGovernments = useMemo(() => {
-    if (!selectedStateId) return [];
-    return selectedState?.local_governments || [];
+    if (!selectedStateId || !selectedState) return [];
+    return selectedState.local_governments || [];
   }, [selectedStateId, selectedState]);
 
   const handlePhaseChange = useCallback((value: string) => {
@@ -371,6 +375,34 @@ const EditStoreForm = ({
     },
     [action, selectedImages, keptExistingPhotos],
   );
+
+  if (!defaultData && store && 'error' in store) {
+    return (
+      <Card className="w-full max-w-2xl mx-auto">
+        <CardHeader>
+          <CardTitle>Error Loading Store</CardTitle>
+          <CardDescription>
+            Unable to load store data. Please try again.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Alert variant="destructive">
+            <AlertDescription>
+              {store.error || 'Failed to load store data'}
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+        <CardFooter>
+          <Button asChild variant="outline">
+            <Link href="/user/stores" className="flex items-center gap-2">
+              <ChevronLeft className="w-4 h-4" />
+              <span>Back to Stores</span>
+            </Link>
+          </Button>
+        </CardFooter>
+      </Card>
+    );
+  }
 
   return (
     <Card className="w-full max-w-2xl mx-auto">
