@@ -148,6 +148,7 @@ export function AddStoreForm({
       local_government_id: '',
       address: '',
       store_type: '',
+      store_type_description: '',
       latitude: 0,
       longitude: 0,
       landmarks: '',
@@ -156,6 +157,16 @@ export function AddStoreForm({
   };
 
   const [state, action, isPending] = useActionState(addStore, initialState);
+
+  const [selectedStoreType, setSelectedStoreType] = useState<string>('');
+
+  // Initialize selectedStoreType from form state
+  useEffect(() => {
+    const storeType = getInputValue('store_type');
+    if (storeType) {
+      setSelectedStoreType(storeType);
+    }
+  }, [state]);
 
   const selectedState = useMemo(() => {
     return locations.find((state) => state.id === selectedStateId);
@@ -339,6 +350,10 @@ export function AddStoreForm({
     setSelectedDistrictId(value);
   }, []);
 
+  const handleStoreTypeChange = useCallback((value: string) => {
+    setSelectedStoreType(value);
+  }, []);
+
   return (
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader className="flex flex-row justify-between items-center">
@@ -375,14 +390,52 @@ export function AddStoreForm({
 
           <div className="space-y-2">
             <Label htmlFor="store_type">Store Type *</Label>
-            <Input
-              id="store_type"
+            <Select
               name="store_type"
               required
-              placeholder="e.g. Supermarket, Pharmacy, Boutique, etc."
               defaultValue={getInputValue('store_type')}
-            />
+              onValueChange={handleStoreTypeChange}
+            >
+              <SelectTrigger id="store_type" className="w-full">
+                <SelectValue placeholder="Select a store type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="SHOP">Shop</SelectItem>
+                <SelectItem value="REFUSE_SITE">Refuse Site</SelectItem>
+                <SelectItem value="SCHOOL">School</SelectItem>
+                <SelectItem value="HOSPITAL">Hospital</SelectItem>
+                <SelectItem value="BAR_RESTAURANT">Bar / Restaurant</SelectItem>
+                <SelectItem value="FUELING_STATION">Fueling Station</SelectItem>
+                <SelectItem value="HOTEL">Hotel</SelectItem>
+                <SelectItem value="RECREATION_PARK">Recreation Park</SelectItem>
+                <SelectItem value="FINANCIAL_INSTITUTION">
+                  Financial Institution
+                </SelectItem>
+                <SelectItem value="RELIGIOUS">Religious Centre</SelectItem>
+                <SelectItem value="OTHER">Other (Specify)</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
+
+          {(selectedStoreType === 'SHOP' || selectedStoreType === 'OTHER') && (
+            <div className="space-y-2">
+              <Label htmlFor="store_type_description">
+                Store Type Description *
+              </Label>
+              <Input
+                id="store_type_description"
+                name="store_type_description"
+                required
+                placeholder="Describe the type of shop or other business..."
+                defaultValue={getInputValue('store_type_description')}
+                maxLength={500}
+              />
+              <p className="text-xs text-muted-foreground">
+                Please provide a detailed description of your store type (1-500
+                characters)
+              </p>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="address">Address *</Label>

@@ -124,9 +124,10 @@ const EditStoreForm = ({
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
-
   const defaultData =
     'data' in store ? store.data : (undefined as StoreInterface | undefined);
+
+  const [selectedStoreType, setSelectedStoreType] = useState<string>('');
 
   const initialState: Response<StoreInterface> & {
     inputs: EditStoreFormData;
@@ -143,6 +144,7 @@ const EditStoreForm = ({
       district_id: defaultData?.district_id ?? undefined,
       address: defaultData?.address ?? '',
       store_type: defaultData?.store_type ?? '',
+      store_type_description: defaultData?.store_type_description ?? '',
       latitude: defaultData?.latitude ?? 0,
       longitude: defaultData?.longitude ?? 0,
       landmarks: defaultData?.landmarks ?? '',
@@ -168,6 +170,14 @@ const EditStoreForm = ({
       '',
   );
   const [state, action, isPending] = useActionState(editStore, initialState);
+
+  useEffect(() => {
+    const storeType = getInputValue('store_type');
+    if (storeType) {
+      setSelectedStoreType(storeType);
+    }
+  }, [state]);
+
   const selectedState = useMemo(() => {
     return locations.find((state) => state.id === selectedStateId);
   }, [selectedStateId, locations]);
@@ -248,6 +258,10 @@ const EditStoreForm = ({
 
   const handleDistrictChange = useCallback((value: string) => {
     setSelectedDistrictId(value);
+  }, []);
+
+  const handleStoreTypeChange = useCallback((value: string) => {
+    setSelectedStoreType(value);
   }, []);
 
   const handleImageSelect = useCallback(
@@ -394,14 +408,52 @@ const EditStoreForm = ({
 
           <div className="space-y-2">
             <Label htmlFor="store_type">Store Type *</Label>
-            <Input
-              id="store_type"
+            <Select
               name="store_type"
               required
-              placeholder="e.g. Supermarket, Pharmacy, Boutique, etc."
               defaultValue={getInputValue('store_type')}
-            />
+              onValueChange={handleStoreTypeChange}
+            >
+              <SelectTrigger id="store_type" className="w-full">
+                <SelectValue placeholder="Select a store type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="SHOP">Shop</SelectItem>
+                <SelectItem value="REFUSE_SITE">Refuse Site</SelectItem>
+                <SelectItem value="SCHOOL">School</SelectItem>
+                <SelectItem value="HOSPITAL">Hospital</SelectItem>
+                <SelectItem value="BAR_RESTAURANT">Bar / Restaurant</SelectItem>
+                <SelectItem value="FUELING_STATION">Fueling Station</SelectItem>
+                <SelectItem value="HOTEL">Hotel</SelectItem>
+                <SelectItem value="RECREATION_PARK">Recreation Park</SelectItem>
+                <SelectItem value="FINANCIAL_INSTITUTION">
+                  Financial Institution
+                </SelectItem>
+                <SelectItem value="RELIGIOUS">Religious Centre</SelectItem>
+                <SelectItem value="OTHER">Other (Specify)</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
+
+          {(selectedStoreType === 'SHOP' || selectedStoreType === 'OTHER') && (
+            <div className="space-y-2">
+              <Label htmlFor="store_type_description">
+                Store Type Description *
+              </Label>
+              <Input
+                id="store_type_description"
+                name="store_type_description"
+                required
+                placeholder="Describe the type of shop or other business..."
+                defaultValue={getInputValue('store_type_description')}
+                maxLength={500}
+              />
+              <p className="text-xs text-muted-foreground">
+                Please provide a detailed description of your store type (1-500
+                characters)
+              </p>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="address">Address *</Label>
