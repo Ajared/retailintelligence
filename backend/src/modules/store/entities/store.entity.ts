@@ -1,3 +1,4 @@
+import { StoreType } from '../types/store.interface';
 import { User } from '~/modules/user/entities/user.entity';
 import { State } from '~/modules/state/entities/state.entity';
 import { Phase } from '~/modules/phase/entities/phase.entity';
@@ -31,7 +32,10 @@ export class Store extends AbstractBaseEntity {
   address: string;
 
   @Column()
-  storeType: string;
+  storeType: StoreType;
+
+  @Column({ type: 'text', nullable: true })
+  storeTypeDescription?: string;
 
   @Column({ type: 'text', nullable: true })
   landmarks?: string;
