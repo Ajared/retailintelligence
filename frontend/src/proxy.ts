@@ -8,7 +8,7 @@ export async function proxy(request: NextRequest) {
 
   if (pathname === '/') {
     if (session && session.user) {
-      if (session.user.role === 'admin') {
+      if (session.user.role === 'admin' || session.user.role === 'super_admin') {
         return NextResponse.redirect(new URL('/admin/stores', request.url));
       } else if (session.user.role === 'user') {
         return NextResponse.redirect(new URL('/user/stores', request.url));
@@ -42,17 +42,17 @@ export async function proxy(request: NextRequest) {
       }
     } else {
       if (isLoginOnlyPage) {
-        if (session.user.role === 'admin') {
+        if (session.user.role === 'admin' || session.user.role === 'super_admin') {
           return NextResponse.redirect(new URL('/admin/stores', request.url));
         } else if (session.user.role === 'user') {
           return NextResponse.redirect(new URL('/user/stores', request.url));
         }
       }
 
-      if (pathname.startsWith('/admin') && session.user.role !== 'admin') {
+      if (pathname.startsWith('/admin') && session.user.role !== 'admin' && session.user.role !== 'super_admin') {
         return NextResponse.redirect(new URL('/user/stores', request.url));
       }
-      if (pathname.startsWith('/user') && session.user.role !== 'user') {
+      if (pathname.startsWith('/user') && session.user.role !== 'user' && session.user.role !== 'super_admin') {
         return NextResponse.redirect(new URL('/admin/stores', request.url));
       }
     }
