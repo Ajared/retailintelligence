@@ -418,6 +418,7 @@ const EditStoreForm = ({
                 <SelectValue placeholder="Select a store type" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="SHOP">Shop</SelectItem>
                 <SelectItem value="REFUSE_SITE">Refuse Site</SelectItem>
                 <SelectItem value="SCHOOL">School</SelectItem>
                 <SelectItem value="HOSPITAL">Hospital</SelectItem>

@@ -260,19 +260,19 @@ export const editStore = async (
 
     rawData = {
       id: getRequiredString('id'),
-      name: getRequiredString('name'),
-      state_id: getRequiredString('state_id'),
-      local_government_id: getRequiredString('local_government_id'),
+      name: getOptionalString('name'),
+      state_id: getOptionalString('state_id'),
+      local_government_id: getOptionalString('local_government_id'),
       phase_id: getOptionalString('phase_id'),
       district_id: getOptionalString('district_id'),
-      address: getRequiredString('address'),
-      store_type: getRequiredString('store_type'),
+      address: getOptionalString('address'),
+      store_type: getOptionalString('store_type'),
       store_type_description: getOptionalString('store_type_description'),
-      latitude: getOptionalNumber('latitude') ?? 0,
-      longitude: getOptionalNumber('longitude') ?? 0,
-      landmarks: getOptionalString('landmarks') ?? '',
+      latitude: getOptionalNumber('latitude'),
+      longitude: getOptionalNumber('longitude'),
+      landmarks: getOptionalString('landmarks'),
       photos: [],
-    } as EditStoreFormData;
+    };
 
     const validatedData = editStoreFormSchema
       .omit({ photos: true })
