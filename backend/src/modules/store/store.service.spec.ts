@@ -45,7 +45,8 @@ describe('StoreService', () => {
     id: '1',
     name: 'Test Store',
     address: '123 Main St',
-    storeType: 'Retail',
+    storeType: 'SHOP' as const,
+    storeTypeDescription: 'Electronics store',
     latitude: 123.456,
     longitude: 78.901,
     localGovernment: {
@@ -146,7 +147,8 @@ describe('StoreService', () => {
       const storeDto: Omit<StoreDto, 'enumeratorId'> = {
         name: 'Test Store',
         address: '123 Main St',
-        storeType: 'Retail',
+        storeType: 'SHOP',
+        storeTypeDescription: 'Electronics store',
         latitude: 123.456,
         longitude: 78.901,
         localGovernmentId: '1',
@@ -172,7 +174,7 @@ describe('StoreService', () => {
       const storeDto: Omit<StoreDto, 'enumeratorId'> = {
         name: 'Test Store',
         address: '123 Main St',
-        storeType: 'Retail',
+        storeType: 'HOSPITAL',
         latitude: 123.456,
         longitude: 78.901,
         localGovernmentId: '1',
@@ -192,6 +194,184 @@ describe('StoreService', () => {
       ).rejects.toMatchObject({
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         message: SYS_MSG.RESOURCE_CREATION_FAILED('Store'),
+      });
+    });
+
+    it('should throw error when SHOP store type is provided without description', async () => {
+      const storeDto: Omit<StoreDto, 'enumeratorId'> = {
+        name: 'Test Store',
+        address: '123 Main St',
+        storeType: 'SHOP',
+        latitude: 123.456,
+        longitude: 78.901,
+        localGovernmentId: '1',
+        stateId: '1',
+      };
+      const enumeratorId = '1';
+
+      await expect(service.createStore(enumeratorId, storeDto)).rejects.toThrow(
+        CustomHttpException,
+      );
+      await expect(
+        service.createStore(enumeratorId, storeDto),
+      ).rejects.toMatchObject({
+        status: HttpStatus.BAD_REQUEST,
+        message:
+          'Store type description is required when store type is SHOP or OTHER',
+      });
+    });
+
+    it('should throw error when OTHER store type is provided without description', async () => {
+      const storeDto: Omit<StoreDto, 'enumeratorId'> = {
+        name: 'Test Store',
+        address: '123 Main St',
+        storeType: 'OTHER',
+        latitude: 123.456,
+        longitude: 78.901,
+        localGovernmentId: '1',
+        stateId: '1',
+      };
+      const enumeratorId = '1';
+
+      await expect(service.createStore(enumeratorId, storeDto)).rejects.toThrow(
+        CustomHttpException,
+      );
+      await expect(
+        service.createStore(enumeratorId, storeDto),
+      ).rejects.toMatchObject({
+        status: HttpStatus.BAD_REQUEST,
+        message:
+          'Store type description is required when store type is SHOP or OTHER',
+      });
+    });
+
+    it('should throw error when SHOP store type has empty string description', async () => {
+      const storeDto: Omit<StoreDto, 'enumeratorId'> = {
+        name: 'Test Store',
+        address: '123 Main St',
+        storeType: 'SHOP',
+        storeTypeDescription: '   ', // whitespace only
+        latitude: 123.456,
+        longitude: 78.901,
+        localGovernmentId: '1',
+        stateId: '1',
+      };
+      const enumeratorId = '1';
+
+      await expect(service.createStore(enumeratorId, storeDto)).rejects.toThrow(
+        CustomHttpException,
+      );
+      await expect(
+        service.createStore(enumeratorId, storeDto),
+      ).rejects.toMatchObject({
+        status: HttpStatus.BAD_REQUEST,
+        message:
+          'Store type description is required when store type is SHOP or OTHER',
+      });
+    });
+
+    it('should throw error when OTHER store type has empty string description', async () => {
+      const storeDto: Omit<StoreDto, 'enumeratorId'> = {
+        name: 'Test Store',
+        address: '123 Main St',
+        storeType: 'OTHER',
+        storeTypeDescription: '', // empty string
+        latitude: 123.456,
+        longitude: 78.901,
+        localGovernmentId: '1',
+        stateId: '1',
+      };
+      const enumeratorId = '1';
+
+      await expect(service.createStore(enumeratorId, storeDto)).rejects.toThrow(
+        CustomHttpException,
+      );
+      await expect(
+        service.createStore(enumeratorId, storeDto),
+      ).rejects.toMatchObject({
+        status: HttpStatus.BAD_REQUEST,
+        message:
+          'Store type description is required when store type is SHOP or OTHER',
+      });
+    });
+
+    it('should create store successfully when SHOP store type has description', async () => {
+      const storeDto: Omit<StoreDto, 'enumeratorId'> = {
+        name: 'Test Store',
+        address: '123 Main St',
+        storeType: 'SHOP',
+        storeTypeDescription: 'Electronics store',
+        latitude: 123.456,
+        longitude: 78.901,
+        localGovernmentId: '1',
+        stateId: '1',
+      };
+      const enumeratorId = '1';
+
+      jest.spyOn(storeModelAction, 'create').mockResolvedValue(mockStore);
+
+      const result = await service.createStore(enumeratorId, storeDto);
+
+      expect(storeModelAction.create).toHaveBeenCalledWith({
+        createPayload: { ...storeDto, enumeratorId },
+        transactionOptions: { useTransaction: false },
+      });
+      expect(result).toEqual({
+        data: mockStore,
+        message: SYS_MSG.RESOURCE_CREATED_SUCCESSFULLY('Store'),
+      });
+    });
+
+    it('should create store successfully when OTHER store type has description', async () => {
+      const storeDto: Omit<StoreDto, 'enumeratorId'> = {
+        name: 'Test Store',
+        address: '123 Main St',
+        storeType: 'OTHER',
+        storeTypeDescription: 'Custom business type',
+        latitude: 123.456,
+        longitude: 78.901,
+        localGovernmentId: '1',
+        stateId: '1',
+      };
+      const enumeratorId = '1';
+
+      jest.spyOn(storeModelAction, 'create').mockResolvedValue(mockStore);
+
+      const result = await service.createStore(enumeratorId, storeDto);
+
+      expect(storeModelAction.create).toHaveBeenCalledWith({
+        createPayload: { ...storeDto, enumeratorId },
+        transactionOptions: { useTransaction: false },
+      });
+      expect(result).toEqual({
+        data: mockStore,
+        message: SYS_MSG.RESOURCE_CREATED_SUCCESSFULLY('Store'),
+      });
+    });
+
+    it('should create store successfully when non-SHOP/OTHER store type is provided without description', async () => {
+      const storeDto: Omit<StoreDto, 'enumeratorId'> = {
+        name: 'Test Store',
+        address: '123 Main St',
+        storeType: 'HOSPITAL',
+        latitude: 123.456,
+        longitude: 78.901,
+        localGovernmentId: '1',
+        stateId: '1',
+      };
+      const enumeratorId = '1';
+
+      jest.spyOn(storeModelAction, 'create').mockResolvedValue(mockStore);
+
+      const result = await service.createStore(enumeratorId, storeDto);
+
+      expect(storeModelAction.create).toHaveBeenCalledWith({
+        createPayload: { ...storeDto, enumeratorId },
+        transactionOptions: { useTransaction: false },
+      });
+      expect(result).toEqual({
+        data: mockStore,
+        message: SYS_MSG.RESOURCE_CREATED_SUCCESSFULLY('Store'),
       });
     });
   });
@@ -347,7 +527,7 @@ describe('StoreService', () => {
       const storeDto: Partial<StoreDto> = {
         name: 'Updated Store',
         address: '456 New St',
-        storeType: 'Retail',
+        storeType: 'HOSPITAL',
         latitude: 123.456,
         longitude: 78.901,
         localGovernmentId: '1',
@@ -378,7 +558,7 @@ describe('StoreService', () => {
       const storeDto: Partial<StoreDto> = {
         name: 'Updated Store',
         address: '456 New St',
-        storeType: 'Retail',
+        storeType: 'HOSPITAL',
         latitude: 123.456,
         longitude: 78.901,
         localGovernmentId: '1',
@@ -397,6 +577,121 @@ describe('StoreService', () => {
       ).rejects.toMatchObject({
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         message: SYS_MSG.RESOURCE_UPDATE_FAILED('Store'),
+      });
+    });
+
+    it('should throw error when updating to SHOP store type without description', async () => {
+      const storeId = '1';
+      const userId = '1';
+      const storeDto: Partial<StoreDto> = {
+        storeType: 'SHOP',
+      };
+
+      await expect(
+        service.updateStore(storeId, userId, storeDto),
+      ).rejects.toThrow(CustomHttpException);
+      await expect(
+        service.updateStore(storeId, userId, storeDto),
+      ).rejects.toMatchObject({
+        status: HttpStatus.BAD_REQUEST,
+        message:
+          'Store type description is required when store type is SHOP or OTHER',
+      });
+    });
+
+    it('should throw error when updating to OTHER store type without description', async () => {
+      const storeId = '1';
+      const userId = '1';
+      const storeDto: Partial<StoreDto> = {
+        storeType: 'OTHER',
+      };
+
+      await expect(
+        service.updateStore(storeId, userId, storeDto),
+      ).rejects.toThrow(CustomHttpException);
+      await expect(
+        service.updateStore(storeId, userId, storeDto),
+      ).rejects.toMatchObject({
+        status: HttpStatus.BAD_REQUEST,
+        message:
+          'Store type description is required when store type is SHOP or OTHER',
+      });
+    });
+
+    it('should update store successfully when SHOP store type has description', async () => {
+      const storeId = '1';
+      const userId = '1';
+      const storeDto: Partial<StoreDto> = {
+        storeType: 'SHOP',
+        storeTypeDescription: 'Electronics store',
+      };
+
+      jest.spyOn(storeModelAction, 'update').mockResolvedValue({
+        ...mockStore,
+        ...storeDto,
+      });
+
+      const result = await service.updateStore(storeId, userId, storeDto);
+
+      expect(storeModelAction.update).toHaveBeenCalledWith({
+        identifierOptions: { id: storeId, enumeratorId: userId },
+        updatePayload: storeDto,
+        transactionOptions: { useTransaction: false },
+      });
+      expect(result).toEqual({
+        data: { ...mockStore, ...storeDto },
+        message: SYS_MSG.RESOURCE_UPDATED_SUCCESSFULLY('Store'),
+      });
+    });
+
+    it('should update store successfully when OTHER store type has description', async () => {
+      const storeId = '1';
+      const userId = '1';
+      const storeDto: Partial<StoreDto> = {
+        storeType: 'OTHER',
+        storeTypeDescription: 'Custom business type',
+      };
+
+      jest.spyOn(storeModelAction, 'update').mockResolvedValue({
+        ...mockStore,
+        ...storeDto,
+      });
+
+      const result = await service.updateStore(storeId, userId, storeDto);
+
+      expect(storeModelAction.update).toHaveBeenCalledWith({
+        identifierOptions: { id: storeId, enumeratorId: userId },
+        updatePayload: storeDto,
+        transactionOptions: { useTransaction: false },
+      });
+      expect(result).toEqual({
+        data: { ...mockStore, ...storeDto },
+        message: SYS_MSG.RESOURCE_UPDATED_SUCCESSFULLY('Store'),
+      });
+    });
+
+    it('should update store successfully when non-SHOP/OTHER store type is provided without description', async () => {
+      const storeId = '1';
+      const userId = '1';
+      const storeDto: Partial<StoreDto> = {
+        storeType: 'HOSPITAL',
+      };
+
+      jest.spyOn(storeModelAction, 'update').mockResolvedValue({
+        ...mockStore,
+        ...storeDto,
+      });
+
+      const result = await service.updateStore(storeId, userId, storeDto);
+
+      expect(storeModelAction.update).toHaveBeenCalledWith({
+        identifierOptions: { id: storeId, enumeratorId: userId },
+        updatePayload: storeDto,
+        transactionOptions: { useTransaction: false },
+      });
+      expect(result).toEqual({
+        data: { ...mockStore, ...storeDto },
+        message: SYS_MSG.RESOURCE_UPDATED_SUCCESSFULLY('Store'),
       });
     });
   });

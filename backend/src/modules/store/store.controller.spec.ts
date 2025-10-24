@@ -14,7 +14,8 @@ describe('StoreController', () => {
     id: '1',
     name: 'Test Store',
     address: '123 Main St',
-    storeType: 'Retail',
+    storeType: 'SHOP' as const,
+    storeTypeDescription: 'Electronics store',
     latitude: 123.456,
     longitude: 78.901,
     localGovernmentId: '1',
@@ -58,7 +59,8 @@ describe('StoreController', () => {
       const storeDto: Omit<StoreDto, 'enumeratorId'> = {
         name: 'Test Store',
         address: '123 Main St',
-        storeType: 'Retail',
+        storeType: 'SHOP',
+        storeTypeDescription: 'Electronics store',
         latitude: 123.456,
         longitude: 78.901,
         localGovernmentId: '1',
@@ -85,7 +87,7 @@ describe('StoreController', () => {
       const storeDto: Omit<StoreDto, 'enumeratorId'> = {
         name: 'Test Store',
         address: '123 Main St',
-        storeType: 'Retail',
+        storeType: 'HOSPITAL',
         latitude: 123.456,
         longitude: 78.901,
         localGovernmentId: '1',

@@ -36,7 +36,7 @@ describe('AdminService', () => {
     id: '1',
     name: 'Test Store',
     address: '123 Main St',
-    storeType: 'Retail',
+    storeType: 'SHOP' as const,
     latitude: 123.456,
     longitude: 78.901,
     localGovernment: {

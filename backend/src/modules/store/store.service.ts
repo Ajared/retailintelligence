@@ -27,6 +27,17 @@ export class StoreService {
     enumeratorId: string,
     storeDto: Omit<StoreDto, 'enumeratorId'>,
   ): Promise<AbstractResponseDto<StoreInterface>> {
+    if (
+      (storeDto.storeType === 'SHOP' || storeDto.storeType === 'OTHER') &&
+      (!storeDto.storeTypeDescription ||
+        storeDto.storeTypeDescription.trim() === '')
+    ) {
+      throw new CustomHttpException(
+        'Store type description is required when store type is SHOP or OTHER',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     const createStorePayload: CreateStoreRecordOptions = {
       createPayload: { ...storeDto, enumeratorId },
       transactionOptions: { useTransaction: false },
@@ -144,6 +155,18 @@ export class StoreService {
     userId: string,
     storeDto: Partial<StoreDto>,
   ): Promise<AbstractResponseDto<StoreInterface>> {
+    if (
+      storeDto.storeType &&
+      (storeDto.storeType === 'SHOP' || storeDto.storeType === 'OTHER') &&
+      (!storeDto.storeTypeDescription ||
+        storeDto.storeTypeDescription.trim() === '')
+    ) {
+      throw new CustomHttpException(
+        'Store type description is required when store type is SHOP or OTHER',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     const updateStorePayload: UpdateStoreRecordOptions = {
       identifierOptions: { id, enumeratorId: userId },
       updatePayload: storeDto,

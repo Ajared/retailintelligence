@@ -5,8 +5,12 @@ import {
   IsOptional,
   IsLatitude,
   IsLongitude,
+  IsIn,
+  ValidateIf,
+  Length,
 } from 'class-validator';
 import { QueryValidator } from '~/helpers/query.helper';
+import { StoreType } from '../types/store.interface';
 
 export class StoreDto {
   @IsString()
@@ -27,7 +31,27 @@ export class StoreDto {
 
   @IsString()
   @IsNotEmpty()
-  storeType: string;
+  @IsIn([
+    'SHOP',
+    'REFUSE_SITE',
+    'SCHOOL',
+    'HOSPITAL',
+    'BAR_RESTAURANT',
+    'FUELING_STATION',
+    'HOTEL',
+    'RECREATION_PARK',
+    'FINANCIAL_INSTITUTION',
+    'RELIGIOUS',
+    'OTHER',
+  ])
+  storeType: StoreType;
+
+  @IsString()
+  @IsOptional()
+  @Length(1, 500, { message: 'Store type description must be between 1 and 500 characters' })
+  @ValidateIf((o) => o.storeType === 'SHOP' || o.storeType === 'OTHER')
+  @IsNotEmpty()
+  storeTypeDescription?: string;
 
   @IsString()
   @IsOptional()
@@ -81,6 +105,23 @@ export class StoreQueryValidator extends QueryValidator {
   @IsString()
   @IsOptional()
   districtId?: string;
+
+  @IsString()
+  @IsOptional()
+  @IsIn([
+    'SHOP',
+    'REFUSE_SITE',
+    'SCHOOL',
+    'HOSPITAL',
+    'BAR_RESTAURANT',
+    'FUELING_STATION',
+    'HOTEL',
+    'RECREATION_PARK',
+    'FINANCIAL_INSTITUTION',
+    'RELIGIOUS',
+    'OTHER',
+  ])
+  storeType?: StoreType;
 
   @IsOptional()
   @IsLatitude()
