@@ -9,12 +9,19 @@ export async function proxy(request: NextRequest) {
   if (pathname === '/') {
     if (session && session.user) {
       if (session.user.role === 'admin') {
-        return NextResponse.redirect(new URL('/admin', request.url));
+        return NextResponse.redirect(new URL('/admin/stores', request.url));
       } else if (session.user.role === 'user') {
-        return NextResponse.redirect(new URL('/user', request.url));
+        return NextResponse.redirect(new URL('/user/stores', request.url));
       }
     }
     return NextResponse.next();
+  }
+
+  if (pathname === '/admin') {
+    return NextResponse.redirect(new URL('/admin/stores', request.url));
+  }
+  if (pathname === '/user') {
+    return NextResponse.redirect(new URL('/user/stores', request.url));
   }
 
   if (pathname.startsWith('/admin') || pathname.startsWith('/user')) {
@@ -23,10 +30,10 @@ export async function proxy(request: NextRequest) {
     }
 
     if (pathname.startsWith('/admin') && session.user.role !== 'admin') {
-      return NextResponse.redirect(new URL('/user', request.url));
+      return NextResponse.redirect(new URL('/user/stores', request.url));
     }
     if (pathname.startsWith('/user') && session.user.role !== 'user') {
-      return NextResponse.redirect(new URL('/admin', request.url));
+      return NextResponse.redirect(new URL('/admin/stores', request.url));
     }
   }
 
