@@ -17,6 +17,7 @@ export interface StoreInterface extends AbstractBaseInterface {
   district?: DistrictInterface;
   address: string;
   store_type: string;
+  store_type_description?: string;
   landmarks?: string;
   photos?: string[];
   latitude: number;
