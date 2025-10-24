@@ -36,7 +36,7 @@ export default function Footer() {
       </div>
       <div className="pt-6 lg:pt-12 text-sm text-gray-400 text-center">
         <p>
-          Copyright &copy; 2025
+          Copyright &copy; 2025{' '}
           <a href="https://ajared.ng" target="_blank" rel="noopener noreferrer">
             Ajared Research Inc.
           </a>{' '}
