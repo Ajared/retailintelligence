@@ -88,18 +88,30 @@ export const addStore = async (
   let rawData: AddStoreFormData | null = null;
 
   try {
+    const getStringValue = (key: string): string => {
+      const value = formData.get(key);
+      return value ? String(value) : '';
+    };
+
+    const getNumberValue = (key: string): number => {
+      const value = formData.get(key);
+      if (!value) return 0;
+      const num = Number(value);
+      return isNaN(num) ? 0 : num;
+    };
+
     rawData = {
-      name: formData.get('name') as string,
-      state_id: formData.get('state_id') as string,
-      local_government_id: formData.get('local_government_id') as string,
-      phase_id: formData.get('phase_id') as string,
-      district_id: formData.get('district_id') as string,
-      address: formData.get('address') as string,
-      store_type: formData.get('store_type') as string,
-      store_type_description: formData.get('store_type_description') as string,
-      latitude: Number(formData.get('latitude')),
-      longitude: Number(formData.get('longitude')),
-      landmarks: formData.get('landmarks') as string,
+      name: getStringValue('name'),
+      state_id: getStringValue('state_id'),
+      local_government_id: getStringValue('local_government_id'),
+      phase_id: getStringValue('phase_id'),
+      district_id: getStringValue('district_id'),
+      address: getStringValue('address'),
+      store_type: getStringValue('store_type'),
+      store_type_description: getStringValue('store_type_description'),
+      latitude: getNumberValue('latitude'),
+      longitude: getNumberValue('longitude'),
+      landmarks: getStringValue('landmarks'),
       photos: [],
     };
 
@@ -228,19 +240,19 @@ export const editStore = async (
   try {
     const getOptionalString = (key: string): string | undefined => {
       const val = formData.get(key);
-      if (typeof val !== 'string') return undefined;
-      const s = val.trim();
+      if (!val) return undefined;
+      const s = String(val).trim();
       return s.length > 0 ? s : undefined;
     };
     const getRequiredString = (key: string): string => {
       const val = formData.get(key);
-      if (typeof val !== 'string') return '';
-      return val;
+      if (!val) return '';
+      return String(val);
     };
     const getOptionalNumber = (key: string): number | undefined => {
       const val = formData.get(key);
-      if (typeof val !== 'string') return undefined;
-      const s = val.trim();
+      if (!val) return undefined;
+      const s = String(val).trim();
       if (s.length === 0) return undefined;
       const n = Number(s);
       return Number.isNaN(n) ? undefined : n;

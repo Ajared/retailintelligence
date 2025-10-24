@@ -400,13 +400,19 @@ export function AddStoreForm({
                 <SelectValue placeholder="Select a store type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="SUPERMARKET">Supermarket</SelectItem>
-                <SelectItem value="PHARMACY">Pharmacy</SelectItem>
                 <SelectItem value="SHOP">Shop</SelectItem>
-                <SelectItem value="RESTAURANT">Restaurant</SelectItem>
+                <SelectItem value="REFUSE_SITE">Refuse Site</SelectItem>
+                <SelectItem value="SCHOOL">School</SelectItem>
+                <SelectItem value="HOSPITAL">Hospital</SelectItem>
+                <SelectItem value="BAR_RESTAURANT">Bar / Restaurant</SelectItem>
+                <SelectItem value="FUELING_STATION">Fueling Station</SelectItem>
                 <SelectItem value="HOTEL">Hotel</SelectItem>
-                <SelectItem value="MARKET">Market</SelectItem>
-                <SelectItem value="OTHER">Other</SelectItem>
+                <SelectItem value="RECREATION_PARK">Recreation Park</SelectItem>
+                <SelectItem value="FINANCIAL_INSTITUTION">
+                  Financial Institution
+                </SelectItem>
+                <SelectItem value="RELIGIOUS">Religious Centre</SelectItem>
+                <SelectItem value="OTHER">Other (Specify)</SelectItem>
               </SelectContent>
             </Select>
           </div>

@@ -9,10 +9,6 @@ export const addStoreFormSchema = z
     store_type: z.string().min(1, 'Store type is required'),
     store_type_description: z
       .string()
-      .min(
-        1,
-        'Store type description is required when store type is SHOP or OTHER',
-      )
       .max(500, 'Store type description must be 500 characters or less')
       .optional(),
     landmarks: z.string().optional(),
