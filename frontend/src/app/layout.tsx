@@ -5,6 +5,7 @@ import type { Metadata } from 'next';
 import Loader from '~/components/loader';
 import { Outfit } from 'next/font/google';
 import { Toaster } from '~/components/ui/sonner';
+import { Analytics } from '@vercel/analytics/next';
 
 const outfit = Outfit({
   variable: '--font-outfit',
@@ -27,6 +28,7 @@ export default function RootLayout({
         <Providers>
           <Suspense fallback={<Loader />}>{children}</Suspense>
           <Toaster />
+          <Analytics />
         </Providers>
       </body>
     </html>

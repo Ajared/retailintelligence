@@ -31,6 +31,7 @@
     "@react-spring/web": "^10.0.3",
     "@t3-oss/env-nextjs": "^0.13.8",
     "@uploadthing/react": "^7.3.3",
+    "@vercel/analytics": "^1.5.0",
     "babel-plugin-react-compiler": "^1.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
