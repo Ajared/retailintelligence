@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { LatLngExpression } from 'leaflet';
-import { Search, Loader2, Map } from 'lucide-react';
+import { Search, Loader2, Map as MapIcon } from 'lucide-react';
 import {
   useCallback,
   useEffect,
@@ -332,7 +332,7 @@ export default function Content({
         <h1 className="text-2xl font-bold tracking-tight">Locations</h1>
         {/* <Button asChild className="cursor-pointer">
           <Link href="/admin/locations">
-            <Map className="h-4 w-4" />
+            <MapIcon className="h-4 w-4" />
             View Locations
           </Link>
         </Button> */}
