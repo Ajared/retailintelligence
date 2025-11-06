@@ -23,7 +23,7 @@ import React, {
 } from 'react';
 import { toast } from 'sonner';
 import { editStore } from '~/app/user/actions';
-import { AddStoreFormData, EditStoreFormData } from '~/app/user/schema';
+import { EditStoreFormData } from '~/app/user/schema';
 import { Alert, AlertDescription } from '~/components/ui/alert';
 import { Button } from '~/components/ui/button';
 import {
@@ -165,18 +165,20 @@ const EditStoreForm = ({
   const [selectedPhaseId, setSelectedPhaseId] = useState<string | undefined>(
     user?.assigned_phase_id || defaultData?.phase_id || '',
   );
-  const [selectedDistrictId, setSelectedDistrictId] = useState<
+  const [selectedLocalGovernmentId, setSelectedLocalGovernmentId] = useState<
     string | undefined
   >(
-    user?.assigned_district_id ||
-      defaultData?.district_id ||
+    user?.assigned_local_government_id ||
       defaultData?.local_government_id ||
       '',
   );
+  const [selectedDistrictId, setSelectedDistrictId] = useState<
+    string | undefined
+  >(user?.assigned_district_id || defaultData?.district_id || '');
   const [state, action, isPending] = useActionState(editStore, initialState);
 
   const getInputValue = useCallback(
-    (key: keyof AddStoreFormData): string => {
+    (key: keyof EditStoreFormData): string => {
       if (
         state &&
         typeof state === 'object' &&
@@ -210,6 +212,10 @@ const EditStoreForm = ({
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const latitudeRef = useRef<HTMLInputElement>(null);
   const longitudeRef = useRef<HTMLInputElement>(null);
+
+  // Geolocation configuration
+  const GEOLOCATION_TIMEOUT = 10000; // 10 seconds
+  const GEOLOCATION_MAXIMUM_AGE = 60000; // 1 minute
   const [keptExistingPhotos, setKeptExistingPhotos] = useState<string[]>(
     Array.isArray(defaultData?.photos) ? defaultData.photos : [],
   );
@@ -251,8 +257,8 @@ const EditStoreForm = ({
       },
       {
         enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 60000,
+        timeout: GEOLOCATION_TIMEOUT,
+        maximumAge: GEOLOCATION_MAXIMUM_AGE,
       },
     );
   }, []);
@@ -349,6 +355,7 @@ const EditStoreForm = ({
       }
 
       const state = locations.find((s) => s.id === value);
+      setSelectedLocalGovernmentId('');
       if (
         !state ||
         (state.name !== 'FCT Abuja' && state.id !== phases[0]?.state_id)
@@ -549,10 +556,10 @@ const EditStoreForm = ({
                 required
                 value={
                   user?.assigned_local_government_id ||
-                  selectedDistrictId ||
+                  selectedLocalGovernmentId ||
                   getInputValue('local_government_id')
                 }
-                onValueChange={setSelectedDistrictId}
+                onValueChange={setSelectedLocalGovernmentId}
                 disabled={
                   !selectedStateId || !!user?.assigned_local_government_id
                 }

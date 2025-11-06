@@ -130,12 +130,19 @@ export function AddStoreForm({
   const [selectedPhaseId, setSelectedPhaseId] = useState<string | undefined>(
     user?.assigned_phase_id || '',
   );
+  const [selectedLocalGovernmentId, setSelectedLocalGovernmentId] = useState<
+    string | undefined
+  >(user?.assigned_local_government_id || '');
   const [selectedDistrictId, setSelectedDistrictId] = useState<
     string | undefined
   >(user?.assigned_district_id || '');
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const latitudeRef = useRef<HTMLInputElement>(null);
   const longitudeRef = useRef<HTMLInputElement>(null);
+
+  // Geolocation configuration
+  const GEOLOCATION_TIMEOUT = 10000; // 10 seconds
+  const GEOLOCATION_MAXIMUM_AGE = 60000; // 1 minute
 
   const initialState: Response<StoreInterface> & {
     inputs: AddStoreFormData;
@@ -235,8 +242,8 @@ export function AddStoreForm({
       },
       {
         enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 60000,
+        timeout: GEOLOCATION_TIMEOUT,
+        maximumAge: GEOLOCATION_MAXIMUM_AGE,
       },
     );
   }, []);
@@ -335,6 +342,7 @@ export function AddStoreForm({
       }
 
       const state = locations.find((s) => s.id === value);
+      setSelectedLocalGovernmentId('');
       if (
         !state ||
         (state.name !== 'FCT Abuja' && state.id !== phases[0]?.state_id)
@@ -495,10 +503,10 @@ export function AddStoreForm({
                 required
                 value={
                   user?.assigned_local_government_id ||
-                  selectedDistrictId ||
+                  selectedLocalGovernmentId ||
                   getInputValue('local_government_id')
                 }
-                onValueChange={setSelectedDistrictId}
+                onValueChange={setSelectedLocalGovernmentId}
                 disabled={
                   !selectedStateId || !!user?.assigned_local_government_id
                 }
