@@ -22,9 +22,9 @@ export default async function StoreDetailsPage({
   return (
     <div className="w-full mx-auto p-6 space-y-6">
       <Button asChild variant="outline">
-        <Link href="/user/stores" className="flex items-center gap-2">
+        <Link href="/user/locations" className="flex items-center gap-2">
           <ChevronLeft className="w-4 h-4" />
-          All Stores
+          All Locations
         </Link>
       </Button>
       <div className="space-y-4 border rounded-md p-6 bg-background">

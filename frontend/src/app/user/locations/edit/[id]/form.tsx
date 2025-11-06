@@ -19,10 +19,11 @@ import React, {
   useMemo,
   useRef,
   useState,
+  useEffectEvent,
 } from 'react';
 import { toast } from 'sonner';
 import { editStore } from '~/app/user/actions';
-import { AddStoreFormData, EditStoreFormData } from '~/app/user/schema';
+import { EditStoreFormData } from '~/app/user/schema';
 import { Alert, AlertDescription } from '~/components/ui/alert';
 import { Button } from '~/components/ui/button';
 import {
@@ -164,42 +165,20 @@ const EditStoreForm = ({
   const [selectedPhaseId, setSelectedPhaseId] = useState<string | undefined>(
     user?.assigned_phase_id || defaultData?.phase_id || '',
   );
-  const [selectedDistrictId, setSelectedDistrictId] = useState<
+  const [selectedLocalGovernmentId, setSelectedLocalGovernmentId] = useState<
     string | undefined
   >(
-    user?.assigned_district_id ||
-      defaultData?.district_id ||
+    user?.assigned_local_government_id ||
       defaultData?.local_government_id ||
       '',
   );
+  const [selectedDistrictId, setSelectedDistrictId] = useState<
+    string | undefined
+  >(user?.assigned_district_id || defaultData?.district_id || '');
   const [state, action, isPending] = useActionState(editStore, initialState);
 
-  useEffect(() => {
-    const storeType = getInputValue('store_type');
-    if (storeType) {
-      setSelectedStoreType(storeType);
-    }
-  }, [state]);
-
-  const selectedState = useMemo(() => {
-    return locations.find((state) => state.id === selectedStateId);
-  }, [selectedStateId, locations]);
-  const [isGettingLocation, setIsGettingLocation] = useState(false);
-  const latitudeRef = useRef<HTMLInputElement>(null);
-  const longitudeRef = useRef<HTMLInputElement>(null);
-  const [keptExistingPhotos, setKeptExistingPhotos] = useState<string[]>(
-    Array.isArray(defaultData?.photos) ? defaultData.photos : [],
-  );
-
-  const showPhaseAndDistrict = useMemo(() => {
-    if (!selectedState) return false;
-    return (
-      selectedState.name === 'FCT Abuja' ||
-      selectedState.id === phases[0]?.state_id
-    );
-  }, [selectedState, phases]);
   const getInputValue = useCallback(
-    (key: keyof AddStoreFormData): string => {
+    (key: keyof EditStoreFormData): string => {
       if (
         state &&
         typeof state === 'object' &&
@@ -214,6 +193,40 @@ const EditStoreForm = ({
     },
     [state],
   );
+
+  const onStateChange = useEffectEvent(() => {
+    const storeType = getInputValue('store_type');
+    if (storeType) {
+      setSelectedStoreType(storeType);
+    }
+  });
+
+  useEffect(() => {
+    onStateChange();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state]);
+
+  const selectedState = useMemo(() => {
+    return locations.find((state) => state.id === selectedStateId);
+  }, [selectedStateId, locations]);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const latitudeRef = useRef<HTMLInputElement>(null);
+  const longitudeRef = useRef<HTMLInputElement>(null);
+
+  // Geolocation configuration
+  const GEOLOCATION_TIMEOUT = 10000; // 10 seconds
+  const GEOLOCATION_MAXIMUM_AGE = 60000; // 1 minute
+  const [keptExistingPhotos, setKeptExistingPhotos] = useState<string[]>(
+    Array.isArray(defaultData?.photos) ? defaultData.photos : [],
+  );
+
+  const showPhaseAndDistrict = useMemo(() => {
+    if (!selectedState) return false;
+    return (
+      selectedState.name === 'FCT Abuja' ||
+      selectedState.id === phases[0]?.state_id
+    );
+  }, [selectedState, phases]);
 
   const filteredDistricts = useMemo(() => {
     if (!showPhaseAndDistrict || !selectedPhaseId) return [];
@@ -244,8 +257,8 @@ const EditStoreForm = ({
       },
       {
         enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 60000,
+        timeout: GEOLOCATION_TIMEOUT,
+        maximumAge: GEOLOCATION_MAXIMUM_AGE,
       },
     );
   }, []);
@@ -342,6 +355,7 @@ const EditStoreForm = ({
       }
 
       const state = locations.find((s) => s.id === value);
+      setSelectedLocalGovernmentId('');
       if (
         !state ||
         (state.name !== 'FCT Abuja' && state.id !== phases[0]?.state_id)
@@ -380,23 +394,23 @@ const EditStoreForm = ({
     return (
       <Card className="w-full max-w-2xl mx-auto">
         <CardHeader>
-          <CardTitle>Error Loading Store</CardTitle>
+          <CardTitle>Error Loading Location</CardTitle>
           <CardDescription>
-            Unable to load store data. Please try again.
+            Unable to load location data. Please try again.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Alert variant="destructive">
             <AlertDescription>
-              {store.error || 'Failed to load store data'}
+              {store.error || 'Failed to load location data'}
             </AlertDescription>
           </Alert>
         </CardContent>
         <CardFooter>
           <Button asChild variant="outline">
-            <Link href="/user/stores" className="flex items-center gap-2">
+            <Link href="/user/locations" className="flex items-center gap-2">
               <ChevronLeft className="w-4 h-4" />
-              <span>Back to Stores</span>
+              <span>Back to Locations</span>
             </Link>
           </Button>
         </CardFooter>
@@ -408,14 +422,16 @@ const EditStoreForm = ({
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader className="flex flex-row justify-between items-center">
         <div className="flex flex-col gap-2">
-          <CardTitle>Edit Store</CardTitle>
-          <CardDescription>Update the details of this store.</CardDescription>
+          <CardTitle>Edit Location</CardTitle>
+          <CardDescription>
+            Update the details of this location.
+          </CardDescription>
         </div>
         <Button asChild variant="outline">
-          <Link href="/user/stores" className="flex items-center gap-2">
+          <Link href="/user/locations" className="flex items-center gap-2">
             <ChevronLeft className="w-4 h-4" />
             <span className="block md:hidden">Back</span>
-            <span className="hidden md:block">Back to Stores</span>
+            <span className="hidden md:block">Back to Locations</span>
           </Link>
         </Button>
       </CardHeader>
@@ -428,18 +444,18 @@ const EditStoreForm = ({
         <CardContent className="space-y-4">
           <input type="hidden" name="id" value={initialState.inputs.id} />
           <div className="space-y-2">
-            <Label htmlFor="name">Store Name *</Label>
+            <Label htmlFor="name">Location Name *</Label>
             <Input
               id="name"
               name="name"
               required
               defaultValue={getInputValue('name')}
-              placeholder="Enter store name"
+              placeholder="Enter location name"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="store_type">Store Type *</Label>
+            <Label htmlFor="store_type">Location Type *</Label>
             <Select
               name="store_type"
               required
@@ -447,7 +463,7 @@ const EditStoreForm = ({
               onValueChange={handleStoreTypeChange}
             >
               <SelectTrigger id="store_type" className="w-full">
-                <SelectValue placeholder="Select a store type" />
+                <SelectValue placeholder="Select a location type" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="SHOP">Shop</SelectItem>
@@ -470,7 +486,7 @@ const EditStoreForm = ({
           {(selectedStoreType === 'SHOP' || selectedStoreType === 'OTHER') && (
             <div className="space-y-2">
               <Label htmlFor="store_type_description">
-                Store Type Description *
+                Location Type Description *
               </Label>
               <Input
                 id="store_type_description"
@@ -494,7 +510,7 @@ const EditStoreForm = ({
               name="address"
               required
               defaultValue={getInputValue('address')}
-              placeholder="Enter store address"
+              placeholder="Enter location address"
             />
           </div>
 
@@ -540,10 +556,10 @@ const EditStoreForm = ({
                 required
                 value={
                   user?.assigned_local_government_id ||
-                  selectedDistrictId ||
+                  selectedLocalGovernmentId ||
                   getInputValue('local_government_id')
                 }
-                onValueChange={setSelectedDistrictId}
+                onValueChange={setSelectedLocalGovernmentId}
                 disabled={
                   !selectedStateId || !!user?.assigned_local_government_id
                 }
@@ -837,7 +853,7 @@ const EditStoreForm = ({
             disabled={isPending}
           >
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isPending ? 'Processing' : 'Edit Store'}
+            {isPending ? 'Processing' : 'Edit Location'}
           </Button>
         </CardFooter>
       </form>

@@ -48,7 +48,7 @@ export function ForgotPasswordForm() {
         href="/"
         className="flex items-center justify-center text-2xl font-bold text-center mb-8"
       >
-        Retail Intelligence
+        Retailytics
       </Link>
       <Card className="bg-card overflow-hidden rounded-lg border shadow-2xl p-0">
         <div className="grid min-h-[360px] lg:min-h-[480px] lg:grid-cols-2">

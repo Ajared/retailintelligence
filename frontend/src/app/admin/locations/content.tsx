@@ -1,9 +1,8 @@
 'use client';
 
-import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { LatLngExpression } from 'leaflet';
-import { PackagePlus, Search, Loader2 } from 'lucide-react';
+import { Search, Loader2 } from 'lucide-react';
 import {
   useCallback,
   useEffect,
@@ -12,9 +11,8 @@ import {
   useState,
   useTransition,
 } from 'react';
-import { getUserMapData, getAllStoresForUser } from '../actions';
+import { getAdminMapData, getAllStores } from '../actions';
 import { StoreInterface } from '~/types/store';
-import { Button } from '~/components/ui/button';
 import { Input } from '~/components/ui/input';
 import {
   ContextMenu,
@@ -188,7 +186,7 @@ export default function Content({
         }
 
         startTransition(() => {
-          getUserMapData(bounds, {
+          getAdminMapData(bounds, {
             page: 1,
             limit: 300,
             sort: 'ASC',
@@ -223,7 +221,15 @@ export default function Content({
       startTransitionAllStores(() => {
         const trimmed = name?.trim();
         const nameParam = trimmed && trimmed.length > 0 ? trimmed : undefined;
-        getAllStoresForUser(page, 50, 'ASC', undefined, undefined, nameParam)
+        getAllStores(
+          page,
+          50,
+          'ASC',
+          undefined,
+          undefined,
+          undefined,
+          nameParam,
+        )
           .then((response) => {
             if (allStoresQueryKeyRef.current !== key) return;
             if ('error' in response) {
@@ -323,13 +329,13 @@ export default function Content({
   return (
     <div className="space-y-4 p-4 md:p-6">
       <div className="flex w-full items-center justify-between gap-2">
-        <h1 className="text-2xl font-bold tracking-tight">Stores</h1>
-        <Button asChild className="cursor-pointer">
-          <Link href="/user/stores/add">
-            <PackagePlus className="h-4 w-4" />
-            Add Store
+        <h1 className="text-2xl font-bold tracking-tight">Locations</h1>
+        {/* <Button asChild className="cursor-pointer">
+          <Link href="/admin/locations">
+            <MapIcon className="h-4 w-4" />
+            View Locations
           </Link>
-        </Button>
+        </Button> */}
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
@@ -383,7 +389,7 @@ export default function Content({
             >
               {allStores.length === 0 && !isPendingAllStores ? (
                 <div className="p-3 text-sm text-muted-foreground">
-                  No stores found.
+                  No locations found.
                 </div>
               ) : (
                 <div className="space-y-1">
@@ -407,11 +413,6 @@ export default function Content({
                         </div>
                       </ContextMenuTrigger>
                       <ContextMenuContent>
-                        <ContextMenuItem>
-                          <Link href={`/user/stores/edit/${store.id}`}>
-                            Edit Store
-                          </Link>
-                        </ContextMenuItem>
                         <ContextMenuItem
                           onClick={() => {
                             setFocus({
@@ -430,7 +431,7 @@ export default function Content({
                             setIsDetailsOpen(true);
                           }}
                         >
-                          View Store Details
+                          View Location Details
                         </ContextMenuItem>
                       </ContextMenuContent>
                     </ContextMenu>

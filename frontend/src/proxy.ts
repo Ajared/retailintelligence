@@ -12,19 +12,19 @@ export async function proxy(request: NextRequest) {
         session.user.role === 'admin' ||
         session.user.role === 'super_admin'
       ) {
-        return NextResponse.redirect(new URL('/admin/stores', request.url));
+        return NextResponse.redirect(new URL('/admin/locations', request.url));
       } else if (session.user.role === 'user') {
-        return NextResponse.redirect(new URL('/user/stores', request.url));
+        return NextResponse.redirect(new URL('/user/locations', request.url));
       }
     }
     return NextResponse.next();
   }
 
   if (pathname === '/admin') {
-    return NextResponse.redirect(new URL('/admin/stores', request.url));
+    return NextResponse.redirect(new URL('/admin/locations', request.url));
   }
   if (pathname === '/user') {
-    return NextResponse.redirect(new URL('/user/stores', request.url));
+    return NextResponse.redirect(new URL('/user/locations', request.url));
   }
 
   const authPages = [
@@ -49,9 +49,11 @@ export async function proxy(request: NextRequest) {
           session.user.role === 'admin' ||
           session.user.role === 'super_admin'
         ) {
-          return NextResponse.redirect(new URL('/admin/stores', request.url));
+          return NextResponse.redirect(
+            new URL('/admin/locations', request.url),
+          );
         } else if (session.user.role === 'user') {
-          return NextResponse.redirect(new URL('/user/stores', request.url));
+          return NextResponse.redirect(new URL('/user/locations', request.url));
         }
       }
 
@@ -60,14 +62,14 @@ export async function proxy(request: NextRequest) {
         session.user.role !== 'admin' &&
         session.user.role !== 'super_admin'
       ) {
-        return NextResponse.redirect(new URL('/user/stores', request.url));
+        return NextResponse.redirect(new URL('/user/locations', request.url));
       }
       if (
         pathname.startsWith('/user') &&
         session.user.role !== 'user' &&
         session.user.role !== 'super_admin'
       ) {
-        return NextResponse.redirect(new URL('/admin/stores', request.url));
+        return NextResponse.redirect(new URL('/admin/locations', request.url));
       }
     }
   }

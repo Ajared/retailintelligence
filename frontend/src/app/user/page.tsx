@@ -1,4 +1,4 @@
 import { redirect } from 'next/navigation';
 export default async function AdminPage() {
-  redirect('/user/stores');
+  redirect('/user/locations');
 }

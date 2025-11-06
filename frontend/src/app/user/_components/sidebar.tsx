@@ -50,10 +50,8 @@ export function AppSidebar({ session }: { session: Session | null }) {
               asChild
             >
               <Link href="/" className="flex items-center gap-2">
-                <span className="truncate font-semibold text-foreground">
-                  Retail
-                  <br />
-                  Intelligence
+                <span className="truncate font-semibold text-foreground text-lg">
+                  Retailytics
                 </span>
               </Link>
             </SidebarMenuButton>

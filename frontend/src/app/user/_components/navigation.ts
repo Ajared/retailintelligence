@@ -1,9 +1,9 @@
-import { Store } from 'lucide-react';
+import { Map } from 'lucide-react';
 
 export const navigationItems = [
   {
-    title: 'Stores',
-    icon: Store,
-    url: '/user/stores' as const,
+    title: 'Locations',
+    icon: Map,
+    url: '/user/locations' as const,
   },
 ] as const;

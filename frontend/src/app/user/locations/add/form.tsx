@@ -8,6 +8,7 @@ import {
   useMemo,
   useCallback,
   startTransition,
+  useEffectEvent,
 } from 'react';
 import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
@@ -129,12 +130,19 @@ export function AddStoreForm({
   const [selectedPhaseId, setSelectedPhaseId] = useState<string | undefined>(
     user?.assigned_phase_id || '',
   );
+  const [selectedLocalGovernmentId, setSelectedLocalGovernmentId] = useState<
+    string | undefined
+  >(user?.assigned_local_government_id || '');
   const [selectedDistrictId, setSelectedDistrictId] = useState<
     string | undefined
   >(user?.assigned_district_id || '');
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const latitudeRef = useRef<HTMLInputElement>(null);
   const longitudeRef = useRef<HTMLInputElement>(null);
+
+  // Geolocation configuration
+  const GEOLOCATION_TIMEOUT = 10000; // 10 seconds
+  const GEOLOCATION_MAXIMUM_AGE = 60000; // 1 minute
 
   const initialState: Response<StoreInterface> & {
     inputs: AddStoreFormData;
@@ -158,14 +166,34 @@ export function AddStoreForm({
 
   const [state, action, isPending] = useActionState(addStore, initialState);
 
+  const getInputValue = useCallback(
+    (key: keyof AddStoreFormData): string => {
+      if (
+        state &&
+        typeof state === 'object' &&
+        'inputs' in state &&
+        state.inputs &&
+        state.inputs[key] !== undefined
+      ) {
+        return String(state.inputs[key]);
+      }
+      return '';
+    },
+    [state],
+  );
+
   const [selectedStoreType, setSelectedStoreType] = useState<string>('');
 
-  // Initialize selectedStoreType from form state
-  useEffect(() => {
+  const onStateChange = useEffectEvent(() => {
     const storeType = getInputValue('store_type');
     if (storeType) {
       setSelectedStoreType(storeType);
     }
+  });
+
+  useEffect(() => {
+    onStateChange();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
 
   const selectedState = useMemo(() => {
@@ -214,27 +242,11 @@ export function AddStoreForm({
       },
       {
         enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 60000,
+        timeout: GEOLOCATION_TIMEOUT,
+        maximumAge: GEOLOCATION_MAXIMUM_AGE,
       },
     );
   }, []);
-
-  const getInputValue = useCallback(
-    (key: keyof AddStoreFormData): string => {
-      if (
-        state &&
-        typeof state === 'object' &&
-        'inputs' in state &&
-        state.inputs &&
-        state.inputs[key] !== undefined
-      ) {
-        return String(state.inputs[key]);
-      }
-      return '';
-    },
-    [state],
-  );
 
   const handleImageSelect = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -330,6 +342,7 @@ export function AddStoreForm({
       }
 
       const state = locations.find((s) => s.id === value);
+      setSelectedLocalGovernmentId('');
       if (
         !state ||
         (state.name !== 'FCT Abuja' && state.id !== phases[0]?.state_id)
@@ -358,16 +371,16 @@ export function AddStoreForm({
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader className="flex flex-row justify-between items-center">
         <div className="flex flex-col gap-2">
-          <CardTitle>Add Store</CardTitle>
+          <CardTitle>Add Location</CardTitle>
           <CardDescription>
-            Fill in the details to add a new store.
+            Fill in the details to add a new location.
           </CardDescription>
         </div>
         <Button asChild variant="outline">
-          <Link href="/user/stores" className="flex items-center gap-2">
+          <Link href="/user/locations" className="flex items-center gap-2">
             <ChevronLeft className="w-4 h-4" />
             <span className="block md:hidden">Back</span>
-            <span className="hidden md:block">Back to Stores</span>
+            <span className="hidden md:block">Back to Locations</span>
           </Link>
         </Button>
       </CardHeader>
@@ -378,18 +391,18 @@ export function AddStoreForm({
       >
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Store Name *</Label>
+            <Label htmlFor="name">Location Name *</Label>
             <Input
               id="name"
               name="name"
               required
               defaultValue={getInputValue('name')}
-              placeholder="Enter store name"
+              placeholder="Enter location name"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="store_type">Store Type *</Label>
+            <Label htmlFor="store_type">Location Type *</Label>
             <Select
               name="store_type"
               required
@@ -397,7 +410,7 @@ export function AddStoreForm({
               onValueChange={handleStoreTypeChange}
             >
               <SelectTrigger id="store_type" className="w-full">
-                <SelectValue placeholder="Select a store type" />
+                <SelectValue placeholder="Select a location type" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="SHOP">Shop</SelectItem>
@@ -420,7 +433,7 @@ export function AddStoreForm({
           {(selectedStoreType === 'SHOP' || selectedStoreType === 'OTHER') && (
             <div className="space-y-2">
               <Label htmlFor="store_type_description">
-                Store Type Description *
+                Location Type Description *
               </Label>
               <Input
                 id="store_type_description"
@@ -444,7 +457,7 @@ export function AddStoreForm({
               name="address"
               required
               defaultValue={getInputValue('address')}
-              placeholder="Enter store address"
+              placeholder="Enter location address"
             />
           </div>
 
@@ -490,10 +503,10 @@ export function AddStoreForm({
                 required
                 value={
                   user?.assigned_local_government_id ||
-                  selectedDistrictId ||
+                  selectedLocalGovernmentId ||
                   getInputValue('local_government_id')
                 }
-                onValueChange={setSelectedDistrictId}
+                onValueChange={setSelectedLocalGovernmentId}
                 disabled={
                   !selectedStateId || !!user?.assigned_local_government_id
                 }
@@ -751,7 +764,7 @@ export function AddStoreForm({
             disabled={isPending}
           >
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isPending ? 'Processing' : 'Add Store'}
+            {isPending ? 'Processing' : 'Add Location'}
           </Button>
         </CardFooter>
       </form>

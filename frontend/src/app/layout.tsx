@@ -13,8 +13,8 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: 'Retail Intelligence',
-  description: 'Retail Intelligence',
+  title: 'Retailytics',
+  description: 'Retailytics aka Retail Intelligence',
 };
 
 export default function RootLayout({
