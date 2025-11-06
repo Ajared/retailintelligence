@@ -9,7 +9,7 @@ import { ThemeToggle } from '~/components/ui/theme-toggle';
 export function AdminHeader() {
   const pathname = usePathname();
   const title =
-    navigationItems.find((item) => item.url === pathname)?.title || 'Stores';
+    navigationItems.find((item) => item.url === pathname)?.title || 'Locations';
   return (
     <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 sticky top-0 z-10 bg-background">
       <SidebarTrigger className="-ml-1 size-10 p-2 cursor-pointer rounded-md transition-colors hover:!bg-transparent" />

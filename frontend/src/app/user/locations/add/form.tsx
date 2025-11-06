@@ -1,39 +1,25 @@
 'use client';
-import { Label } from '@radix-ui/react-label';
+
 import {
-  CheckCircle2,
-  ChevronLeft,
-  ImageIcon,
-  Loader2,
-  MapPin,
-  Plus,
-  X,
-} from 'lucide-react';
-import Image from 'next/image';
-import Link from 'next/link';
-import React, {
-  startTransition,
   useActionState,
-  useCallback,
-  useEffect,
-  useMemo,
   useRef,
   useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  startTransition,
 } from 'react';
-import { toast } from 'sonner';
-import { editStore } from '~/app/user/actions';
-import { AddStoreFormData, EditStoreFormData } from '~/app/user/schema';
-import { Alert, AlertDescription } from '~/components/ui/alert';
+import { Input } from '~/components/ui/input';
+import { Label } from '~/components/ui/label';
 import { Button } from '~/components/ui/button';
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
+  CardDescription,
+  CardFooter,
 } from '~/components/ui/card';
-import { Input } from '~/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -41,10 +27,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from '~/components/ui/select';
-import { Response } from '~/types/actions';
-import { PhaseInterface } from '~/types/phase';
-import { StateInterface } from '~/types/state';
-import { StoreInterface } from '~/types/store';
+import { addStore } from '../../actions';
+import type { Response } from '~/types/actions';
+import { Alert, AlertDescription } from '~/components/ui/alert';
+import {
+  CheckCircle2,
+  Loader2,
+  MapPin,
+  ImageIcon,
+  X,
+  Plus,
+  ChevronLeft,
+} from 'lucide-react';
+import type { StoreInterface } from '~/types/store';
+import type { StateInterface } from '~/types/state';
+import { AddStoreFormData } from '../../schema';
+import Link from 'next/link';
+import { toast } from 'sonner';
+import Image from 'next/image';
+import type { PhaseInterface } from '~/types/phase';
 import { UserInterface } from '~/types/user';
 
 function ImagePreview({
@@ -110,70 +111,56 @@ function ImagePreview({
   );
 }
 
-const EditStoreForm = ({
+export function AddStoreForm({
   phases,
   locations,
   user,
-  store,
 }: {
   phases: PhaseInterface[];
   locations: StateInterface[];
   user?: UserInterface;
-  store: Response<StoreInterface>;
-}) => {
+}) {
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
-  const defaultData = useMemo(() => {
-    if (!store || 'error' in store) {
-      return undefined;
-    }
-    return 'data' in store ? store.data : undefined;
-  }, [store]);
-
-  const [selectedStoreType, setSelectedStoreType] = useState<string>('');
-
-  const initialState: Response<StoreInterface> & {
-    inputs: EditStoreFormData;
-  } = useMemo(
-    () => ({
-      error: '',
-      message: '',
-      timestamp: '',
-      inputs: {
-        id: defaultData?.id ?? '',
-        name: defaultData?.name ?? '',
-        state_id: defaultData?.state_id ?? '',
-        local_government_id: defaultData?.local_government_id ?? '',
-        phase_id: defaultData?.phase_id ?? undefined,
-        district_id: defaultData?.district_id ?? undefined,
-        address: defaultData?.address ?? '',
-        store_type: defaultData?.store_type ?? '',
-        store_type_description: defaultData?.store_type_description ?? '',
-        latitude: defaultData?.latitude ?? 0,
-        longitude: defaultData?.longitude ?? 0,
-        landmarks: defaultData?.landmarks ?? '',
-        photos: defaultData?.photos ?? [],
-      },
-    }),
-    [defaultData],
-  );
   const [selectedStateId, setSelectedStateId] = useState<string | undefined>(
-    user?.assigned_state_id || defaultData?.state_id || '',
+    user?.assigned_state_id || '',
   );
   const [selectedPhaseId, setSelectedPhaseId] = useState<string | undefined>(
-    user?.assigned_phase_id || defaultData?.phase_id || '',
+    user?.assigned_phase_id || '',
   );
   const [selectedDistrictId, setSelectedDistrictId] = useState<
     string | undefined
-  >(
-    user?.assigned_district_id ||
-      defaultData?.district_id ||
-      defaultData?.local_government_id ||
-      '',
-  );
-  const [state, action, isPending] = useActionState(editStore, initialState);
+  >(user?.assigned_district_id || '');
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const latitudeRef = useRef<HTMLInputElement>(null);
+  const longitudeRef = useRef<HTMLInputElement>(null);
 
+  const initialState: Response<StoreInterface> & {
+    inputs: AddStoreFormData;
+  } = {
+    error: '',
+    message: '',
+    timestamp: '',
+    inputs: {
+      name: '',
+      state_id: '',
+      local_government_id: '',
+      address: '',
+      store_type: '',
+      store_type_description: '',
+      latitude: 0,
+      longitude: 0,
+      landmarks: '',
+      photos: [],
+    },
+  };
+
+  const [state, action, isPending] = useActionState(addStore, initialState);
+
+  const [selectedStoreType, setSelectedStoreType] = useState<string>('');
+
+  // Initialize selectedStoreType from form state
   useEffect(() => {
     const storeType = getInputValue('store_type');
     if (storeType) {
@@ -184,12 +171,6 @@ const EditStoreForm = ({
   const selectedState = useMemo(() => {
     return locations.find((state) => state.id === selectedStateId);
   }, [selectedStateId, locations]);
-  const [isGettingLocation, setIsGettingLocation] = useState(false);
-  const latitudeRef = useRef<HTMLInputElement>(null);
-  const longitudeRef = useRef<HTMLInputElement>(null);
-  const [keptExistingPhotos, setKeptExistingPhotos] = useState<string[]>(
-    Array.isArray(defaultData?.photos) ? defaultData.photos : [],
-  );
 
   const showPhaseAndDistrict = useMemo(() => {
     if (!selectedState) return false;
@@ -198,22 +179,11 @@ const EditStoreForm = ({
       selectedState.id === phases[0]?.state_id
     );
   }, [selectedState, phases]);
-  const getInputValue = useCallback(
-    (key: keyof AddStoreFormData): string => {
-      if (
-        state &&
-        typeof state === 'object' &&
-        'inputs' in state &&
-        state.inputs &&
-        state.inputs[key] !== undefined &&
-        state.inputs[key] !== null
-      ) {
-        return String(state.inputs[key]);
-      }
-      return '';
-    },
-    [state],
-  );
+
+  const filteredLocalGovernments = useMemo(() => {
+    if (!selectedStateId) return [];
+    return selectedState?.local_governments || [];
+  }, [selectedStateId, selectedState]);
 
   const filteredDistricts = useMemo(() => {
     if (!showPhaseAndDistrict || !selectedPhaseId) return [];
@@ -250,23 +220,21 @@ const EditStoreForm = ({
     );
   }, []);
 
-  const filteredLocalGovernments = useMemo(() => {
-    if (!selectedStateId || !selectedState) return [];
-    return selectedState.local_governments || [];
-  }, [selectedStateId, selectedState]);
-
-  const handlePhaseChange = useCallback((value: string) => {
-    setSelectedPhaseId(value);
-    setSelectedDistrictId('');
-  }, []);
-
-  const handleDistrictChange = useCallback((value: string) => {
-    setSelectedDistrictId(value);
-  }, []);
-
-  const handleStoreTypeChange = useCallback((value: string) => {
-    setSelectedStoreType(value);
-  }, []);
+  const getInputValue = useCallback(
+    (key: keyof AddStoreFormData): string => {
+      if (
+        state &&
+        typeof state === 'object' &&
+        'inputs' in state &&
+        state.inputs &&
+        state.inputs[key] !== undefined
+      ) {
+        return String(state.inputs[key]);
+      }
+      return '';
+    },
+    [state],
+  );
 
   const handleImageSelect = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -328,6 +296,26 @@ const EditStoreForm = ({
     fileInputRef.current?.click();
   }, []);
 
+  const handleSubmit = useCallback(
+    (event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      const formData = new FormData(event.currentTarget);
+      const latInput = latitudeRef.current?.value ?? '';
+      const lngInput = longitudeRef.current?.value ?? '';
+      if (latInput.trim().length > 0) formData.set('latitude', latInput.trim());
+      if (lngInput.trim().length > 0)
+        formData.set('longitude', lngInput.trim());
+      formData.delete('photos');
+      selectedImages.forEach((file) => {
+        formData.append('photos', file);
+      });
+      startTransition(() => {
+        action(formData);
+      });
+    },
+    [action, selectedImages],
+  );
+
   const handleStateChange = useCallback(
     (value: string) => {
       setSelectedStateId(value);
@@ -353,93 +341,55 @@ const EditStoreForm = ({
     [locations, phases],
   );
 
-  const handleSubmit = useCallback(
-    (event: React.FormEvent<HTMLFormElement>) => {
-      event.preventDefault();
-      const formData = new FormData(event.currentTarget);
-      const latInput = latitudeRef.current?.value ?? '';
-      const lngInput = longitudeRef.current?.value ?? '';
-      if (latInput.trim().length > 0) formData.set('latitude', latInput.trim());
-      if (lngInput.trim().length > 0)
-        formData.set('longitude', lngInput.trim());
-      keptExistingPhotos.forEach((url) =>
-        formData.append('existing_photos', url),
-      );
-      formData.delete('photos');
-      selectedImages.forEach((file) => {
-        formData.append('photos', file);
-      });
-      startTransition(() => {
-        action(formData);
-      });
-    },
-    [action, selectedImages, keptExistingPhotos],
-  );
+  const handlePhaseChange = useCallback((value: string) => {
+    setSelectedPhaseId(value);
+    setSelectedDistrictId('');
+  }, []);
 
-  if (!defaultData && store && 'error' in store) {
-    return (
-      <Card className="w-full max-w-2xl mx-auto">
-        <CardHeader>
-          <CardTitle>Error Loading Store</CardTitle>
-          <CardDescription>
-            Unable to load store data. Please try again.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Alert variant="destructive">
-            <AlertDescription>
-              {store.error || 'Failed to load store data'}
-            </AlertDescription>
-          </Alert>
-        </CardContent>
-        <CardFooter>
-          <Button asChild variant="outline">
-            <Link href="/user/stores" className="flex items-center gap-2">
-              <ChevronLeft className="w-4 h-4" />
-              <span>Back to Stores</span>
-            </Link>
-          </Button>
-        </CardFooter>
-      </Card>
-    );
-  }
+  const handleDistrictChange = useCallback((value: string) => {
+    setSelectedDistrictId(value);
+  }, []);
+
+  const handleStoreTypeChange = useCallback((value: string) => {
+    setSelectedStoreType(value);
+  }, []);
 
   return (
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader className="flex flex-row justify-between items-center">
         <div className="flex flex-col gap-2">
-          <CardTitle>Edit Store</CardTitle>
-          <CardDescription>Update the details of this store.</CardDescription>
+          <CardTitle>Add Location</CardTitle>
+          <CardDescription>
+            Fill in the details to add a new location.
+          </CardDescription>
         </div>
         <Button asChild variant="outline">
-          <Link href="/user/stores" className="flex items-center gap-2">
+          <Link href="/user/locations" className="flex items-center gap-2">
             <ChevronLeft className="w-4 h-4" />
             <span className="block md:hidden">Back</span>
-            <span className="hidden md:block">Back to Stores</span>
+            <span className="hidden md:block">Back to Locations</span>
           </Link>
         </Button>
       </CardHeader>
       <form
-        action=""
-        className="flex flex-col gap-4"
-        onSubmit={handleSubmit}
         ref={formRef}
+        onSubmit={handleSubmit}
+        className="flex flex-col gap-4"
       >
         <CardContent className="space-y-4">
-          <input type="hidden" name="id" value={initialState.inputs.id} />
           <div className="space-y-2">
-            <Label htmlFor="name">Store Name *</Label>
+            <Label htmlFor="name">Location Name *</Label>
             <Input
               id="name"
               name="name"
               required
               defaultValue={getInputValue('name')}
-              placeholder="Enter store name"
+              placeholder="Enter location name"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="store_type">Store Type *</Label>
+            <Label htmlFor="store_type">Location Type *</Label>
             <Select
               name="store_type"
               required
@@ -447,7 +397,7 @@ const EditStoreForm = ({
               onValueChange={handleStoreTypeChange}
             >
               <SelectTrigger id="store_type" className="w-full">
-                <SelectValue placeholder="Select a store type" />
+                <SelectValue placeholder="Select a location type" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="SHOP">Shop</SelectItem>
@@ -470,7 +420,7 @@ const EditStoreForm = ({
           {(selectedStoreType === 'SHOP' || selectedStoreType === 'OTHER') && (
             <div className="space-y-2">
               <Label htmlFor="store_type_description">
-                Store Type Description *
+                Location Type Description *
               </Label>
               <Input
                 id="store_type_description"
@@ -494,7 +444,7 @@ const EditStoreForm = ({
               name="address"
               required
               defaultValue={getInputValue('address')}
-              placeholder="Enter store address"
+              placeholder="Enter location address"
             />
           </div>
 
@@ -706,43 +656,6 @@ const EditStoreForm = ({
 
           <div className="space-y-4">
             <Label>Photos</Label>
-
-            {keptExistingPhotos.length > 0 ? (
-              <div className="space-y-2">
-                <div className="text-sm text-muted-foreground">
-                  Existing Photos
-                </div>
-                <div className="flex flex-wrap gap-3">
-                  {keptExistingPhotos.map((url, index) => (
-                    <div key={`${url}-${index}`} className="relative group">
-                      <div className="w-20 h-20 rounded-lg overflow-hidden border bg-gray-50">
-                        <Image
-                          src={url}
-                          alt={`Photo ${index + 1}`}
-                          width={80}
-                          height={80}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <Button
-                        variant="destructive"
-                        size="icon"
-                        type="button"
-                        onClick={() =>
-                          setKeptExistingPhotos((prev) =>
-                            prev.filter((u) => u !== url),
-                          )
-                        }
-                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 w-6 h-6 dark:bg-red-600 dark:hover:bg-red-700"
-                        aria-label={`Remove existing photo ${index + 1}`}
-                      >
-                        <X className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : null}
             <input
               ref={fileInputRef}
               type="file"
@@ -806,6 +719,7 @@ const EditStoreForm = ({
               JPG, PNG, GIF, WebP • Max 4MB each • Up to 10 images
             </p>
           </div>
+
           {state?.message && (
             <Alert variant={'data' in state ? 'default' : 'destructive'}>
               {'data' in state && <CheckCircle2 className="h-4 w-4" />}
@@ -837,12 +751,10 @@ const EditStoreForm = ({
             disabled={isPending}
           >
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isPending ? 'Processing' : 'Edit Store'}
+            {isPending ? 'Processing' : 'Add Location'}
           </Button>
         </CardFooter>
       </form>
     </Card>
   );
-};
-
-export default EditStoreForm;
+}

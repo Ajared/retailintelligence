@@ -9,15 +9,15 @@ export function UserHeader() {
   const pathname = usePathname();
 
   let title: string;
-  if (pathname.startsWith('/user/stores/add')) {
-    title = 'Add Store';
-  } else if (pathname.startsWith('/user/stores/edit')) {
-    title = 'Edit Store';
+  if (pathname.startsWith('/user/locations/add')) {
+    title = 'Add Location';
+  } else if (pathname.startsWith('/user/locations/edit')) {
+    title = 'Edit Location';
   } else {
     const matched = navigationItems.find((item) =>
       pathname.startsWith(item.url),
     );
-    title = matched?.title ?? 'Dashboard';
+    title = matched?.title ?? 'Locations';
   }
 
   return (

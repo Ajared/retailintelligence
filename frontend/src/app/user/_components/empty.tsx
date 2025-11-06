@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '~/components/ui/button';
-import { PackagePlus, Store } from 'lucide-react';
+import { PackagePlus, Map } from 'lucide-react';
 
 export default function EmptyState() {
   return (
@@ -19,20 +19,20 @@ export default function EmptyState() {
         <div className="flex flex-col items-center justify-center">
           <h3 className="text-lg font-semibold">Not enough data to display</h3>
           <p className="text-sm text-muted-foreground text-center">
-            Add stores to view application metrics
+            Add locations to view application metrics
           </p>
         </div>
         <div className="flex gap-2">
           <Button asChild className="cursor-pointer">
-            <Link href="/user/stores">
-              <Store className="h-4 w-4" />
-              View Stores
+            <Link href="/user/locations">
+              <Map className="h-4 w-4" />
+              View Locations
             </Link>
           </Button>
           <Button variant="outline" asChild className="cursor-pointer">
-            <Link href="/user/stores/add">
+            <Link href="/user/locations/add">
               <PackagePlus className="h-4 w-4" />
-              Add Stores
+              Add Locations
             </Link>
           </Button>
         </div>

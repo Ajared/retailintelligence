@@ -69,7 +69,10 @@ export function AppSidebar({ session }: { session: Session | null }) {
                     isActive={pathname.startsWith(item.url)}
                     className="data-[state=active]:bg-sidebar-accent data-[state=active]:text-sidebar-accent-foreground"
                   >
-                    <Link href={item.url} className="flex items-center gap-2">
+                    <Link
+                      href={item.url as string}
+                      className="flex items-center gap-2"
+                    >
                       <item.icon className="size-4" />
                       <span>{item.title}</span>
                     </Link>

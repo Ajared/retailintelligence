@@ -1,4 +1,4 @@
-import { Users, Store } from 'lucide-react';
+import { Users, Map } from 'lucide-react';
 
 export const navigationItems = [
   {
@@ -7,8 +7,8 @@ export const navigationItems = [
     url: '/admin/users' as const,
   },
   {
-    title: 'Stores',
-    icon: Store,
-    url: '/admin/stores' as const,
+    title: 'Locations',
+    icon: Map,
+    url: '/admin/locations' as const,
   },
 ] as const;
