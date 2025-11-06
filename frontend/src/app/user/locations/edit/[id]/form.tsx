@@ -19,6 +19,7 @@ import React, {
   useMemo,
   useRef,
   useState,
+  useEffectEvent,
 } from 'react';
 import { toast } from 'sonner';
 import { editStore } from '~/app/user/actions';
@@ -174,11 +175,33 @@ const EditStoreForm = ({
   );
   const [state, action, isPending] = useActionState(editStore, initialState);
 
-  useEffect(() => {
+  const getInputValue = useCallback(
+    (key: keyof AddStoreFormData): string => {
+      if (
+        state &&
+        typeof state === 'object' &&
+        'inputs' in state &&
+        state.inputs &&
+        state.inputs[key] !== undefined &&
+        state.inputs[key] !== null
+      ) {
+        return String(state.inputs[key]);
+      }
+      return '';
+    },
+    [state],
+  );
+
+  const onStateChange = useEffectEvent(() => {
     const storeType = getInputValue('store_type');
     if (storeType) {
       setSelectedStoreType(storeType);
     }
+  });
+
+  useEffect(() => {
+    onStateChange();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
 
   const selectedState = useMemo(() => {
@@ -198,22 +221,6 @@ const EditStoreForm = ({
       selectedState.id === phases[0]?.state_id
     );
   }, [selectedState, phases]);
-  const getInputValue = useCallback(
-    (key: keyof AddStoreFormData): string => {
-      if (
-        state &&
-        typeof state === 'object' &&
-        'inputs' in state &&
-        state.inputs &&
-        state.inputs[key] !== undefined &&
-        state.inputs[key] !== null
-      ) {
-        return String(state.inputs[key]);
-      }
-      return '';
-    },
-    [state],
-  );
 
   const filteredDistricts = useMemo(() => {
     if (!showPhaseAndDistrict || !selectedPhaseId) return [];

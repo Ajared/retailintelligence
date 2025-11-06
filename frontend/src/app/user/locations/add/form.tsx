@@ -8,6 +8,7 @@ import {
   useMemo,
   useCallback,
   startTransition,
+  useEffectEvent,
 } from 'react';
 import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
@@ -158,14 +159,34 @@ export function AddStoreForm({
 
   const [state, action, isPending] = useActionState(addStore, initialState);
 
+  const getInputValue = useCallback(
+    (key: keyof AddStoreFormData): string => {
+      if (
+        state &&
+        typeof state === 'object' &&
+        'inputs' in state &&
+        state.inputs &&
+        state.inputs[key] !== undefined
+      ) {
+        return String(state.inputs[key]);
+      }
+      return '';
+    },
+    [state],
+  );
+
   const [selectedStoreType, setSelectedStoreType] = useState<string>('');
 
-  // Initialize selectedStoreType from form state
-  useEffect(() => {
+  const onStateChange = useEffectEvent(() => {
     const storeType = getInputValue('store_type');
     if (storeType) {
       setSelectedStoreType(storeType);
     }
+  });
+
+  useEffect(() => {
+    onStateChange();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
 
   const selectedState = useMemo(() => {
@@ -219,22 +240,6 @@ export function AddStoreForm({
       },
     );
   }, []);
-
-  const getInputValue = useCallback(
-    (key: keyof AddStoreFormData): string => {
-      if (
-        state &&
-        typeof state === 'object' &&
-        'inputs' in state &&
-        state.inputs &&
-        state.inputs[key] !== undefined
-      ) {
-        return String(state.inputs[key]);
-      }
-      return '';
-    },
-    [state],
-  );
 
   const handleImageSelect = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
