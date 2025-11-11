@@ -326,6 +326,24 @@ def main():
                 with tab1:
                     st.subheader(f"Table Information: {selected_table}")
 
+                    # Row count
+                    row_count = st.session_state.analyzer.get_row_count(selected_table)
+                    if row_count is not None:
+                        col1, col2, col3 = st.columns(3)
+                        with col1:
+                            st.metric("Total Rows", f"{row_count.iloc[0]['row_count']:,}")
+
+                        # Get column count for metrics
+                        table_info = st.session_state.analyzer.get_table_info(
+                            selected_table
+                        )
+                        if table_info is not None:
+                            with col2:
+                                st.metric("Columns", len(table_info))
+                            with col3:
+                                # Show sample size that will be used
+                                st.metric("Sample Size", "Configurable")
+
                     # Table structure
                     table_info = st.session_state.analyzer.get_table_info(
                         selected_table
@@ -334,30 +352,41 @@ def main():
                         st.write("**Table Structure:**")
                         st.dataframe(_make_arrow_compatible(table_info))
 
-                    # Row count
-                    row_count = st.session_state.analyzer.get_row_count(selected_table)
-                    if row_count is not None:
-                        st.metric("Total Rows", row_count.iloc[0]["row_count"])
-
                 with tab2:
                     st.subheader("Data Preview")
 
-                    # Sample size selector
-                    sample_size = st.slider(
-                        "Number of rows to display",
-                        min_value=10,
-                        max_value=1000,
-                        value=100,
-                    )
+                    col1, col2 = st.columns([3, 1])
+                    with col1:
+                        # Sample size selector
+                        sample_size = st.slider(
+                            "Number of rows to display",
+                            min_value=10,
+                            max_value=1000,
+                            value=100,
+                        )
+                    with col2:
+                        # Option to hide ID columns
+                        hide_ids = st.checkbox("Hide ID columns", value=False)
 
                     # Get sample data
                     sample_data = st.session_state.analyzer.get_table_sample(
                         selected_table, sample_size
                     )
                     if sample_data is not None:
-                        st.dataframe(_make_arrow_compatible(sample_data))
+                        display_data = sample_data.copy()
 
-                        # Download option
+                        # Filter out ID columns if requested
+                        if hide_ids:
+                            id_cols = [col for col in display_data.columns
+                                      if col.lower().endswith('id') or
+                                      col.lower() in ('id', 'uuid', 'guid')]
+                            display_data = display_data.drop(columns=id_cols, errors='ignore')
+                            if id_cols:
+                                st.info(f"Hidden columns: {', '.join(id_cols)}")
+
+                        st.dataframe(_make_arrow_compatible(display_data))
+
+                        # Download option (always use full data)
                         csv = sample_data.to_csv(index=False)
                         st.download_button(
                             label="Download as CSV",
@@ -433,6 +462,17 @@ def main():
                                         title=f"Box Plot of {selected_numeric}",
                                     )
                                     st.plotly_chart(fig_box, use_container_width=True)
+
+                                # Enhanced statistics display
+                                st.write("**Statistics:**")
+                                stats = sample_data[selected_numeric].describe()
+                                stat_cols = st.columns(min(len(stats), 8))
+                                for idx, (stat_name, stat_value) in enumerate(stats.items()):
+                                    with stat_cols[idx % len(stat_cols)]:
+                                        st.metric(
+                                            stat_name.title(),
+                                            f"{stat_value:.2f}" if isinstance(stat_value, float) else str(stat_value)
+                                        )
 
                         if categorical_columns:
                             st.write("**Categorical Column Analysis:**")
