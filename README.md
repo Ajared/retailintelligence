@@ -30,4 +30,4 @@ Database Integration: Secure storage and retrieval of all collected information
 Role-based Access: Different permissions for enumerators, supervisors, and administrators
 
 ## Access
-Retailytics is available here: https://retailintelligence.ajared.ng/
+Retailytics is available here: https://retailytics.ajared.ng/
