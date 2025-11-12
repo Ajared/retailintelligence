@@ -1,554 +1,349 @@
 import streamlit as st
 import pandas as pd
-import psycopg2
-from sqlalchemy import create_engine, text
 import plotly.express as px
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
+from sqlalchemy import create_engine, text
 import os
-import re
 import hmac
-import uuid
-from datetime import datetime
-import warnings
-from pandas.api.types import is_datetime64_any_dtype, is_datetime64tz_dtype
 from dotenv import load_dotenv
 
 load_dotenv()
 
 
-def _make_arrow_compatible(df: pd.DataFrame) -> pd.DataFrame:
-    """Return a copy of df with Arrow-friendly dtypes.
-
-    - Convert UUID objects to strings
-    - Convert object-dtype datetime-like values to pandas datetime64[ns]
-      and drop timezone info for consistency
-    - Normalize mixed-type object columns where most values parse as datetimes
-    - Apply convert_dtypes for cleaner integer/boolean/string dtypes
-    """
-    if df is None:
-        return df
-
-    result = df.copy()
-
-    for column_name in result.columns:
-        series = result[column_name]
-
-        # If datetime with timezone, drop tz to make Arrow-friendly
-        if is_datetime64tz_dtype(series):
-            try:
-                result[column_name] = series.dt.tz_localize(None)
-            except Exception:
-                pass
-            continue
-
-        # Only coerce object-typed columns
-        if series.dtype == object:
-            non_null_series = series.dropna()
-            if non_null_series.empty:
-                continue
-
-            sample_value = non_null_series.iloc[0]
-
-            # UUIDs → strings
-            if isinstance(sample_value, uuid.UUID) or (
-                non_null_series.map(lambda v: isinstance(v, uuid.UUID)).all()
-            ):
-                result[column_name] = series.map(
-                    lambda v: str(v) if isinstance(v, uuid.UUID) else v
-                )
-                continue
-
-            # Datetime-like objects held in object dtype → proper datetime64
-            if non_null_series.map(
-                lambda v: isinstance(v, (pd.Timestamp, datetime))
-            ).all():
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore", UserWarning)
-                    coerced = pd.to_datetime(series, errors="coerce", utc=False)
-                try:
-                    # If timezone-aware, convert to naive
-                    if getattr(coerced.dt, "tz", None) is not None:
-                        coerced = coerced.dt.tz_localize(None)
-                except Exception:
-                    pass
-                result[column_name] = coerced
-                continue
-
-            # Mixed but largely datetime-parsable values
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore", UserWarning)
-                coerced_guess = pd.to_datetime(series, errors="coerce", utc=False)
-            if coerced_guess.notna().sum() >= max(1, int(0.8 * len(non_null_series))):
-                try:
-                    if getattr(coerced_guess.dt, "tz", None) is not None:
-                        coerced_guess = coerced_guess.dt.tz_localize(None)
-                except Exception:
-                    pass
-                result[column_name] = coerced_guess
-
-    # General dtype cleanup (nullable ints, booleans, strings)
-    result = result.convert_dtypes()
-
-    # After convert_dtypes, ensure any datetime64[ns, tz] became naive
-    for column_name in result.columns:
-        series = result[column_name]
-        if is_datetime64tz_dtype(series):
-            try:
-                result[column_name] = series.dt.tz_localize(None)
-            except Exception:
-                pass
-
-    # Ensure no lingering UUID objects in any object/string columns
-    for column_name in result.columns:
-        series = result[column_name]
-        if series.dtype == object:
-            non_null_series = series.dropna()
-            if (
-                not non_null_series.empty
-                and non_null_series.map(lambda v: isinstance(v, uuid.UUID)).any()
-            ):
-                result[column_name] = series.map(
-                    lambda v: str(v) if isinstance(v, uuid.UUID) else v
-                )
-
-    return result
-
-
-def _validate_read_only_sql(query: str):
-    """Validate custom SQL as read-only and safe-ish.
-
-    Returns (is_valid: bool, message: str, sanitized_query: str)
-    - Allows only single-statement queries starting with SELECT or WITH
-    - Allows a trailing semicolon but disallows additional statements
-    - Disallows SELECT INTO (which writes a table)
-    """
-    if query is None:
-        return False, "Query is empty.", ""
-
-    original = str(query)
-    # Trim and remove trailing semicolons
-    sanitized = original.strip()
-    sanitized = re.sub(r";\s*$", "", sanitized)
-
-    # Quick multi-statement check (very basic, ignores semicolons inside strings)
-    if ";" in sanitized:
-        return False, "Multiple SQL statements are not allowed.", ""
-
-    # Normalize for checks
-    lowered = sanitized.lstrip().lower()
-
-    # Only allow SELECT or WITH
-    if not (lowered.startswith("select") or lowered.startswith("with")):
-        return False, "Only read-only SELECT or WITH queries are permitted.", ""
-
-    # Disallow SELECT INTO (table creation)
-    if lowered.startswith("select") and re.search(r"\binto\b", lowered):
-        return False, "SELECT INTO is not allowed.", ""
-
-    return True, "", sanitized
-
-
-class PostgreSQLAnalyzer:
+class RetailyticsAnalyzer:
     def __init__(self):
         self.engine = None
         self.connection = None
-        self.last_error = None
 
     def connect(self):
-        """Connect to PostgreSQL database using environment variables"""
+        """Connect to PostgreSQL database"""
         try:
             db_config = {
-                "host": os.getenv("DB_HOST", "localhost"),
-                "port": os.getenv("DB_PORT", "5432"),
+                "host": os.getenv("DB_HOST"),
+                "port": os.getenv("DB_PORT"),
                 "database": os.getenv("DB_NAME"),
                 "user": os.getenv("DB_USER"),
                 "password": os.getenv("DB_PASSWORD"),
             }
-            # Build connection string from environment variables (do not hardcode secrets)
-            # Ensure you have a .env file with DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD (not committed to git)
-            connection_string = f"postgresql://{db_config['user']}:{db_config['password']}@{db_config['host']}:{db_config['port']}/{db_config['database']}"
+            connection_string = f"postgresql://{db_config['user']}:{db_config['password']}@{db_config['host']}:{db_config['port']}/{db_config['database']}?sslmode=require"
             self.engine = create_engine(connection_string, isolation_level="AUTOCOMMIT")
             self.connection = self.engine.connect()
-            # Enforce read-only at the session level for safety
-            try:
-                self.connection.execute(text("SET default_transaction_read_only = on"))
-            except Exception:
-                # If this fails, continue; we'll still validate queries in code
-                pass
+            self.connection.execute(text("SET default_transaction_read_only = on"))
             return True
         except Exception as e:
-            st.error(f"Error connecting to database: {e}")
+            st.error(f"Database connection failed: {e}")
             return False
 
-    def _reset_failed_transaction(self):
+    def query(self, sql):
+        """Execute query and return DataFrame"""
         try:
-            # Attempt to rollback in case a previous error left the session aborted
-            self.connection.rollback()
-        except Exception:
-            try:
-                self.connection.execute(text("ROLLBACK"))
-            except Exception:
-                pass
-
-    def execute_query(self, query, suppress_error: bool = False):
-        """Execute SQL query and return pandas DataFrame.
-
-        If suppress_error is True, errors are stored in self.last_error and not displayed.
-        """
-        self.last_error = None
-        try:
-            is_valid, message, sanitized = _validate_read_only_sql(query)
-            if not is_valid:
-                if not suppress_error:
-                    st.error(message)
-                else:
-                    self.last_error = message
-                return None
-
-            # Ensure clean state before running a new query
-            self._reset_failed_transaction()
-
-            df = pd.read_sql_query(sanitized, self.connection)
-            return df
+            return pd.read_sql_query(sql, self.connection)
         except Exception as e:
-            # Reset and record error to allow subsequent queries
-            self._reset_failed_transaction()
-            self.last_error = str(e)
-            if not suppress_error:
-                st.error(f"Error executing query: {e}")
+            st.error(f"Query failed: {e}")
             return None
 
-    def get_tables(self):
-        """Get list of tables in the database"""
-        query = """
-        SELECT table_name 
-        FROM information_schema.tables 
-        WHERE table_schema = 'public'
-        ORDER BY table_name;
-        """
-        return self.execute_query(query, suppress_error=True)
+    def get_total_stores(self):
+        """Get total number of stores"""
+        return self.query("SELECT COUNT(*) as count FROM stores")
 
-    def get_table_info(self, table_name):
-        """Get basic information about a table"""
-        query = f"""
-        SELECT column_name, data_type, is_nullable
-        FROM information_schema.columns
-        WHERE table_name = '{table_name}'
-        ORDER BY ordinal_position;
-        """
-        return self.execute_query(query, suppress_error=True)
+    def get_stores_per_enumerator(self):
+        """Get stores count per enumerator"""
+        return self.query("""
+            SELECT
+                u.email as enumerator,
+                COUNT(s.id) as store_count
+            FROM users u
+            LEFT JOIN stores s ON u.id = s.enumerator_id
+            WHERE u.role = 'user'
+            GROUP BY u.id, u.email
+            ORDER BY store_count DESC
+        """)
 
-    def get_table_sample(self, table_name, limit=100):
-        """Get a sample of data from a table"""
-        query = f"SELECT * FROM {table_name} LIMIT {limit};"
-        return self.execute_query(query, suppress_error=True)
+    def get_stores_per_district(self):
+        """Get stores count per district"""
+        return self.query("""
+            SELECT
+                COALESCE(d.name, 'Unassigned') as district,
+                COUNT(s.id) as store_count
+            FROM stores s
+            LEFT JOIN districts d ON s.district_id = d.id
+            GROUP BY d.id, d.name
+            ORDER BY store_count DESC
+        """)
 
-    def get_row_count(self, table_name):
-        """Get row count for a table"""
-        query = f"SELECT COUNT(*) as row_count FROM {table_name};"
-        return self.execute_query(query, suppress_error=True)
+    def get_stores_per_lga(self):
+        """Get stores count per local government"""
+        return self.query("""
+            SELECT
+                COALESCE(lg.name, 'Unassigned') as lga,
+                COUNT(s.id) as store_count
+            FROM stores s
+            LEFT JOIN local_governments lg ON s.local_government_id = lg.id
+            GROUP BY lg.id, lg.name
+            ORDER BY store_count DESC
+        """)
 
-    def close_connection(self):
-        """Close database connection"""
-        if self.connection:
-            self.connection.close()
+    def get_stores_per_state(self):
+        """Get stores count per state"""
+        return self.query("""
+            SELECT
+                COALESCE(st.name, 'Unassigned') as state,
+                COUNT(s.id) as store_count
+            FROM stores s
+            LEFT JOIN states st ON s.state_id = st.id
+            GROUP BY st.id, st.name
+            ORDER BY store_count DESC
+        """)
+
+    def get_stores_by_type(self):
+        """Get stores count by business type"""
+        return self.query("""
+            SELECT
+                store_type as business_type,
+                COUNT(*) as store_count
+            FROM stores
+            GROUP BY store_type
+            ORDER BY store_count DESC
+        """)
+
+    def get_total_enumerators(self):
+        """Get total assigned enumerators"""
+        return self.query("""
+            SELECT COUNT(*) as count
+            FROM users
+            WHERE role = 'user'
+            AND (assigned_local_government_id IS NOT NULL
+                 OR assigned_district_id IS NOT NULL
+                 OR assigned_state_id IS NOT NULL)
+        """)
+
+    def get_enumerators_per_lga(self):
+        """Get enumerators assigned per LGA"""
+        return self.query("""
+            SELECT
+                COALESCE(lg.name, 'Unassigned') as lga,
+                COUNT(u.id) as enumerator_count
+            FROM users u
+            LEFT JOIN local_governments lg ON u.assigned_local_government_id = lg.id
+            WHERE u.role = 'user'
+            GROUP BY lg.id, lg.name
+            ORDER BY enumerator_count DESC
+        """)
+
+    def get_stores_with_location(self):
+        """Get stores with coordinates for mapping"""
+        return self.query("""
+            SELECT
+                s.name,
+                s.address,
+                s.store_type,
+                s.latitude,
+                s.longitude,
+                u.email as enumerator,
+                COALESCE(lg.name, 'N/A') as lga,
+                COALESCE(d.name, 'N/A') as district
+            FROM stores s
+            LEFT JOIN users u ON s.enumerator_id = u.id
+            LEFT JOIN local_governments lg ON s.local_government_id = lg.id
+            LEFT JOIN districts d ON s.district_id = d.id
+            LIMIT 1000
+        """)
+
+    def get_recent_stores(self, limit=10):
+        """Get recently added stores"""
+        return self.query(f"""
+            SELECT
+                s.name,
+                s.address,
+                s.store_type,
+                s.created_at,
+                u.email as enumerator
+            FROM stores s
+            LEFT JOIN users u ON s.enumerator_id = u.id
+            ORDER BY s.created_at DESC
+            LIMIT {limit}
+        """)
 
 
 def main():
-    st.set_page_config(page_title="PostgreSQL Data Analyzer", layout="wide")
+    st.set_page_config(
+        page_title="Retailytics Dashboard",
+        page_icon="📊",
+        layout="wide"
+    )
 
-    st.title("PostgreSQL Data Analyzer")
-    st.markdown("Analyze your PostgreSQL database with interactive visualizations")
+    st.title("📊 Retailytics Analytics Dashboard")
+    st.markdown("Real-time insights into retail store data collection")
 
     # Initialize analyzer
     if "analyzer" not in st.session_state:
-        st.session_state.analyzer = PostgreSQLAnalyzer()
+        st.session_state.analyzer = RetailyticsAnalyzer()
 
-    # Authentication & background connection via admin secret
+    # Authentication
     if "authenticated" not in st.session_state:
         st.session_state.authenticated = False
     if "connected" not in st.session_state:
         st.session_state.connected = False
-    if "admin_prompt_active" not in st.session_state:
-        st.session_state.admin_prompt_active = True
 
     if not st.session_state.authenticated:
-        if st.session_state.admin_prompt_active:
-            st.header("Admin Access")
-            with st.form("admin_secret_form"):
-                admin_secret_input = st.text_input("Admin Secret", type="password")
-                unlock_button = st.form_submit_button("Unlock")
+        st.header("🔐 Admin Access")
+        with st.form("admin_form"):
+            admin_secret = st.text_input("Admin Secret", type="password")
+            submit = st.form_submit_button("Unlock Dashboard")
 
-            if unlock_button:
-                expected_secret = os.getenv("ADMIN_SECRET", "")
-                if not expected_secret:
-                    st.error("Server misconfiguration: ADMIN_SECRET is not set.")
-                    st.session_state.admin_prompt_active = False
-                elif hmac.compare_digest(admin_secret_input or "", expected_secret):
-                    with st.spinner("Verifying and connecting..."):
-                        if st.session_state.analyzer.connect():
-                            st.success("Connected to database successfully!")
-                            st.session_state.connected = True
-                            st.session_state.authenticated = True
-                        else:
-                            st.session_state.connected = False
-                    st.session_state.admin_prompt_active = False
-                else:
-                    st.error("Invalid admin secret.")
-                    st.session_state.admin_prompt_active = False
-        else:
-            if not st.session_state.connected:
-                st.info("Access restricted. Refresh the page to try again.")
-
-    # Stop rendering the rest of the app until a successful connection is established
-    if not st.session_state.get("connected", False):
+        if submit:
+            expected_secret = os.getenv("ADMIN_SECRET", "")
+            if hmac.compare_digest(admin_secret or "", expected_secret):
+                with st.spinner("Connecting to database..."):
+                    if st.session_state.analyzer.connect():
+                        st.success("✅ Connected successfully!")
+                        st.session_state.authenticated = True
+                        st.session_state.connected = True
+                        st.rerun()
+                    else:
+                        st.error("❌ Database connection failed")
+            else:
+                st.error("❌ Invalid admin secret")
         st.stop()
 
-    # Main analysis section
-    if st.session_state.get("connected", False):
-        st.header("Data Analysis")
+    # Main dashboard
+    if st.session_state.connected:
 
-        # Get tables
-        tables_df = st.session_state.analyzer.get_tables()
-        if tables_df is not None and not tables_df.empty:
-            table_names = tables_df["table_name"].tolist()
+        # Refresh button
+        if st.button("🔄 Refresh Data"):
+            st.rerun()
 
-            # Table selection
-            selected_table = st.selectbox("Select a table to analyze:", table_names)
+        # === KEY METRICS ===
+        st.header("📈 Key Metrics")
 
-            if selected_table:
-                # Create tabs for different analysis types
-                tab1, tab2, tab3, tab4 = st.tabs(
-                    ["Table Info", "Data Preview", "Statistics", "Visualizations"]
-                )
+        col1, col2, col3, col4 = st.columns(4)
 
-                with tab1:
-                    st.subheader(f"Table Information: {selected_table}")
+        with col1:
+            total_stores = st.session_state.analyzer.get_total_stores()
+            if total_stores is not None:
+                count = total_stores.iloc[0]["count"]
+                st.metric("Total Stores", f"{count:,}")
 
-                    # Row count
-                    row_count = st.session_state.analyzer.get_row_count(selected_table)
-                    if row_count is not None:
-                        col1, col2, col3 = st.columns(3)
-                        with col1:
-                            st.metric("Total Rows", f"{row_count.iloc[0]['row_count']:,}")
+        with col2:
+            total_enum = st.session_state.analyzer.get_total_enumerators()
+            if total_enum is not None:
+                count = total_enum.iloc[0]["count"]
+                st.metric("Assigned Enumerators", f"{count:,}")
 
-                        # Get column count for metrics
-                        table_info = st.session_state.analyzer.get_table_info(
-                            selected_table
-                        )
-                        if table_info is not None:
-                            with col2:
-                                st.metric("Columns", len(table_info))
-                            with col3:
-                                # Show sample size that will be used
-                                st.metric("Sample Size", "Configurable")
+        with col3:
+            stores_per_enum = st.session_state.analyzer.get_stores_per_enumerator()
+            if stores_per_enum is not None and len(stores_per_enum) > 0:
+                avg_stores = stores_per_enum["store_count"].mean()
+                st.metric("Avg Stores/Enumerator", f"{avg_stores:.1f}")
 
-                    # Table structure
-                    table_info = st.session_state.analyzer.get_table_info(
-                        selected_table
-                    )
-                    if table_info is not None:
-                        st.write("**Table Structure:**")
-                        st.dataframe(_make_arrow_compatible(table_info))
+        with col4:
+            lga_count = st.session_state.analyzer.get_stores_per_lga()
+            if lga_count is not None:
+                active_lgas = len(lga_count[lga_count["store_count"] > 0])
+                st.metric("Active LGAs", f"{active_lgas}")
 
-                with tab2:
-                    st.subheader("Data Preview")
+        st.divider()
 
-                    col1, col2 = st.columns([3, 1])
-                    with col1:
-                        # Sample size selector
-                        sample_size = st.slider(
-                            "Number of rows to display",
-                            min_value=10,
-                            max_value=1000,
-                            value=100,
-                        )
-                    with col2:
-                        # Option to hide ID columns
-                        hide_ids = st.checkbox("Hide ID columns", value=False)
+        # === ENUMERATOR PERFORMANCE ===
+        st.header("👥 Enumerator Performance")
+        enum_data = st.session_state.analyzer.get_stores_per_enumerator()
+        if enum_data is not None:
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                fig = px.bar(enum_data.head(15), x="enumerator", y="store_count",
+                           title="Top 15 Enumerators", color="store_count")
+                fig.update_layout(showlegend=False, xaxis_tickangle=-45)
+                st.plotly_chart(fig, use_container_width=True)
+            with col2:
+                st.metric("Total", len(enum_data))
+                st.metric("Active", len(enum_data[enum_data["store_count"] > 0]))
+                csv = enum_data.to_csv(index=False)
+                st.download_button("📥 CSV", csv, "enumerators.csv")
 
-                    # Get sample data
-                    sample_data = st.session_state.analyzer.get_table_sample(
-                        selected_table, sample_size
-                    )
-                    if sample_data is not None:
-                        display_data = sample_data.copy()
+        st.divider()
 
-                        # Filter out ID columns if requested
-                        if hide_ids:
-                            id_cols = [col for col in display_data.columns
-                                      if col.lower().endswith('id') or
-                                      col.lower() in ('id', 'uuid', 'guid')]
-                            display_data = display_data.drop(columns=id_cols, errors='ignore')
-                            if id_cols:
-                                st.info(f"Hidden columns: {', '.join(id_cols)}")
+        # === BUSINESS TYPES ===
+        st.header("🏢 Business Types")
+        business_data = st.session_state.analyzer.get_stores_by_type()
+        if business_data is not None:
+            col1, col2 = st.columns([2, 1])
+            with col1:
+                fig = px.pie(business_data, values="store_count", names="business_type",
+                           title="Distribution", hole=0.4)
+                st.plotly_chart(fig, use_container_width=True)
+            with col2:
+                st.dataframe(business_data, hide_index=True)
+                csv = business_data.to_csv(index=False)
+                st.download_button("📥 CSV", csv, "business_types.csv")
 
-                        st.dataframe(_make_arrow_compatible(display_data))
+        st.divider()
 
-                        # Download option (always use full data)
-                        csv = sample_data.to_csv(index=False)
-                        st.download_button(
-                            label="Download as CSV",
-                            data=csv,
-                            file_name=f"{selected_table}_sample.csv",
-                            mime="text/csv",
-                        )
+        # === STORE DISTRIBUTION ===
+        st.header("📍 Store Distribution")
+        col1, col2 = st.columns(2)
+        with col1:
+            lga_data = st.session_state.analyzer.get_stores_per_lga()
+            if lga_data is not None:
+                fig = px.bar(lga_data.head(10), x="lga", y="store_count",
+                           title="Top 10 LGAs", color="store_count")
+                fig.update_layout(showlegend=False, xaxis_tickangle=-45)
+                st.plotly_chart(fig, use_container_width=True)
+        with col2:
+            district_data = st.session_state.analyzer.get_stores_per_district()
+            if district_data is not None:
+                fig = px.bar(district_data.head(10), x="district", y="store_count",
+                           title="Top 10 Districts", color="store_count")
+                fig.update_layout(showlegend=False, xaxis_tickangle=-45)
+                st.plotly_chart(fig, use_container_width=True)
 
-                with tab3:
-                    st.subheader("Statistics")
+        # === ENUMERATOR ASSIGNMENT ===
+        enum_lga = st.session_state.analyzer.get_enumerators_per_lga()
+        if enum_lga is not None:
+            fig = px.pie(enum_lga[enum_lga["lga"] != "Unassigned"],
+                        values="enumerator_count", names="lga",
+                        title="Enumerators by LGA")
+            st.plotly_chart(fig, use_container_width=True)
 
-                    sample_data = st.session_state.analyzer.get_table_sample(
-                        selected_table, 1000
-                    )
-                    if sample_data is not None:
-                        # Basic statistics
-                        st.write("**Basic Statistics:**")
-                        st.dataframe(sample_data.describe())
+        st.divider()
 
-                        # Missing values
-                        st.write("**Missing Values:**")
-                        missing_values = sample_data.isnull().sum()
-                        missing_df = pd.DataFrame(
-                            {
-                                "Column": missing_values.index,
-                                "Missing Count": missing_values.values,
-                                "Missing Percentage": (
-                                    missing_values.values / len(sample_data)
-                                )
-                                * 100,
-                            }
-                        )
-                        st.dataframe(missing_df)
+        # === MAP ===
+        st.header("🗺️ Store Locations")
+        stores_location = st.session_state.analyzer.get_stores_with_location()
+        if stores_location is not None and len(stores_location) > 0:
+            stores_location["latitude"] = pd.to_numeric(stores_location["latitude"], errors="coerce")
+            stores_location["longitude"] = pd.to_numeric(stores_location["longitude"], errors="coerce")
+            valid = stores_location.dropna(subset=["latitude", "longitude"])
+            if len(valid) > 0:
+                fig = px.scatter_mapbox(valid, lat="latitude", lon="longitude",
+                                       hover_name="name", color="store_type",
+                                       hover_data=["address", "lga", "district"],
+                                       zoom=10, height=500)
+                fig.update_layout(mapbox_style="open-street-map")
+                st.plotly_chart(fig, use_container_width=True)
+                st.info(f"📍 {len(valid)} stores shown")
 
-                with tab4:
-                    st.subheader("Visualizations")
+        st.divider()
 
-                    sample_data = st.session_state.analyzer.get_table_sample(
-                        selected_table, 1000
-                    )
-                    if sample_data is not None:
-                        # Column selector for visualization
-                        numeric_columns = sample_data.select_dtypes(
-                            include=["number"]
-                        ).columns.tolist()
-                        categorical_columns = sample_data.select_dtypes(
-                            include=["object", "category"]
-                        ).columns.tolist()
+        # === RECENT ACTIVITY ===
+        st.header("🕐 Recent Activity")
 
-                        if numeric_columns:
-                            st.write("**Numeric Column Analysis:**")
-                            selected_numeric = st.selectbox(
-                                "Select numeric column:", numeric_columns
-                            )
-
-                            if selected_numeric:
-                                col1, col2 = st.columns(2)
-
-                                with col1:
-                                    # Histogram
-                                    fig_hist = px.histogram(
-                                        sample_data,
-                                        x=selected_numeric,
-                                        title=f"Distribution of {selected_numeric}",
-                                    )
-                                    st.plotly_chart(fig_hist, use_container_width=True)
-
-                                with col2:
-                                    # Box plot
-                                    fig_box = px.box(
-                                        sample_data,
-                                        y=selected_numeric,
-                                        title=f"Box Plot of {selected_numeric}",
-                                    )
-                                    st.plotly_chart(fig_box, use_container_width=True)
-
-                                # Enhanced statistics display
-                                st.write("**Statistics:**")
-                                stats = sample_data[selected_numeric].describe()
-                                stat_cols = st.columns(min(len(stats), 8))
-                                for idx, (stat_name, stat_value) in enumerate(stats.items()):
-                                    with stat_cols[idx % len(stat_cols)]:
-                                        st.metric(
-                                            stat_name.title(),
-                                            f"{stat_value:.2f}" if isinstance(stat_value, float) else str(stat_value)
-                                        )
-
-                        if categorical_columns:
-                            st.write("**Categorical Column Analysis:**")
-                            selected_categorical = st.selectbox(
-                                "Select categorical column:", categorical_columns
-                            )
-
-                            if selected_categorical:
-                                # Value counts
-                                series_for_counts = (
-                                    sample_data[selected_categorical]
-                                    .dropna()
-                                    .astype(str)
-                                )
-                                value_counts = series_for_counts.value_counts().head(10)
-                                x_values = value_counts.index.tolist()
-                                y_values = value_counts.values.tolist()
-                                counts_df = pd.DataFrame(
-                                    {selected_categorical: x_values, "Count": y_values}
-                                )
-                                fig_bar = px.bar(
-                                    counts_df,
-                                    x=selected_categorical,
-                                    y="Count",
-                                    title=f"Top 10 Values in {selected_categorical}",
-                                )
-                                st.plotly_chart(fig_bar, use_container_width=True)
-
-                        # Correlation matrix for numeric columns
-                        if len(numeric_columns) > 1:
-                            st.write("**Correlation Matrix:**")
-                            corr_matrix = sample_data[numeric_columns].corr()
-                            fig_corr = px.imshow(
-                                corr_matrix, text_auto=True, title="Correlation Matrix"
-                            )
-                            st.plotly_chart(fig_corr, use_container_width=True)
-
-        # Custom SQL query section
-        st.header("Custom SQL Query")
-
-        query = st.text_area("Enter your SQL query:", height=150, key="custom_sql_area")
-        execute_clicked = st.button("Execute Query", key="execute_query_button")
-
-        error_placeholder = st.empty()
-
-        if execute_clicked:
-            if not query or not query.strip():
-                error_placeholder.warning("Please enter a SQL query.")
-            else:
-                is_valid, message, sanitized = _validate_read_only_sql(query)
-                if not is_valid:
-                    error_placeholder.error(message)
-                else:
-                    with st.spinner("Running query..."):
-                        result = st.session_state.analyzer.execute_query(
-                            sanitized, suppress_error=True
-                        )
-                    if result is not None:
-                        st.dataframe(_make_arrow_compatible(result))
-
-                        # Download option
-                        csv = result.to_csv(index=False)
-                        st.download_button(
-                            label="Download Results as CSV",
-                            data=csv,
-                            file_name="query_results.csv",
-                            mime="text/csv",
-                        )
-                    else:
-                        error_message = (
-                            st.session_state.analyzer.last_error
-                            or "An error occurred while executing the query."
-                        )
-                        error_placeholder.error(
-                            f"Error executing query: {error_message}"
-                        )
+        recent = st.session_state.analyzer.get_recent_stores(20)
+        if recent is not None and len(recent) > 0:
+            st.dataframe(
+                recent,
+                column_config={
+                    "created_at": st.column_config.DatetimeColumn(
+                        "Created At",
+                        format="DD/MM/YYYY HH:mm"
+                    ),
+                    "name": "Store Name",
+                    "address": "Address",
+                    "store_type": "Business Type",
+                    "enumerator": "Submitted By"
+                },
+                use_container_width=True,
+                hide_index=True
+            )
 
 
 if __name__ == "__main__":
