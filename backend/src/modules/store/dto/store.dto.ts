@@ -48,7 +48,9 @@ export class StoreDto {
 
   @IsString()
   @IsOptional()
-  @Length(1, 500, { message: 'Store type description must be between 1 and 500 characters' })
+  @Length(1, 500, {
+    message: 'Store type description must be between 1 and 500 characters',
+  })
   @ValidateIf((o) => o.storeType === 'SHOP' || o.storeType === 'OTHER')
   @IsNotEmpty()
   storeTypeDescription?: string;

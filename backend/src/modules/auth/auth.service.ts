@@ -20,6 +20,7 @@ import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { CustomHttpException } from '~/helpers/custom.exception';
 import CreateUserRecordOptions from '../user/types/create-user.type';
 import { UserRole, UserStatus } from '../user/constants/user.constant';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class AuthService {
@@ -28,6 +29,7 @@ export class AuthService {
     private readonly mailService: MailService,
     private readonly tokenService: TokenService,
     private readonly configService: ConfigService,
+    private readonly notificationService: NotificationService,
   ) {}
   private readonly logger = new Logger('AuthService');
 
@@ -117,6 +119,16 @@ export class AuthService {
       );
     });
 
+    if (createdUser.status === UserStatus.UNVERIFIED) {
+      void this.notificationService
+        .notifyNewUserSignup(createdUser.id)
+        .catch(() => {
+          this.logger.error(
+            `Failed to queue notification for user ${createdUser.id}`,
+          );
+        });
+    }
+
     return {
       data: createdUser,
       message: SYS_MSG.RESOURCE_CREATED_SUCCESSFULLY('User'),
@@ -190,6 +202,16 @@ export class AuthService {
             `Failed to send welcome email to ${createdUser.email}`,
           );
         });
+
+      if (createdUser.status === UserStatus.UNVERIFIED) {
+        void this.notificationService
+          .notifyNewUserSignup(createdUser.id)
+          .catch(() => {
+            this.logger.error(
+              `Failed to queue notification for user ${createdUser.id}`,
+            );
+          });
+      }
 
       return {
         message: SYS_MSG.RESOURCE_CREATED_SUCCESSFULLY('User'),
