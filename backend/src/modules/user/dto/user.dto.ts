@@ -6,6 +6,8 @@ import {
   MinLength,
   IsEnum,
   IsOptional,
+  IsArray,
+  IsUUID,
 } from 'class-validator';
 import { QueryValidator } from '~/helpers/query.helper';
 import { AuthProvider } from '~/modules/auth/constants/auth.constant';
@@ -59,4 +61,11 @@ export class AssignLocationDto {
   @IsString()
   @IsOptional()
   districtId?: string;
+}
+
+export class BulkApproveUsersDto {
+  @IsArray()
+  @IsNotEmpty()
+  @IsUUID('4', { each: true })
+  userIds: string[];
 }

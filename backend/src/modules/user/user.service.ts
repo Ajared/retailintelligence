@@ -3,7 +3,7 @@ import * as SYS_MSG from '~/helpers/system-messages';
 import { StateService } from '../state/state.service';
 import { UserModelAction } from './user.model-action';
 import { EntityPropertyNotFoundError } from 'typeorm';
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import UpdateUserRecordOptions from './types/update-user.type';
 import CreateUserRecordOptions from './types/create-user.type';
 import { NullishValueError, trySafe } from '~/helpers/try-safe';
@@ -14,9 +14,12 @@ import {
   ListUserRecordOptions,
 } from './types/list-user.type';
 import { validateUUID } from '~/helpers/validation.helper';
+import { User } from './entities/user.entity';
 
 @Injectable()
 export class UserService {
+  private readonly logger = new Logger(UserService.name);
+
   constructor(
     private stateService: StateService,
     private userModelAction: UserModelAction,
@@ -465,6 +468,126 @@ export class UserService {
     return {
       message: SYS_MSG.RESOURCE_OPERATION_SUCCESSFUL('User Verification'),
       data,
+    };
+  }
+
+  async getUnverifiedUsersInLast24Hours(): Promise<User[]> {
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    const [error, users] = await trySafe(() =>
+      this.userModelAction.findUnverifiedUsersInLast24Hours(twentyFourHoursAgo),
+    );
+
+    if (error) {
+      this.logger.error(
+        'Failed to fetch unverified users in last 24 hours',
+        error.message,
+      );
+      return [];
+    }
+
+    return users || [];
+  }
+
+  async getAdmins(): Promise<User[]> {
+    const [error, admins] = await trySafe(() =>
+      this.userModelAction.findAdmins(),
+    );
+
+    if (error) {
+      this.logger.error('Failed to fetch admins', error.message);
+      return [];
+    }
+
+    return admins || [];
+  }
+
+  async verifyUsersBulk(
+    userIds: string[],
+    verifiedBy: string,
+  ): Promise<{ message: string; data: User[] }> {
+    validateUUID(verifiedBy, 'verifiedBy');
+
+    if (!userIds || userIds.length === 0) {
+      throw new CustomHttpException(
+        SYS_MSG.INVALID_PARAMETER('User IDs'),
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    userIds.forEach((id) => validateUUID(id, 'userId'));
+
+    const [verifiedByError, verifiedByUser] = await trySafe(() =>
+      this.getUserById(verifiedBy),
+    );
+
+    if (verifiedByError || !verifiedByUser) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_OPERATION_FAILED('Bulk User Verification'),
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const verifiedByRole = verifiedByUser.role;
+
+    if (
+      verifiedByRole !== UserRole.SUPER_ADMIN &&
+      verifiedByRole !== UserRole.ADMIN
+    ) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_OPERATION_FAILED('Bulk User Verification'),
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
+    const [usersError, users] = await trySafe(() =>
+      this.userModelAction.findUsersByIdsAndStatus(
+        userIds,
+        UserStatus.UNVERIFIED,
+      ),
+    );
+
+    if (usersError) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_FETCH_FAILED('Users'),
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    if (users.length !== userIds.length) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_NOT_FOUND('Some users not found or already verified'),
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const updatePromises = users.map((user: User) =>
+      this.userModelAction.update({
+        identifierOptions: {
+          id: user.id,
+          status: UserStatus.UNVERIFIED,
+        },
+        updatePayload: { status: UserStatus.VERIFIED },
+        transactionOptions: {
+          useTransaction: false,
+        },
+      }),
+    );
+
+    const [updateError, updatedUsers] = await trySafe(() =>
+      Promise.all(updatePromises),
+    );
+
+    if (updateError) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_OPERATION_FAILED('Bulk User Verification'),
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    return {
+      message: SYS_MSG.RESOURCE_OPERATION_SUCCESSFUL('Bulk User Verification'),
+      data: updatedUsers.filter((u) => u !== null) as User[],
     };
   }
 }

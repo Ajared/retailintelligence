@@ -30,6 +30,7 @@ import { ValidationExceptionFilter } from './helpers/validation-filter.exception
 import { LocalGovernmentModule } from './modules/local-government/local-government.module';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
+import { NotificationModule } from './modules/notification/notification.module';
 
 @Module({
   imports: [
@@ -168,6 +169,7 @@ import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConne
     GuardModule,
     PhaseModule,
     DistrictModule,
+    NotificationModule,
   ],
   controllers: [AppController],
   providers: [

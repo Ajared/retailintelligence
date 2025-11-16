@@ -12,6 +12,7 @@ import { UserInterface } from '../user/types/user.interface';
 import { CustomHttpException } from '~/helpers/custom.exception';
 import CreateUserRecordOptions from '../user/types/create-user.type';
 import { UserRole, UserStatus } from '../user/constants/user.constant';
+import { NotificationService } from '../notification/notification.service';
 
 const mockUserService = {
   getUserByEmail: jest.fn(),
@@ -37,6 +38,10 @@ const mockConfigService = {
     if (key === 'AUTH_CLIENT_ID') return 'test-google-client-id';
     return undefined;
   }),
+};
+
+const mockNotificationService = {
+  notifyNewUserSignup: jest.fn(),
 };
 
 const testEmail = 'test@example.com';
@@ -173,6 +178,7 @@ describe('AuthService', () => {
         { provide: TokenService, useValue: mockTokenService },
         { provide: MailService, useValue: mockMailService },
         { provide: ConfigService, useValue: mockConfigService },
+        { provide: NotificationService, useValue: mockNotificationService },
       ],
     }).compile();
 

@@ -21,7 +21,11 @@ import {
 import { AdminService } from './admin.service';
 import { SkipThrottle } from '@nestjs/throttler';
 import { StoreQueryValidator } from '../store/dto/store.dto';
-import { AssignLocationDto, UserQueryValidator } from '../user/dto/user.dto';
+import {
+  AssignLocationDto,
+  UserQueryValidator,
+  BulkApproveUsersDto,
+} from '../user/dto/user.dto';
 
 @Controller('admin')
 @UseGuards(RoleGuard)
@@ -70,6 +74,19 @@ export class AdminController {
     @Req() req: Request & { user: { sub: string } },
   ) {
     return this.userService.verifyUser(userId, req.user.sub);
+  }
+
+  @Mutation()
+  @HttpCode(HttpStatus.OK)
+  @Post('users/bulk-approve')
+  async bulkApproveUsers(
+    @Body() bulkApproveUsersDto: BulkApproveUsersDto,
+    @Req() req: Request & { user: { sub: string } },
+  ) {
+    return this.userService.verifyUsersBulk(
+      bulkApproveUsersDto.userIds,
+      req.user.sub,
+    );
   }
 
   @Get('users')
