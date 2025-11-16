@@ -425,7 +425,7 @@ describe('NotificationProcessor', () => {
       });
     });
 
-    it('should handle errors and throw them', async () => {
+    it('should handle errors from getUserById gracefully', async () => {
       const mockJob = {
         data: { userId: 'user-123' },
         id: 'job-123',
@@ -433,6 +433,30 @@ describe('NotificationProcessor', () => {
 
       const testError = new Error('Database connection failed');
       mockUserService.getUserById.mockRejectedValueOnce(testError);
+
+      await processor.process(mockJob);
+
+      expect(userService.getUserById).toHaveBeenCalledWith('user-123');
+      expect(warnSpy).toHaveBeenCalledWith(
+        'User user-123 not found, skipping notification',
+      );
+      expect(mockMailService.sendMail).not.toHaveBeenCalled();
+      expect(logSpy).toHaveBeenCalledWith(
+        `Notification job ${mockJob.id} processed successfully.`,
+      );
+    });
+
+    it('should throw errors from the outer trySafe wrapper', async () => {
+      const mockJob = {
+        data: { userId: 'user-123' },
+        id: 'job-123',
+      } as Job<NotificationJobData>;
+
+      const testError = new Error('Unexpected error in notification processing');
+      mockUserService.getUserById.mockResolvedValueOnce(mockUser);
+      mockUserService.getUnverifiedUsersInLast24Hours.mockRejectedValueOnce(
+        testError,
+      );
 
       await expect(processor.process(mockJob)).rejects.toThrow(testError);
 
