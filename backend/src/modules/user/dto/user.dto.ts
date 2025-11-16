@@ -9,6 +9,7 @@ import {
   IsArray,
   IsUUID,
 } from 'class-validator';
+import { UserRole } from '../constants/user.constant';
 import { QueryValidator } from '~/helpers/query.helper';
 import { AuthProvider } from '~/modules/auth/constants/auth.constant';
 
@@ -68,4 +69,10 @@ export class BulkApproveUsersDto {
   @IsNotEmpty()
   @IsUUID('4', { each: true })
   userIds: string[];
+}
+
+export class UpdateUserRoleDto {
+  @IsEnum(UserRole)
+  @IsNotEmpty()
+  role: UserRole;
 }

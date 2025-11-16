@@ -8,6 +8,7 @@ import { UserRole } from '~/modules/user/constants/user.constant';
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -25,6 +26,7 @@ import {
   AssignLocationDto,
   UserQueryValidator,
   BulkApproveUsersDto,
+  UpdateUserRoleDto,
 } from '../user/dto/user.dto';
 
 @Controller('admin')
@@ -111,5 +113,30 @@ export class AdminController {
   @Get('stores/:id')
   async getStoreById(@Param('id') id: string) {
     return this.adminService.getStoreById(id);
+  }
+
+  @Mutation()
+  @HttpCode(HttpStatus.OK)
+  @Delete('users/:userId')
+  async deleteUser(
+    @Param('userId') userId: string,
+    @Req() req: Request & { user: { sub: string } },
+  ) {
+    return this.userService.deleteUser(userId, req.user.sub);
+  }
+
+  @Mutation()
+  @HttpCode(HttpStatus.OK)
+  @Post('users/:userId/role')
+  async updateUserRole(
+    @Param('userId') userId: string,
+    @Body() updateUserRoleDto: UpdateUserRoleDto,
+    @Req() req: Request & { user: { sub: string } },
+  ) {
+    return this.userService.updateUserRole(
+      userId,
+      updateUserRoleDto.role,
+      req.user.sub,
+    );
   }
 }

@@ -590,4 +590,145 @@ export class UserService {
       data: updatedUsers.filter((u) => u !== null) as User[],
     };
   }
+
+  async deleteUser(id: string, deletedBy: string) {
+    validateUUID(id, 'id');
+    validateUUID(deletedBy, 'deletedBy');
+
+    if (id === deletedBy) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_OPERATION_FAILED('User Deletion'),
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const [userError] = await trySafe(() => this.getUserById(id));
+    const [deletedByError, deletedByUser] = await trySafe(() =>
+      this.getUserById(deletedBy),
+    );
+
+    if (userError || deletedByError || !deletedByUser) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_OPERATION_FAILED('User Deletion'),
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const deletedByRole = deletedByUser.role;
+
+    if (
+      deletedByRole !== UserRole.SUPER_ADMIN &&
+      deletedByRole !== UserRole.ADMIN
+    ) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_OPERATION_FAILED('User Deletion'),
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
+    const [error, result] = await trySafe(() =>
+      this.userModelAction.delete({
+        identifierOptions: { id },
+        transactionOptions: {
+          useTransaction: false,
+        },
+      }),
+    );
+
+    if (error) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_OPERATION_FAILED('User Deletion'),
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    if (result.affected === 0) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_NOT_FOUND('User'),
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    return {
+      message: SYS_MSG.RESOURCE_OPERATION_SUCCESSFUL('User Deletion'),
+    };
+  }
+
+  async updateUserRole(
+    id: string,
+    newRole: UserRole,
+    updatedBy: string,
+  ): Promise<{ message: string; data: User }> {
+    validateUUID(id, 'id');
+    validateUUID(updatedBy, 'updatedBy');
+
+    if (id === updatedBy) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_OPERATION_FAILED('User Role Update'),
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const [userError, user] = await trySafe(() => this.getUserById(id));
+    const [updatedByError, updatedByUser] = await trySafe(() =>
+      this.getUserById(updatedBy),
+    );
+
+    if (userError || updatedByError) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_OPERATION_FAILED('User Role Update'),
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (user.role === newRole) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_OPERATION_FAILED('User Role Update'),
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const updatedByRole = updatedByUser.role;
+
+    if (
+      updatedByRole !== UserRole.SUPER_ADMIN &&
+      updatedByRole !== UserRole.ADMIN
+    ) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_OPERATION_FAILED('User Role Update'),
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
+    const payload: UpdateUserRecordOptions = {
+      identifierOptions: { id },
+      updatePayload: { role: newRole },
+      transactionOptions: {
+        useTransaction: false,
+      },
+    };
+
+    const [error, data] = await trySafe(() =>
+      this.userModelAction.update(payload),
+    );
+
+    if (error) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_OPERATION_FAILED('User Role Update'),
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    if (!data) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_NOT_FOUND('User'),
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    return {
+      message: SYS_MSG.RESOURCE_OPERATION_SUCCESSFUL('User Role Update'),
+      data,
+    };
+  }
 }
