@@ -22,6 +22,10 @@ const mockUserService = {
   reactivateUser: jest.fn().mockResolvedValue(undefined),
   listUsers: jest.fn().mockResolvedValue({ data: [], total: 0 }),
   assignLocationToUser: jest.fn().mockResolvedValue(undefined),
+  deleteUser: jest.fn().mockResolvedValue(undefined),
+  updateUserRole: jest.fn().mockResolvedValue(undefined),
+  verifyUser: jest.fn().mockResolvedValue(undefined),
+  verifyUsersBulk: jest.fn().mockResolvedValue(undefined),
 };
 
 const mockAdminService = {
@@ -270,6 +274,88 @@ describe('AdminController', () => {
       mockAdminService.getStoreById.mockRejectedValueOnce(error);
 
       await expect(controller.getStoreById(storeId)).rejects.toThrow(error);
+    });
+  });
+
+  describe('deleteUser', () => {
+    it('should call userService.deleteUser with correct id and return the expected result', async () => {
+      const userId = '123e4567-e89b-42d3-a456-426614174000';
+      const req = {
+        user: { sub: '123e4567-e89b-42d3-a456-426614174001' },
+      } as Request & {
+        user: { sub: string };
+      };
+      const expectedResult = {
+        message: 'User Deletion operation successful',
+      };
+      mockUserService.deleteUser.mockResolvedValueOnce(expectedResult);
+
+      const result = await controller.deleteUser(userId, req);
+
+      expect(mockUserService.deleteUser).toHaveBeenCalledWith(
+        userId,
+        req.user.sub,
+      );
+      expect(result).toEqual(expectedResult);
+    });
+
+    it('should handle errors from userService.deleteUser', async () => {
+      const userId = '123e4567-e89b-42d3-a456-426614174000';
+      const req = {
+        user: { sub: '123e4567-e89b-42d3-a456-426614174001' },
+      } as Request & {
+        user: { sub: string };
+      };
+      const error = new Error('Deletion failed');
+      mockUserService.deleteUser.mockRejectedValueOnce(error);
+
+      await expect(controller.deleteUser(userId, req)).rejects.toThrow(error);
+    });
+  });
+
+  describe('updateUserRole', () => {
+    it('should call userService.updateUserRole with correct arguments and return the expected result', async () => {
+      const userId = '123e4567-e89b-42d3-a456-426614174000';
+      const updateUserRoleDto = { role: 'admin' as any };
+      const req = {
+        user: { sub: '123e4567-e89b-42d3-a456-426614174001' },
+      } as Request & {
+        user: { sub: string };
+      };
+      const expectedResult = {
+        message: 'User Role Update operation successful',
+        data: { id: userId, role: 'admin' },
+      };
+      mockUserService.updateUserRole.mockResolvedValueOnce(expectedResult);
+
+      const result = await controller.updateUserRole(
+        userId,
+        updateUserRoleDto,
+        req,
+      );
+
+      expect(mockUserService.updateUserRole).toHaveBeenCalledWith(
+        userId,
+        'admin',
+        req.user.sub,
+      );
+      expect(result).toEqual(expectedResult);
+    });
+
+    it('should handle errors from userService.updateUserRole', async () => {
+      const userId = '123e4567-e89b-42d3-a456-426614174000';
+      const updateUserRoleDto = { role: 'admin' as any };
+      const req = {
+        user: { sub: '123e4567-e89b-42d3-a456-426614174001' },
+      } as Request & {
+        user: { sub: string };
+      };
+      const error = new Error('Role update failed');
+      mockUserService.updateUserRole.mockRejectedValueOnce(error);
+
+      await expect(
+        controller.updateUserRole(userId, updateUserRoleDto, req),
+      ).rejects.toThrow(error);
     });
   });
 });
