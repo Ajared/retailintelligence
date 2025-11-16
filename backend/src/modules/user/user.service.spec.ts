@@ -411,5 +411,31 @@ describe('UserService', () => {
         service.updateUserRole(userId, UserRole.ADMIN, updatedBy),
       ).rejects.toThrow(CustomHttpException);
     });
+
+    it('should throw error when trying to update user role to SUPER_ADMIN', async () => {
+      mockModelAction.get
+        .mockResolvedValueOnce(mockUser)
+        .mockResolvedValueOnce(mockAdmin);
+
+      await expect(
+        service.updateUserRole(userId, UserRole.SUPER_ADMIN, updatedBy),
+      ).rejects.toThrow(CustomHttpException);
+    });
+
+    it('should throw error when SUPER_ADMIN tries to promote user to SUPER_ADMIN', async () => {
+      const superAdminUser = {
+        id: updatedBy,
+        email: 'superadmin@example.com',
+        role: UserRole.SUPER_ADMIN,
+      };
+
+      mockModelAction.get
+        .mockResolvedValueOnce(mockUser)
+        .mockResolvedValueOnce(superAdminUser);
+
+      await expect(
+        service.updateUserRole(userId, UserRole.SUPER_ADMIN, updatedBy),
+      ).rejects.toThrow(CustomHttpException);
+    });
   });
 });

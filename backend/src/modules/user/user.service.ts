@@ -700,6 +700,13 @@ export class UserService {
       );
     }
 
+    if (newRole === UserRole.SUPER_ADMIN) {
+      throw new CustomHttpException(
+        SYS_MSG.RESOURCE_OPERATION_FAILED('User Role Update'),
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
     const payload: UpdateUserRecordOptions = {
       identifierOptions: { id },
       updatePayload: { role: newRole },
