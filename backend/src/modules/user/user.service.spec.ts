@@ -220,8 +220,8 @@ describe('UserService', () => {
   });
 
   describe('deleteUser', () => {
-    const userId = 'user-123';
-    const deletedBy = 'admin-123';
+    const userId = '123e4567-e89b-42d3-a456-426614174000';
+    const deletedBy = '123e4567-e89b-42d3-a456-426614174001';
     const mockUser = {
       id: userId,
       email: 'user@example.com',
@@ -281,7 +281,7 @@ describe('UserService', () => {
 
     it('should throw error when user does not have permission', async () => {
       const regularUser = {
-        id: 'regular-user',
+        id: '123e4567-e89b-42d3-a456-426614174002',
         email: 'regular@example.com',
         role: UserRole.USER,
       };
@@ -307,8 +307,8 @@ describe('UserService', () => {
   });
 
   describe('updateUserRole', () => {
-    const userId = 'user-123';
-    const updatedBy = 'admin-123';
+    const userId = '123e4567-e89b-42d3-a456-426614174000';
+    const updatedBy = '123e4567-e89b-42d3-a456-426614174001';
     const mockUser = {
       id: userId,
       email: 'user@example.com',
@@ -388,7 +388,7 @@ describe('UserService', () => {
 
     it('should throw error when user does not have permission', async () => {
       const regularUser = {
-        id: 'regular-user',
+        id: '123e4567-e89b-42d3-a456-426614174002',
         email: 'regular@example.com',
         role: UserRole.USER,
       };
