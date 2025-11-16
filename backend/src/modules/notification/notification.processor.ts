@@ -34,14 +34,14 @@ export class NotificationProcessor extends WorkerHost {
 
       if (userError || !user) {
         this.logger.warn(`User ${userId} not found, skipping notification`);
-        return;
+        return true;
       }
 
       if (user.status !== UserStatus.UNVERIFIED) {
         this.logger.log(
           `User ${userId} is already verified, skipping notification`,
         );
-        return;
+        return true;
       }
 
       const unverifiedUsers =
@@ -52,7 +52,7 @@ export class NotificationProcessor extends WorkerHost {
 
       if (admins.length === 0) {
         this.logger.warn('No admins found, skipping notification');
-        return;
+        return true;
       }
 
       const frontendUrl = this.configService.get<string>('FRONTEND_URL');
@@ -68,8 +68,11 @@ export class NotificationProcessor extends WorkerHost {
           this.logger.log(
             `Skipping notification: ${count} signups (need ${3 + Math.ceil(countAfterInitialThree / 5) * 5} for next bulk)`,
           );
+          return true;
         }
       }
+
+      return true;
     });
 
     if (error) {

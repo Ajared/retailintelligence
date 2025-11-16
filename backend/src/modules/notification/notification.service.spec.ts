@@ -37,6 +37,8 @@ describe('NotificationService', () => {
 
     service = module.get<NotificationService>(NotificationService);
     queue = module.get<Queue>(getQueueToken('notification'));
+
+    logSpy.mockClear();
   });
 
   afterEach(() => {
@@ -71,6 +73,7 @@ describe('NotificationService', () => {
       const errorMessage = 'Queue connection failed';
       const testError = new Error(errorMessage);
       mockNotificationQueue.add.mockRejectedValueOnce(testError);
+      logSpy.mockClear();
 
       const result = await service.notifyNewUserSignup(userId);
 

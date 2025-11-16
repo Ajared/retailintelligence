@@ -56,6 +56,9 @@ describe('NotificationProcessor', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockMailService.sendMail.mockClear();
+    mockUserService.getUserById.mockClear();
+    mockUserService.getUnverifiedUsersInLast24Hours.mockClear();
+    mockUserService.getAdmins.mockClear();
     logSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation(() => {});
     errorSpy = jest
       .spyOn(Logger.prototype, 'error')
