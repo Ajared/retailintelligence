@@ -117,6 +117,14 @@ class EnvVariables {
 
   @IsString()
   FRONTEND_URL!: string;
+
+  @IsNumber()
+  @Transform(({ value }) => parseInt(value as string, 10))
+  NOTIFICATION_INDIVIDUAL_THRESHOLD!: number;
+
+  @IsNumber()
+  @Transform(({ value }) => parseInt(value as string, 10))
+  NOTIFICATION_BULK_THRESHOLD!: number;
 }
 
 export function validateEnv(config: Record<string, unknown>): EnvVariables {

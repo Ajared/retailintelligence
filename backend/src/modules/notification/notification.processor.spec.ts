@@ -64,7 +64,12 @@ describe('NotificationProcessor', () => {
       .spyOn(Logger.prototype, 'error')
       .mockImplementation(() => {});
     warnSpy = jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => {});
-    mockConfigService.get.mockReturnValue('https://example.com');
+    mockConfigService.get.mockImplementation((key: string) => {
+      if (key === 'FRONTEND_URL') return 'https://example.com';
+      if (key === 'NOTIFICATION_INDIVIDUAL_THRESHOLD') return 3;
+      if (key === 'NOTIFICATION_BULK_THRESHOLD') return 5;
+      return undefined;
+    });
   });
 
   afterEach(() => {
@@ -242,6 +247,52 @@ describe('NotificationProcessor', () => {
         );
       });
 
+      it('should skip notification if user is not in unverified users list', async () => {
+        const mockJob = {
+          data: { userId: 'user-123' },
+          id: 'job-123',
+        } as Job<NotificationJobData>;
+
+        mockUserService.getUserById.mockResolvedValueOnce(mockUser);
+        mockUserService.getUnverifiedUsersInLast24Hours.mockResolvedValueOnce(
+          [],
+        );
+        mockUserService.getAdmins.mockResolvedValueOnce([mockAdmin1]);
+
+        await processor.process(mockJob);
+
+        expect(warnSpy).toHaveBeenCalledWith(
+          'User user-123 not found in unverified users list, skipping notification',
+        );
+        expect(mockMailService.sendMail).not.toHaveBeenCalled();
+      });
+
+      it('should handle partial email failures with Promise.allSettled', async () => {
+        const mockJob = {
+          data: { userId: 'user-123' },
+          id: 'job-123',
+        } as Job<NotificationJobData>;
+
+        mockUserService.getUserById.mockResolvedValueOnce(mockUser);
+        mockUserService.getUnverifiedUsersInLast24Hours.mockResolvedValueOnce([
+          mockUser,
+        ]);
+        mockUserService.getAdmins.mockResolvedValueOnce([
+          mockAdmin1,
+          mockAdmin2,
+        ]);
+        mockMailService.sendMail
+          .mockResolvedValueOnce(true)
+          .mockRejectedValueOnce(new Error('SMTP error'));
+
+        await processor.process(mockJob);
+
+        expect(mockMailService.sendMail).toHaveBeenCalledTimes(2);
+        expect(warnSpy).toHaveBeenCalledWith(
+          'Sent individual approval notification for user user-123 to 1/2 admin(s). 1 failed.',
+        );
+      });
+
       it('should send individual notification for third user', async () => {
         const mockJob = {
           data: { userId: 'user-3' },
@@ -312,7 +363,7 @@ describe('NotificationProcessor', () => {
         );
       });
 
-      it('should send bulk notification when count is 8 (3 + 5)', async () => {
+      it('should send bulk notification when count is 8 (3 + 5) and user is in last 5', async () => {
         const mockJob = {
           data: { userId: 'user-8' },
           id: 'job-123',
@@ -356,7 +407,33 @@ describe('NotificationProcessor', () => {
         );
       });
 
-      it('should send bulk notification when count is 13 (3 + 10)', async () => {
+      it('should skip bulk notification when count is 8 but user is not in last 5', async () => {
+        const mockJob = {
+          data: { userId: 'user-1' },
+          id: 'job-123',
+        } as Job<NotificationJobData>;
+
+        const users = Array.from({ length: 8 }, (_, i) => ({
+          id: `user-${i + 1}`,
+          email: `user${i + 1}@example.com`,
+          status: UserStatus.UNVERIFIED,
+        }));
+
+        mockUserService.getUserById.mockResolvedValueOnce(users[0]);
+        mockUserService.getUnverifiedUsersInLast24Hours.mockResolvedValueOnce(
+          users,
+        );
+        mockUserService.getAdmins.mockResolvedValueOnce([mockAdmin1]);
+
+        await processor.process(mockJob);
+
+        expect(mockMailService.sendMail).not.toHaveBeenCalled();
+        expect(logSpy).toHaveBeenCalledWith(
+          'Skipping bulk notification: current user user-1 is not in the last 5 users',
+        );
+      });
+
+      it('should send bulk notification when count is 13 (3 + 10) and user is in last 5', async () => {
         const mockJob = {
           data: { userId: 'user-13' },
           id: 'job-123',
@@ -423,6 +500,39 @@ describe('NotificationProcessor', () => {
           'Sent bulk approval notification for 5 users to 2 admin(s)',
         );
       });
+
+      it('should handle partial email failures in bulk notifications', async () => {
+        const mockJob = {
+          data: { userId: 'user-8' },
+          id: 'job-123',
+        } as Job<NotificationJobData>;
+
+        const users = Array.from({ length: 8 }, (_, i) => ({
+          id: `user-${i + 1}`,
+          email: `user${i + 1}@example.com`,
+          status: UserStatus.UNVERIFIED,
+        }));
+
+        mockUserService.getUserById.mockResolvedValueOnce(users[7]);
+        mockUserService.getUnverifiedUsersInLast24Hours.mockResolvedValueOnce(
+          users,
+        );
+        mockUserService.getAdmins.mockResolvedValueOnce([
+          mockAdmin1,
+          mockAdmin2,
+        ]);
+        // First email succeeds, second fails
+        mockMailService.sendMail
+          .mockResolvedValueOnce(true)
+          .mockRejectedValueOnce(new Error('SMTP error'));
+
+        await processor.process(mockJob);
+
+        expect(mockMailService.sendMail).toHaveBeenCalledTimes(2);
+        expect(warnSpy).toHaveBeenCalledWith(
+          'Sent bulk approval notification for 5 users to 1/2 admin(s). 1 failed.',
+        );
+      });
     });
 
     it('should handle errors from getUserById gracefully', async () => {
@@ -452,7 +562,9 @@ describe('NotificationProcessor', () => {
         id: 'job-123',
       } as Job<NotificationJobData>;
 
-      const testError = new Error('Unexpected error in notification processing');
+      const testError = new Error(
+        'Unexpected error in notification processing',
+      );
       mockUserService.getUserById.mockResolvedValueOnce(mockUser);
       mockUserService.getUnverifiedUsersInLast24Hours.mockRejectedValueOnce(
         testError,

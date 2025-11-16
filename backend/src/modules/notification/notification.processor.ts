@@ -55,18 +55,48 @@ export class NotificationProcessor extends WorkerHost {
         return true;
       }
 
-      const frontendUrl = this.configService.get<string>('FRONTEND_URL');
+      const currentUserIndex = unverifiedUsers.findIndex(
+        (u) => u.id === userId,
+      );
 
-      if (count <= 3) {
-        await this.sendIndividualNotification(user, admins, frontendUrl);
+      if (
+        count <=
+        this.configService.get<number>('NOTIFICATION_INDIVIDUAL_THRESHOLD')!
+      ) {
+        if (currentUserIndex === -1) {
+          this.logger.warn(
+            `User ${userId} not found in unverified users list, skipping notification`,
+          );
+          return true;
+        }
+        await this.sendIndividualNotification(user, admins);
       } else {
-        const countAfterInitialThree = count - 3;
-        if (countAfterInitialThree % 5 === 0) {
-          const lastFiveUsers = unverifiedUsers.slice(-5);
-          await this.sendBulkNotification(lastFiveUsers, admins, frontendUrl);
+        const countAfterInitial =
+          count -
+          this.configService.get<number>('NOTIFICATION_INDIVIDUAL_THRESHOLD')!;
+        if (
+          countAfterInitial %
+            this.configService.get<number>('NOTIFICATION_BULK_THRESHOLD')! ===
+          0
+        ) {
+          const lastBulkUsers = unverifiedUsers.slice(
+            -this.configService.get<number>('NOTIFICATION_BULK_THRESHOLD')!,
+          );
+          const isCurrentUserInBulk = lastBulkUsers.some(
+            (u) => u.id === userId,
+          );
+
+          if (isCurrentUserInBulk) {
+            await this.sendBulkNotification(lastBulkUsers, admins);
+          } else {
+            this.logger.log(
+              `Skipping bulk notification: current user ${userId} is not in the last ${this.configService.get<number>('NOTIFICATION_BULK_THRESHOLD')!} users`,
+            );
+            return true;
+          }
         } else {
           this.logger.log(
-            `Skipping notification: ${count} signups (need ${3 + Math.ceil(countAfterInitialThree / 5) * 5} for next bulk)`,
+            `Skipping notification: ${count} signups (need ${this.configService.get<number>('NOTIFICATION_INDIVIDUAL_THRESHOLD')! + Math.ceil(countAfterInitial / this.configService.get<number>('NOTIFICATION_BULK_THRESHOLD')!) * this.configService.get<number>('NOTIFICATION_BULK_THRESHOLD')!} for next bulk)`,
           );
           return true;
         }
@@ -88,9 +118,8 @@ export class NotificationProcessor extends WorkerHost {
   private async sendIndividualNotification(
     user: { id: string; email: string },
     admins: { email: string }[],
-    frontendUrl?: string,
   ) {
-    const approvalUrl = `${frontendUrl}/admin/approve?userId=${user.id}`;
+    const approvalUrl = `${this.configService.get<string>('FRONTEND_URL')}/admin/approve?userId=${user.id}`;
     const userName = user.email.split('@')[0];
 
     const emailPromises = admins.map((admin) =>
@@ -106,19 +135,27 @@ export class NotificationProcessor extends WorkerHost {
       }),
     );
 
-    await Promise.all(emailPromises);
-    this.logger.log(
-      `Sent individual approval notification for user ${user.id} to ${admins.length} admin(s)`,
-    );
+    const results = await Promise.allSettled(emailPromises);
+    const successful = results.filter((r) => r.status === 'fulfilled').length;
+    const failed = results.filter((r) => r.status === 'rejected').length;
+
+    if (failed > 0) {
+      this.logger.warn(
+        `Sent individual approval notification for user ${user.id} to ${successful}/${admins.length} admin(s). ${failed} failed.`,
+      );
+    } else {
+      this.logger.log(
+        `Sent individual approval notification for user ${user.id} to ${admins.length} admin(s)`,
+      );
+    }
   }
 
   private async sendBulkNotification(
     users: { id: string; email: string }[],
     admins: { email: string }[],
-    frontendUrl?: string,
   ) {
     const userIds = users.map((u) => u.id).join(',');
-    const approvalUrl = `${frontendUrl}/admin/approve?userIds=${userIds}`;
+    const approvalUrl = `${this.configService.get<string>('FRONTEND_URL')}/admin/approve?userIds=${userIds}`;
     const userList = users.map((u) => ({
       email: u.email,
       name: u.email.split('@')[0],
@@ -137,9 +174,18 @@ export class NotificationProcessor extends WorkerHost {
       }),
     );
 
-    await Promise.all(emailPromises);
-    this.logger.log(
-      `Sent bulk approval notification for ${users.length} users to ${admins.length} admin(s)`,
-    );
+    const results = await Promise.allSettled(emailPromises);
+    const successful = results.filter((r) => r.status === 'fulfilled').length;
+    const failed = results.filter((r) => r.status === 'rejected').length;
+
+    if (failed > 0) {
+      this.logger.warn(
+        `Sent bulk approval notification for ${users.length} users to ${successful}/${admins.length} admin(s). ${failed} failed.`,
+      );
+    } else {
+      this.logger.log(
+        `Sent bulk approval notification for ${users.length} users to ${admins.length} admin(s)`,
+      );
+    }
   }
 }
