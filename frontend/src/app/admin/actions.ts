@@ -1,10 +1,10 @@
 'use server';
 
 import { z } from 'zod/v4';
-import { UserInterface } from '~/types/user';
 import customFetch from '~/lib/custom-fetch';
 import { StoreInterface } from '~/types/store';
 import { collectErrorMessages } from '~/lib/utils';
+import { UserInterface, UserRole } from '~/types/user';
 import type {
   Response,
   ErrorResponse,
@@ -145,6 +145,56 @@ export const reactivateUser = async (
   try {
     const response = await customFetch.post<UserInterface>(
       `/admin/users/${userId}/reactivate`,
+    );
+
+    if (!('data' in response)) {
+      throw new Error(response.message);
+    }
+
+    return response;
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : 'Something went wrong';
+    return {
+      error: errorMessage,
+      message: errorMessage,
+      timestamp: new Date().toISOString(),
+    } as ErrorResponse;
+  }
+};
+
+export const deleteUser = async (
+  userId: string,
+): Promise<Response<UserInterface>> => {
+  try {
+    const response = await customFetch.delete<UserInterface>(
+      `/admin/users/${userId}`,
+    );
+
+    if (!('data' in response)) {
+      throw new Error(response.message);
+    }
+
+    return response;
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : 'Something went wrong';
+    return {
+      error: errorMessage,
+      message: errorMessage,
+      timestamp: new Date().toISOString(),
+    } as ErrorResponse;
+  }
+};
+
+export const updateUserRole = async (
+  userId: string,
+  role: UserRole,
+): Promise<Response<UserInterface>> => {
+  try {
+    const response = await customFetch.post<UserInterface>(
+      `/admin/users/${userId}/role`,
+      { role },
     );
 
     if (!('data' in response)) {
