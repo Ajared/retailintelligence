@@ -87,6 +87,8 @@ export default function Content({
     toggleRoleFilter,
     toggleStatusFilter,
     handleStatusChange,
+    handleDeleteUser,
+    handleUpdateRole,
     isSearchActive,
     toggleSearchMode,
     showDialog,
@@ -94,6 +96,8 @@ export default function Content({
     selectedUser,
     actionType,
     confirmStatusChange,
+    confirmDeleteUser,
+    confirmUpdateRole,
     isPending,
     pagination,
     setPage,
@@ -165,6 +169,7 @@ export default function Content({
   const [assignError, setAssignError] = useState<string | null>(null);
   const [assignSuccess, setAssignSuccess] = useState<string | null>(null);
   const [assignPending, setAssignPending] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
 
   const openAssignDialog = (user: UserInterface) => {
     setAssignUser(user);
@@ -502,10 +507,23 @@ export default function Content({
                                     Deactivate User
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
+                                    onClick={() => handleUpdateRole(user)}
+                                    className="cursor-pointer"
+                                  >
+                                    Update Role
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
                                     onClick={() => openAssignDialog(user)}
                                     className="cursor-pointer"
                                   >
                                     Assign Location
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onClick={() => handleDeleteUser(user)}
+                                    className="cursor-pointer text-destructive focus:text-destructive"
+                                  >
+                                    Delete User
                                   </DropdownMenuItem>
                                 </>
                               )}
@@ -600,10 +618,23 @@ export default function Content({
                               Deactivate User
                             </DropdownMenuItem>
                             <DropdownMenuItem
+                              onClick={() => handleUpdateRole(user)}
+                              className="cursor-pointer"
+                            >
+                              Update Role
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
                               onClick={() => openAssignDialog(user)}
                               className="cursor-pointer"
                             >
                               Assign Location
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => handleDeleteUser(user)}
+                              className="cursor-pointer text-destructive focus:text-destructive"
+                            >
+                              Delete User
                             </DropdownMenuItem>
                           </>
                         )}
@@ -676,48 +707,129 @@ export default function Content({
         </div>
       </div>
 
-      <AlertDialog open={showDialog} onOpenChange={setShowDialog}>
+      <AlertDialog
+        open={showDialog}
+        onOpenChange={(open) => {
+          setShowDialog(open);
+          if (!open) {
+            setSelectedRole(null);
+          }
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
               {actionType === 'verify' && 'Verify User'}
               {actionType === 'deactivate' && 'Deactivate User'}
               {actionType === 'reactivate' && 'Reactivate User'}
+              {actionType === 'delete' && 'Delete User'}
+              {actionType === 'updateRole' && 'Update User Role'}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to {actionType === 'verify' && 'verify'}
-              {actionType === 'deactivate' && 'deactivate'}
-              {actionType === 'reactivate' && 'reactivate'}{' '}
-              <span className="font-medium">{selectedUser?.email}</span>?{' '}
-              {actionType === 'verify' &&
-                'This will verify the user and grant them full access to their account.'}
-              {actionType === 'deactivate' &&
-                'This will deactivate the user and restrict their access.'}
-              {actionType === 'reactivate' &&
-                "This will restore the user's access to their account."}
+              {actionType === 'delete' ? (
+                <>
+                  Are you sure you want to delete{' '}
+                  <span className="font-medium">{selectedUser?.email}</span>?
+                  This action cannot be undone and will permanently remove the
+                  user from the system.
+                </>
+              ) : actionType === 'updateRole' ? (
+                <>
+                  Select a new role for{' '}
+                  <span className="font-medium">{selectedUser?.email}</span>.
+                  Current role:{' '}
+                  <span className="font-medium capitalize">
+                    {selectedUser?.role}
+                  </span>
+                </>
+              ) : (
+                <>
+                  Are you sure you want to {actionType === 'verify' && 'verify'}
+                  {actionType === 'deactivate' && 'deactivate'}
+                  {actionType === 'reactivate' && 'reactivate'}{' '}
+                  <span className="font-medium">{selectedUser?.email}</span>?{' '}
+                  {actionType === 'verify' &&
+                    'This will verify the user and grant them full access to their account.'}
+                  {actionType === 'deactivate' &&
+                    'This will deactivate the user and restrict their access.'}
+                  {actionType === 'reactivate' &&
+                    "This will restore the user's access to their account."}
+                </>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {actionType === 'updateRole' ? (
+            <div className="space-y-4 py-4">
+              <Select
+                onValueChange={(value) => {
+                  const role = value as UserRole;
+                  setSelectedRole(role);
+                }}
+                value={selectedRole || selectedUser?.role}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={UserRole.USER}>User</SelectItem>
+                  <SelectItem value={UserRole.ADMIN}>Admin</SelectItem>
+                  <SelectItem value={UserRole.SUPER_ADMIN}>
+                    Super Admin
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          ) : null}
           <AlertDialogFooter>
             <AlertDialogCancel
               autoFocus={false}
               className="focus-visible:ring-0 cursor-pointer"
+              disabled={isPending}
+              onClick={() => {
+                setSelectedRole(null);
+              }}
             >
               Cancel
             </AlertDialogCancel>
-            <AlertDialogAction
-              autoFocus
-              onClick={confirmStatusChange}
-              className={`cursor-pointer ${
-                actionType === 'deactivate'
-                  ? 'bg-destructive hover:bg-destructive/90 text-white'
-                  : ''
-              }`}
-              disabled={isPending}
-            >
-              {actionType === 'verify' && 'Verify'}
-              {actionType === 'deactivate' && 'Deactivate'}
-              {actionType === 'reactivate' && 'Reactivate'}
-            </AlertDialogAction>
+            {actionType === 'updateRole' ? (
+              <AlertDialogAction
+                autoFocus
+                onClick={() => {
+                  if (selectedRole) {
+                    confirmUpdateRole(selectedRole);
+                    setSelectedRole(null);
+                  }
+                }}
+                className="cursor-pointer"
+                disabled={
+                  isPending ||
+                  !selectedRole ||
+                  selectedRole === selectedUser?.role
+                }
+              >
+                Update Role
+              </AlertDialogAction>
+            ) : (
+              <AlertDialogAction
+                autoFocus
+                onClick={
+                  actionType === 'delete'
+                    ? confirmDeleteUser
+                    : confirmStatusChange
+                }
+                className={`cursor-pointer ${
+                  actionType === 'deactivate' || actionType === 'delete'
+                    ? 'bg-destructive hover:bg-destructive/90 text-white'
+                    : ''
+                }`}
+                disabled={isPending}
+              >
+                {actionType === 'verify' && 'Verify'}
+                {actionType === 'deactivate' && 'Deactivate'}
+                {actionType === 'reactivate' && 'Reactivate'}
+                {actionType === 'delete' && 'Delete'}
+              </AlertDialogAction>
+            )}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

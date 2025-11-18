@@ -4,7 +4,13 @@ import { toast } from 'sonner';
 import { UserRole } from '~/types/user';
 import { UserInterface } from '~/types/user';
 import { PaginationMeta } from '~/types/actions';
-import { deactivateUser, reactivateUser, verifyUser } from '../actions';
+import {
+  deactivateUser,
+  reactivateUser,
+  verifyUser,
+  deleteUser,
+  updateUserRole,
+} from '../actions';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createContext, useContext, useCallback, useState } from 'react';
 
@@ -25,13 +31,23 @@ interface UsersContextType {
     user: UserInterface,
     action: 'verify' | 'deactivate' | 'reactivate',
   ) => void;
+  handleDeleteUser: (user: UserInterface) => void;
+  handleUpdateRole: (user: UserInterface) => void;
   isSearchActive: boolean;
   toggleSearchMode: () => void;
   showDialog: boolean;
   setShowDialog: (show: boolean) => void;
   selectedUser: UserInterface | null;
-  actionType: 'verify' | 'deactivate' | 'reactivate' | null;
+  actionType:
+    | 'verify'
+    | 'deactivate'
+    | 'reactivate'
+    | 'delete'
+    | 'updateRole'
+    | null;
   confirmStatusChange: () => void;
+  confirmDeleteUser: () => void;
+  confirmUpdateRole: (role: UserRole) => void;
   isPending: boolean;
   pagination: PaginationMeta;
   setPage: (page: number) => void;
@@ -60,7 +76,7 @@ export function UsersProvider({
   const [showDialog, setShowDialogState] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserInterface | null>(null);
   const [actionType, setActionType] = useState<
-    'verify' | 'deactivate' | 'reactivate' | null
+    'verify' | 'deactivate' | 'reactivate' | 'delete' | 'updateRole' | null
   >(null);
   const [isPending, setIsPending] = useState(false);
 
@@ -127,6 +143,20 @@ export function UsersProvider({
     [],
   );
 
+  const handleDeleteUser = useCallback((user: UserInterface) => {
+    if (!user.id) return;
+    setSelectedUser(user);
+    setActionType('delete');
+    setShowDialogState(true);
+  }, []);
+
+  const handleUpdateRole = useCallback((user: UserInterface) => {
+    if (!user.id) return;
+    setSelectedUser(user);
+    setActionType('updateRole');
+    setShowDialogState(true);
+  }, []);
+
   const setShowDialog = useCallback((show: boolean) => {
     setShowDialogState(show);
     if (!show) {
@@ -138,6 +168,14 @@ export function UsersProvider({
 
   const confirmStatusChange = useCallback(async () => {
     if (!selectedUser?.id || !actionType) return;
+
+    if (
+      actionType !== 'verify' &&
+      actionType !== 'deactivate' &&
+      actionType !== 'reactivate'
+    ) {
+      return;
+    }
 
     setIsPending(true);
     const actionMessages = {
@@ -169,6 +207,8 @@ export function UsersProvider({
         case 'reactivate':
           response = await reactivateUser(selectedUser.id);
           break;
+        default:
+          return;
       }
 
       if ('error' in response) {
@@ -188,6 +228,63 @@ export function UsersProvider({
       setIsPending(false);
     }
   }, [selectedUser, actionType, router, setShowDialog]);
+
+  const confirmDeleteUser = useCallback(async () => {
+    if (!selectedUser?.id) return;
+
+    setIsPending(true);
+    const toastId = toast.loading('Deleting user...');
+
+    try {
+      const response = await deleteUser(selectedUser.id);
+
+      if ('error' in response) {
+        toast.error(response.message, { id: toastId });
+        return;
+      }
+
+      toast.success('User deleted successfully', { id: toastId });
+
+      router.refresh();
+      setShowDialog(false);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to delete user';
+      toast.error(errorMessage, { id: toastId });
+    } finally {
+      setIsPending(false);
+    }
+  }, [selectedUser, router, setShowDialog]);
+
+  const confirmUpdateRole = useCallback(
+    async (role: UserRole) => {
+      if (!selectedUser?.id) return;
+
+      setIsPending(true);
+      const toastId = toast.loading('Updating user role...');
+
+      try {
+        const response = await updateUserRole(selectedUser.id, role);
+
+        if ('error' in response) {
+          toast.error(response.message, { id: toastId });
+          return;
+        }
+
+        toast.success('User role updated successfully', { id: toastId });
+
+        router.refresh();
+        setShowDialog(false);
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : 'Failed to update user role';
+        toast.error(errorMessage, { id: toastId });
+      } finally {
+        setIsPending(false);
+      }
+    },
+    [selectedUser, router, setShowDialog],
+  );
 
   const setPage = useCallback(
     (page: number) => {
@@ -211,6 +308,8 @@ export function UsersProvider({
     toggleRoleFilter,
     toggleStatusFilter,
     handleStatusChange,
+    handleDeleteUser,
+    handleUpdateRole,
     isSearchActive,
     toggleSearchMode,
     showDialog,
@@ -218,6 +317,8 @@ export function UsersProvider({
     selectedUser,
     actionType,
     confirmStatusChange,
+    confirmDeleteUser,
+    confirmUpdateRole,
     isPending,
     pagination: metadata,
     setPage,
