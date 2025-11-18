@@ -187,6 +187,31 @@ export const verifyUser = async (
   }
 };
 
+export const bulkVerifyUsers = async (
+  userIds: string[],
+): Promise<Response<UserInterface[]>> => {
+  try {
+    const response = await customFetch.post<UserInterface[]>(
+      '/admin/users/bulk-approve',
+      { userIds },
+    );
+
+    if (!('data' in response)) {
+      throw new Error(response.message);
+    }
+
+    return response;
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : 'Something went wrong';
+    return {
+      error: errorMessage,
+      message: errorMessage,
+      timestamp: new Date().toISOString(),
+    } as ErrorResponse;
+  }
+};
+
 export const inviteUser = async (
   _: Response<{ email: string } | null>,
   formData: FormData,
