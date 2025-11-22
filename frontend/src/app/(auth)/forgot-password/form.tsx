@@ -55,28 +55,26 @@ export function ForgotPasswordForm() {
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current);
+      countdownIntervalRef.current = null;
+    }
+
     if (countdown > 0) {
       countdownIntervalRef.current = setInterval(() => {
         setCountdown((prev) => {
           if (prev <= 1) {
-            if (countdownIntervalRef.current) {
-              clearInterval(countdownIntervalRef.current);
-            }
             return 0;
           }
           return prev - 1;
         });
       }, 1000);
-    } else {
-      if (countdownIntervalRef.current) {
-        clearInterval(countdownIntervalRef.current);
-        countdownIntervalRef.current = null;
-      }
     }
 
     return () => {
       if (countdownIntervalRef.current) {
         clearInterval(countdownIntervalRef.current);
+        countdownIntervalRef.current = null;
       }
     };
   }, [countdown]);
