@@ -1,5 +1,6 @@
 'use server';
 
+import { redirect } from 'next/navigation';
 import { z } from 'zod/v4';
 import { utapi } from '~/lib/uploadthing';
 import { StoreInterface } from '~/types/store';
@@ -16,6 +17,7 @@ import type {
   ErrorResponse,
   PaginatedSuccessResponse,
 } from '~/types/actions';
+import { isRedirectError } from 'next/dist/client/components/redirect-error';
 
 export const getAllStoresForUser = async (
   page: number = 1,
@@ -221,8 +223,10 @@ export const addStore = async (
       } as ErrorResponse & { inputs: AddStoreFormData };
     }
 
-    return response;
+    redirect('/user/locations');
   } catch (error) {
+    if (isRedirectError(error)) throw error;
+
     const errorMessage =
       error instanceof Error ? error.message : 'Something went wrong';
     return {
@@ -386,8 +390,10 @@ export const editStore = async (
       } as ErrorResponse & { inputs: EditStoreFormData };
     }
 
-    return response;
+    redirect('/user/locations');
   } catch (error) {
+    if (isRedirectError(error)) throw error;
+
     const errorMessage =
       error instanceof Error ? error.message : 'Something went wrong';
     return {
