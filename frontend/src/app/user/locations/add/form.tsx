@@ -599,31 +599,6 @@ export function AddStoreForm({
 
           <div className="flex flex-row gap-4 w-full">
             <div className="space-y-2 w-full">
-              <Label htmlFor="latitude">Latitude *</Label>
-              <Input
-                id="latitude"
-                name="latitude"
-                defaultValue={String(getInputValue('latitude') || '')}
-                placeholder="e.g. 4.8156"
-                inputMode="decimal"
-                ref={latitudeRef}
-              />
-            </div>
-            <div className="space-y-2 w-full">
-              <Label htmlFor="longitude">Longitude *</Label>
-              <Input
-                id="longitude"
-                name="longitude"
-                defaultValue={String(getInputValue('longitude') || '')}
-                placeholder="e.g. 7.0333"
-                inputMode="decimal"
-                ref={longitudeRef}
-              />
-            </div>
-          </div>
-
-          <div className="flex flex-row gap-4 w-full">
-            <div className="space-y-2 w-full">
               <Label>Quick Action</Label>
               <Button
                 type="button"
@@ -663,6 +638,41 @@ export function AddStoreForm({
                     e.preventDefault();
                   }
                 }}
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-row gap-4 w-full">
+            <div className="space-y-2 w-full">
+              <Label htmlFor="latitude">Latitude *</Label>
+              <Input
+                id="latitude"
+                name="latitude"
+                required
+                readOnly
+                tabIndex={-1}
+                onFocus={(e) => e.target.blur()}
+                className="cursor-not-allowed"
+                defaultValue={String(getInputValue('latitude') || '')}
+                placeholder="e.g. 4.8156"
+                inputMode="decimal"
+                ref={latitudeRef}
+              />
+            </div>
+            <div className="space-y-2 w-full">
+              <Label htmlFor="longitude">Longitude *</Label>
+              <Input
+                id="longitude"
+                name="longitude"
+                required
+                readOnly
+                tabIndex={-1}
+                onFocus={(e) => e.target.blur()}
+                className="cursor-not-allowed"
+                defaultValue={String(getInputValue('longitude') || '')}
+                placeholder="e.g. 7.0333"
+                inputMode="decimal"
+                ref={longitudeRef}
               />
             </div>
           </div>
