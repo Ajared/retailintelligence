@@ -479,14 +479,23 @@ export default function Content({
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               {isUnverified ? (
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    handleStatusChange(user, 'verify')
-                                  }
-                                  className="cursor-pointer"
-                                >
-                                  Verify User
-                                </DropdownMenuItem>
+                                <>
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      handleStatusChange(user, 'verify')
+                                    }
+                                    className="cursor-pointer"
+                                  >
+                                    Verify User
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onClick={() => handleDeleteUser(user)}
+                                    className="cursor-pointer text-destructive focus:text-destructive"
+                                  >
+                                    Delete User
+                                  </DropdownMenuItem>
+                                </>
                               ) : isDeactivated ? (
                                 <DropdownMenuItem
                                   onClick={() =>
@@ -592,12 +601,21 @@ export default function Content({
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         {isUnverified ? (
-                          <DropdownMenuItem
-                            onClick={() => handleStatusChange(user, 'verify')}
-                            className="cursor-pointer"
-                          >
-                            Verify User
-                          </DropdownMenuItem>
+                          <>
+                            <DropdownMenuItem
+                              onClick={() => handleStatusChange(user, 'verify')}
+                              className="cursor-pointer"
+                            >
+                              Verify User
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => handleDeleteUser(user)}
+                              className="cursor-pointer text-destructive focus:text-destructive"
+                            >
+                              Delete User
+                            </DropdownMenuItem>
+                          </>
                         ) : isDeactivated ? (
                           <DropdownMenuItem
                             onClick={() =>
