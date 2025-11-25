@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { LatLngExpression } from 'leaflet';
-import { Search, Loader2 } from 'lucide-react';
+import { Search, Loader2, Plus } from 'lucide-react';
 import {
   useCallback,
   useEffect,
@@ -21,6 +21,8 @@ import {
   ContextMenuTrigger,
 } from '~/components/ui/context-menu';
 import StoreDetailsDialog from '~/components/store-dialog';
+import { Button } from '~/components/ui/button';
+import Link from 'next/link';
 
 const InteractiveMap = dynamic(() => import('~/components/map'), {
   ssr: false,
@@ -330,12 +332,12 @@ export default function Content({
     <div className="space-y-4 p-4 md:p-6">
       <div className="flex w-full items-center justify-between gap-2">
         <h1 className="text-2xl font-bold tracking-tight">Locations</h1>
-        {/* <Button asChild className="cursor-pointer">
-          <Link href="/admin/locations">
-            <MapIcon className="h-4 w-4" />
-            View Locations
+        <Button asChild className="cursor-pointer">
+          <Link href="/admin/locations/add">
+            <Plus className="h-4 w-4 mr-2" />
+            Add Location
           </Link>
-        </Button> */}
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
@@ -432,6 +434,11 @@ export default function Content({
                           }}
                         >
                           View Location Details
+                        </ContextMenuItem>
+                        <ContextMenuItem asChild>
+                          <Link href={`/admin/locations/edit/${store.id}`}>
+                            Edit Location
+                          </Link>
                         </ContextMenuItem>
                       </ContextMenuContent>
                     </ContextMenu>
