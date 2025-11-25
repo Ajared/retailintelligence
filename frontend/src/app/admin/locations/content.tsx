@@ -430,7 +430,7 @@ export default function Content({
                 />
               </div>
               <Select value={storeType} onValueChange={setStoreType}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Filter by Type" />
                 </SelectTrigger>
                 <SelectContent>
