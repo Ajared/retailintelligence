@@ -20,6 +20,13 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from '~/components/ui/context-menu';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '~/components/ui/select';
 import StoreDetailsDialog from '~/components/store-dialog';
 import { Button } from '~/components/ui/button';
 import Link from 'next/link';
@@ -63,6 +70,7 @@ export default function Content({
     string | undefined
   >();
   const [name, setName] = useState<string>(initialName ?? '');
+  const [storeType, setStoreType] = useState<string>('ALL');
 
   const debounceTimerRef = useRef<number | null>(null);
   const searchDebounceRef = useRef<number | null>(null);
@@ -102,9 +110,9 @@ export default function Content({
   const sanitizedName = useMemo(() => name.trim().toLowerCase(), [name]);
 
   const boundsKey = useCallback(
-    (b: BoundsQuery, n: string) => {
+    (b: BoundsQuery, n: string, st: string) => {
       const norm = normalizeBounds(b);
-      return `${norm.minLat}:${norm.maxLat}:${norm.minLng}:${norm.maxLng}:name=${n}`;
+      return `${norm.minLat}:${norm.maxLat}:${norm.minLng}:${norm.maxLng}:name=${n}:type=${st}`;
     },
     [normalizeBounds],
   );
@@ -159,7 +167,7 @@ export default function Content({
         const requestId = latestRequestIdRef.current;
         setError(null);
 
-        const key = boundsKey(bounds, sanitizedName);
+        const key = boundsKey(bounds, sanitizedName, storeType);
 
         if (lastFetchedBoundsRef.current && lastFetchedStoresRef.current) {
           if (isSubsetBounds(bounds, lastFetchedBoundsRef.current)) {
@@ -193,6 +201,7 @@ export default function Content({
             limit: 300,
             sort: 'ASC',
             name: sanitizedName,
+            storeType: storeType === 'ALL' ? undefined : storeType,
           })
             .then((response) => {
               if (requestId !== latestRequestIdRef.current) return;
@@ -214,12 +223,25 @@ export default function Content({
         });
       }, delay);
     },
-    [boundsKey, filterStoresByBounds, isSubsetBounds, setCache, sanitizedName],
+    [
+      boundsKey,
+      filterStoresByBounds,
+      isSubsetBounds,
+      setCache,
+      sanitizedName,
+      storeType,
+    ],
   );
 
   const loadAllStoresPage = useCallback(
-    (params: { page: number; name?: string; append: boolean; key: string }) => {
-      const { page, name, append, key } = params;
+    (params: {
+      page: number;
+      name?: string;
+      storeType?: string;
+      append: boolean;
+      key: string;
+    }) => {
+      const { page, name, storeType, append, key } = params;
       startTransitionAllStores(() => {
         const trimmed = name?.trim();
         const nameParam = trimmed && trimmed.length > 0 ? trimmed : undefined;
@@ -231,6 +253,7 @@ export default function Content({
           undefined,
           undefined,
           nameParam,
+          storeType === 'ALL' ? undefined : storeType,
         )
           .then((response) => {
             if (allStoresQueryKeyRef.current !== key) return;
@@ -261,13 +284,19 @@ export default function Content({
   );
 
   const resetAndLoadAllStores = useCallback(
-    (queryName?: string) => {
-      const key = `${queryName ?? ''}:${Date.now()}`;
+    (queryName?: string, queryStoreType?: string) => {
+      const key = `${queryName ?? ''}:${queryStoreType ?? ''}:${Date.now()}`;
       allStoresQueryKeyRef.current = key;
       setAllStores([]);
       setAllStoresPage(0);
       setAllStoresHasNext(true);
-      loadAllStoresPage({ page: 1, name: queryName, append: false, key });
+      loadAllStoresPage({
+        page: 1,
+        name: queryName,
+        storeType: queryStoreType,
+        append: false,
+        key,
+      });
     },
     [loadAllStoresPage],
   );
@@ -275,13 +304,20 @@ export default function Content({
   const loadNextAllStoresPage = useCallback(() => {
     if (!allStoresHasNext || isPendingAllStores) return;
     const key = allStoresQueryKeyRef.current;
-    loadAllStoresPage({ page: allStoresPage + 1, name, append: true, key });
+    loadAllStoresPage({
+      page: allStoresPage + 1,
+      name,
+      storeType,
+      append: true,
+      key,
+    });
   }, [
     allStoresHasNext,
     isPendingAllStores,
     allStoresPage,
     loadAllStoresPage,
     name,
+    storeType,
   ]);
 
   useEffect(() => {
@@ -292,14 +328,14 @@ export default function Content({
       if (lastFetchedBoundsRef.current) {
         handleBoundsChange(lastFetchedBoundsRef.current);
       }
-      resetAndLoadAllStores(name);
+      resetAndLoadAllStores(name, storeType);
     }, 400);
     return () => {
       if (searchDebounceRef.current) {
         window.clearTimeout(searchDebounceRef.current);
       }
     };
-  }, [name, handleBoundsChange, resetAndLoadAllStores]);
+  }, [name, storeType, handleBoundsChange, resetAndLoadAllStores]);
 
   useEffect(() => {
     if (!sentinelRef.current || !listContainerRef.current) return;
@@ -384,6 +420,33 @@ export default function Content({
                   className="pl-8"
                 />
               </div>
+              <Select value={storeType} onValueChange={setStoreType}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Filter by Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">All Types</SelectItem>
+                  <SelectItem value="SHOP">Shop</SelectItem>
+                  <SelectItem value="REFUSE_SITE">Refuse Site</SelectItem>
+                  <SelectItem value="SCHOOL">School</SelectItem>
+                  <SelectItem value="HOSPITAL">Hospital</SelectItem>
+                  <SelectItem value="BAR_RESTAURANT">
+                    Bar / Restaurant
+                  </SelectItem>
+                  <SelectItem value="FUELING_STATION">
+                    Fueling Station
+                  </SelectItem>
+                  <SelectItem value="HOTEL">Hotel</SelectItem>
+                  <SelectItem value="RECREATION_PARK">
+                    Recreation Park
+                  </SelectItem>
+                  <SelectItem value="FINANCIAL_INSTITUTION">
+                    Financial Institution
+                  </SelectItem>
+                  <SelectItem value="RELIGIOUS">Religious Centre</SelectItem>
+                  <SelectItem value="OTHER">Other</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div
               className="max-h-[420px] overflow-auto p-2"
