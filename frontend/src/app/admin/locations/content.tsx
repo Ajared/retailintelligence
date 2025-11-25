@@ -410,7 +410,7 @@ export default function Content({
         </div>
         <div className="lg:col-span-3">
           <div className="rounded-lg border bg-background">
-            <div className="flex items-center gap-2 p-3 border-b">
+            <div className="flex flex-col items-center gap-2 p-3 border-b">
               <div className="relative w-full">
                 <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
