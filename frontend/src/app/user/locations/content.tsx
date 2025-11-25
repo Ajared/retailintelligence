@@ -77,6 +77,8 @@ export default function Content({
   const latestRequestIdRef = useRef(0);
   const lastFetchedBoundsRef = useRef<BoundsQuery | null>(null);
   const lastFetchedStoresRef = useRef<StoreInterface[] | null>(null);
+  const lastFetchedNameRef = useRef<string>('');
+  const lastFetchedStoreTypeRef = useRef<string>('ALL');
   const allStoresQueryKeyRef = useRef<string>('');
   const listContainerRef = useRef<HTMLDivElement | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
@@ -169,7 +171,12 @@ export default function Content({
 
         const key = boundsKey(bounds, sanitizedName, storeType);
 
-        if (lastFetchedBoundsRef.current && lastFetchedStoresRef.current) {
+        if (
+          lastFetchedBoundsRef.current &&
+          lastFetchedStoresRef.current &&
+          lastFetchedNameRef.current === sanitizedName &&
+          lastFetchedStoreTypeRef.current === storeType
+        ) {
           if (isSubsetBounds(bounds, lastFetchedBoundsRef.current)) {
             const filtered = filterStoresByBounds(
               lastFetchedStoresRef.current,
@@ -212,6 +219,8 @@ export default function Content({
               setStores(response.data);
               lastFetchedBoundsRef.current = { ...bounds };
               lastFetchedStoresRef.current = response.data;
+              lastFetchedNameRef.current = sanitizedName;
+              lastFetchedStoreTypeRef.current = storeType;
               setCache(key, response.data);
             })
             .catch((err: unknown) => {
