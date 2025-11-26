@@ -2,12 +2,19 @@
 
 import * as React from 'react';
 import { ThemeProvider } from './theme';
+import type { Session } from 'next-auth';
 import { initMixpanel } from '~/lib/mixpanel';
 import { ProgressProvider } from '@bprogress/next/app';
 
-const Providers = ({ children }: { children: React.ReactNode }) => {
+const Providers = ({
+  children,
+  session,
+}: {
+  children: React.ReactNode;
+  session: Session | null;
+}) => {
   React.useEffect(() => {
-    initMixpanel();
+    initMixpanel(session);
   }, []);
 
   return (

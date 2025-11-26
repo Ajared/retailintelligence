@@ -16,8 +16,7 @@ export enum AuthProvider {
   GOOGLE = 'google',
 }
 
-export interface UserInterface extends AbstractBaseInterface {
-  email: string;
+export interface UserBase extends AbstractBaseInterface {
   password: string;
   role: UserRole;
   status: UserStatus;
@@ -29,4 +28,8 @@ export interface UserInterface extends AbstractBaseInterface {
   assigned_local_government_id?: string;
   assigned_phase_id?: string;
   assigned_district_id?: string;
+}
+
+export interface UserInterface extends UserBase {
+  email: string;
 }
