@@ -11,7 +11,12 @@ export const env = createEnv({
     UPLOADTHING_TOKEN: z.string(),
     UPLOADTHING_APP_ID: z.string(),
   },
+  client: {
+    NEXT_PUBLIC_MIXPANEL_TOKEN: z.string(),
+  },
   emptyStringAsUndefined: true,
-  experimental__runtimeEnv: process.env,
+  experimental__runtimeEnv: {
+    NEXT_PUBLIC_MIXPANEL_TOKEN: process.env.NEXT_PUBLIC_MIXPANEL_TOKEN,
+  },
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,
 });
