@@ -2,7 +2,7 @@ import { env } from '~/env';
 import { loginUser } from './actions';
 import { authConfig } from './auth.config';
 import { loginFormSchema } from './schema';
-import { UserInterface } from '~/types/user';
+import { UserInterface, UserBase } from '~/types/user';
 import type { DefaultJWT } from 'next-auth/jwt';
 import NextAuth, { type DefaultSession } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
@@ -12,7 +12,8 @@ declare module 'next-auth' {
     user: UserInterface & DefaultSession['user'] & { access_token: string };
   }
 
-  interface User extends UserInterface {
+  interface User extends UserBase {
+    email: string;
     access_token: string;
   }
 }
