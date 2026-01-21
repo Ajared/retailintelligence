@@ -311,6 +311,12 @@ export function AddStoreForm({
   const handleSubmit = useCallback(
     (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault();
+
+      if (selectedImages.length === 0) {
+        toast.error('Please add at least one photo');
+        return;
+      }
+
       const formData = new FormData(event.currentTarget);
       const latInput = latitudeRef.current?.value ?? '';
       const lngInput = longitudeRef.current?.value ?? '';
@@ -678,7 +684,7 @@ export function AddStoreForm({
           </div>
 
           <div className="space-y-4">
-            <Label>Photos</Label>
+            <Label>Photos *</Label>
             <input
               ref={fileInputRef}
               type="file"
