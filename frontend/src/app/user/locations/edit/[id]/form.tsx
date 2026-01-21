@@ -55,28 +55,18 @@ function ImagePreview({
   file: File;
   onRemove: () => void;
 }) {
-  const [preview, setPreview] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(true);
+  const preview = useMemo(() => URL.createObjectURL(file), [file]);
 
   useEffect(() => {
-    const url = URL.createObjectURL(file);
-    setPreview(url);
-    setIsLoading(false);
     return () => {
-      if (url) {
-        URL.revokeObjectURL(url);
-      }
+      URL.revokeObjectURL(preview);
     };
-  }, [file]);
+  }, [preview]);
 
   return (
     <div className="relative group">
       <div className="w-20 h-20 rounded-lg overflow-hidden border-2 border-dashed border-gray-300 bg-gray-50">
-        {isLoading ? (
-          <div className="w-full h-full flex items-center justify-center">
-            <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
-          </div>
-        ) : preview ? (
+        {preview ? (
           <Image
             src={preview}
             alt={file.name}
@@ -203,7 +193,7 @@ const EditStoreForm = ({
 
   useEffect(() => {
     onStateChange();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [state]);
 
   const selectedState = useMemo(() => {

@@ -15,7 +15,7 @@ const ClientProviders = ({
 }) => {
   React.useEffect(() => {
     initMixpanel(session);
-  }, []);
+  }, [session]);
 
   return (
     <ProgressProvider
