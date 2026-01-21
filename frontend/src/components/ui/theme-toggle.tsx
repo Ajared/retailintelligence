@@ -16,7 +16,11 @@ const getServerSnapshot = () => false;
 
 export function ThemeToggle() {
   const { setTheme, theme } = useTheme();
-  const mounted = useSyncExternalStore(emptySubscribe, getSnapshot, getServerSnapshot);
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    getSnapshot,
+    getServerSnapshot,
+  );
 
   if (!mounted) {
     return null;

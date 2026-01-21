@@ -419,7 +419,7 @@ export function ForgotPasswordForm() {
                             type="button"
                             variant="ghost"
                             size="icon"
-                            className="absolute right-0 top-0 h-full px-3 !bg-transparent !hover:bg-transparent cursor-pointer"
+                            className="absolute right-0 top-0 h-full px-3 bg-transparent! !hover:bg-transparent cursor-pointer"
                             onClick={() => setShowPassword(!showPassword)}
                           >
                             {showPassword ? (

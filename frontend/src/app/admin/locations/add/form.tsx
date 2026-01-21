@@ -183,7 +183,6 @@ export function AddStoreForm({
 
   useEffect(() => {
     onStateChange();
-     
   }, [state]);
 
   const selectedState = useMemo(() => {

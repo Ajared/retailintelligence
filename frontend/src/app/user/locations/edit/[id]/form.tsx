@@ -193,7 +193,6 @@ const EditStoreForm = ({
 
   useEffect(() => {
     onStateChange();
-     
   }, [state]);
 
   const selectedState = useMemo(() => {
