@@ -7,14 +7,10 @@ import { redirect } from 'next/navigation';
 
 const getSession = cache(() => auth());
 
-async function RegisterFormWrapper({
-  searchParams,
-}: {
-  searchParams: Promise<{ inviteToken?: string }>;
-}) {
-  const params = await searchParams;
-  const inviteToken = params.inviteToken ?? '';
-
+function validateInviteToken(inviteToken: string): {
+  email: string;
+  isValidToken: boolean;
+} {
   let email = '';
   let isValidToken = true;
 
@@ -23,7 +19,8 @@ async function RegisterFormWrapper({
       const decoded = decodeJwt(inviteToken);
       email = decoded.email as string;
 
-      if (decoded.exp && decoded.exp < Date.now() / 1000) {
+      const currentTime = Date.now() / 1000;
+      if (decoded.exp && decoded.exp < currentTime) {
         isValidToken = false;
       }
     } else {
@@ -32,6 +29,19 @@ async function RegisterFormWrapper({
   } catch {
     isValidToken = false;
   }
+
+  return { email, isValidToken };
+}
+
+async function RegisterFormWrapper({
+  searchParams,
+}: {
+  searchParams: Promise<{ inviteToken?: string }>;
+}) {
+  const params = await searchParams;
+  const inviteToken = params.inviteToken ?? '';
+
+  const { email, isValidToken } = validateInviteToken(inviteToken);
 
   return (
     <RegisterForm

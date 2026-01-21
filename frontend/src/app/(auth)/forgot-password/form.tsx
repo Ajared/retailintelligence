@@ -20,6 +20,7 @@ import {
   useActionState,
   useState,
   useEffect,
+  useEffectEvent,
   lazy,
   Suspense,
   useRef,
@@ -116,23 +117,35 @@ export function ForgotPasswordForm() {
     isResetPasswordPending,
   ] = useActionState(resetPasswordAction, resetPasswordInitialState);
 
-  useEffect(() => {
+  const onForgotPasswordSuccess = useEffectEvent(() => {
     if (
       step === 1 &&
       'data' in forgotPasswordState &&
       forgotPasswordState.data?.email
     ) {
-      setEmail(forgotPasswordState.data.email);
-      setStep(2);
-      setCountdown(300);
+      startTransition(() => {
+        setEmail(forgotPasswordState.data.email);
+        setStep(2);
+        setCountdown(300);
+      });
     }
-  }, [forgotPasswordState, step]);
+  });
 
   useEffect(() => {
+    onForgotPasswordSuccess();
+  }, [forgotPasswordState]);
+
+  const onResetPasswordSuccess = useEffectEvent(() => {
     if (step === 2 && 'data' in resetPasswordState && resetPasswordState.data) {
-      setStep('success');
+      startTransition(() => {
+        setStep('success');
+      });
     }
-  }, [resetPasswordState, step]);
+  });
+
+  useEffect(() => {
+    onResetPasswordSuccess();
+  }, [resetPasswordState]);
 
   const handleResendCode = () => {
     if (resendCount >= 3 || countdown > 0) return;
@@ -407,7 +420,7 @@ export function ForgotPasswordForm() {
                             type="button"
                             variant="ghost"
                             size="icon"
-                            className="absolute right-0 top-0 h-full px-3 !bg-transparent !hover:bg-transparent cursor-pointer"
+                            className="absolute right-0 top-0 h-full px-3 bg-transparent! !hover:bg-transparent cursor-pointer"
                             onClick={() => setShowPassword(!showPassword)}
                           >
                             {showPassword ? (

@@ -1,6 +1,13 @@
 'use client';
 
-import { useCallback, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { Input } from '~/components/ui/input';
 import { Button } from '~/components/ui/button';
 import {
@@ -122,18 +129,19 @@ export default function Content({
 
   const dialogRef = useRef<HTMLButtonElement>(null);
 
-  const handleInviteSuccess = useCallback(() => {
+  const handleInviteSuccess = useEffectEvent(() => {
     if ('data' in inviteState && inviteState.data) {
       setTimeout(() => {
-        inviteState.message = '';
         dialogRef.current?.click();
       }, 1000);
     }
-  }, [inviteState]);
+  });
 
-  if ('data' in inviteState && inviteState.data) {
-    handleInviteSuccess();
-  }
+  useEffect(() => {
+    if ('data' in inviteState && inviteState.data) {
+      handleInviteSuccess();
+    }
+  }, [inviteState]);
 
   const filteredUsers = useMemo(() => {
     return users.filter((user) => {
