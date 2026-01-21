@@ -370,6 +370,12 @@ const EditStoreForm = ({
   const handleSubmit = useCallback(
     (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault();
+
+      if (keptExistingPhotos.length === 0 && selectedImages.length === 0) {
+        toast.error('Please add at least one photo');
+        return;
+      }
+
       const formData = new FormData(event.currentTarget);
       const latInput = latitudeRef.current?.value ?? '';
       const lngInput = longitudeRef.current?.value ?? '';
@@ -731,7 +737,7 @@ const EditStoreForm = ({
           </div>
 
           <div className="space-y-4">
-            <Label>Photos</Label>
+            <Label>Photos *</Label>
 
             {keptExistingPhotos.length > 0 ? (
               <div className="space-y-2">

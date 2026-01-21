@@ -163,6 +163,15 @@ export const addStore = async (
       }
     }
 
+    if (uploadedPhotoUrls.length === 0) {
+      return {
+        inputs: rawData,
+        message: 'At least one photo is required',
+        timestamp: new Date().toISOString(),
+        error: 'At least one photo is required',
+      };
+    }
+
     rawData.photos = uploadedPhotoUrls;
     const finalValidation = addStoreFormSchema.safeParse(rawData);
 
@@ -325,6 +334,15 @@ export const editStore = async (
           error: 'Photo upload failed',
         };
       }
+    }
+
+    if (existingPhotoUrls.length === 0 && uploadedPhotoUrls.length === 0) {
+      return {
+        inputs: rawData,
+        message: 'At least one photo is required',
+        timestamp: new Date().toISOString(),
+        error: 'At least one photo is required',
+      };
     }
 
     rawData.photos = [...existingPhotoUrls, ...uploadedPhotoUrls];

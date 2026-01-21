@@ -12,7 +12,7 @@ export const addStoreFormSchema = z
       .max(500, 'Store type description must be 500 characters or less')
       .optional(),
     landmarks: z.string().optional(),
-    photos: z.array(z.string()).optional(),
+    photos: z.array(z.string()).min(1, 'At least one photo is required'),
     latitude: z.number(),
     longitude: z.number(),
     phase_id: z.string().optional(),
@@ -40,6 +40,7 @@ export type AddStoreFormData = z.infer<typeof addStoreFormSchema>;
 
 export const editStoreFormSchema = addStoreFormSchema.partial().extend({
   id: z.string().min(1, 'Store ID is required'),
+  photos: z.array(z.string()).min(1, 'At least one photo is required'),
 });
 
 export type EditStoreFormData = z.infer<typeof editStoreFormSchema>;
