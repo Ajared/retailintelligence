@@ -44,12 +44,22 @@ export const addStoreFormSchema = baseStoreSchema.refine(
 
 export type AddStoreFormData = z.infer<typeof addStoreFormSchema>;
 
-export const editStoreFormSchema = baseStoreSchema
-  .partial()
-  .extend({
-    id: z.string().min(1, 'Store ID is required'),
-    photos: z.array(z.string()).min(1, 'At least one photo is required'),
-  })
+export const addStoreFormSchemaWithoutPhotos = baseStoreSchema
+  .omit({ photos: true })
   .refine(storeTypeRefinement, storeTypeRefinementError);
 
+const editStoreBaseSchema = baseStoreSchema.partial().extend({
+  id: z.string().min(1, 'Store ID is required'),
+  photos: z.array(z.string()).min(1, 'At least one photo is required'),
+});
+
+export const editStoreFormSchema = editStoreBaseSchema.refine(
+  storeTypeRefinement,
+  storeTypeRefinementError,
+);
+
 export type EditStoreFormData = z.infer<typeof editStoreFormSchema>;
+
+export const editStoreFormSchemaWithoutPhotos = editStoreBaseSchema
+  .omit({ photos: true })
+  .refine(storeTypeRefinement, storeTypeRefinementError);

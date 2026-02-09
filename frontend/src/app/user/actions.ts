@@ -9,8 +9,10 @@ import { collectErrorMessages } from '~/lib/utils';
 import {
   AddStoreFormData,
   addStoreFormSchema,
+  addStoreFormSchemaWithoutPhotos,
   EditStoreFormData,
   editStoreFormSchema,
+  editStoreFormSchemaWithoutPhotos,
 } from './schema';
 import type {
   Response,
@@ -123,9 +125,7 @@ export const addStore = async (
       photos: [],
     };
 
-    const validatedData = addStoreFormSchema
-      .omit({ photos: true })
-      .safeParse(rawData);
+    const validatedData = addStoreFormSchemaWithoutPhotos.safeParse(rawData);
 
     if (!validatedData.success) {
       const messages = collectErrorMessages(
@@ -293,9 +293,7 @@ export const editStore = async (
       photos: [],
     };
 
-    const validatedData = editStoreFormSchema
-      .omit({ photos: true })
-      .safeParse(rawData);
+    const validatedData = editStoreFormSchemaWithoutPhotos.safeParse(rawData);
 
     if (!validatedData.success) {
       const messages = collectErrorMessages(

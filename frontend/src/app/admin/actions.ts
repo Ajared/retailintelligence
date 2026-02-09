@@ -14,8 +14,10 @@ import { InviteUserFormData, inviteUserFormSchema } from './schema';
 import {
   AddStoreFormData,
   addStoreFormSchema,
+  addStoreFormSchemaWithoutPhotos,
   EditStoreFormData,
   editStoreFormSchema,
+  editStoreFormSchemaWithoutPhotos,
 } from '../user/schema';
 import { utapi } from '~/lib/uploadthing';
 import { isRedirectError } from 'next/dist/client/components/redirect-error';
@@ -476,9 +478,7 @@ export const addStore = async (
       photos: [],
     };
 
-    const validatedData = addStoreFormSchema
-      .omit({ photos: true })
-      .safeParse(rawData);
+    const validatedData = addStoreFormSchemaWithoutPhotos.safeParse(rawData);
 
     if (!validatedData.success) {
       const messages = collectErrorMessages(
@@ -637,9 +637,7 @@ export const editStore = async (
       photos: [],
     };
 
-    const validatedData = editStoreFormSchema
-      .omit({ photos: true })
-      .safeParse(rawData);
+    const validatedData = editStoreFormSchemaWithoutPhotos.safeParse(rawData);
 
     if (!validatedData.success) {
       const messages = collectErrorMessages(
