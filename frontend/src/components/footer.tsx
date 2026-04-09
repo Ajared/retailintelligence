@@ -36,7 +36,8 @@ export default function Footer() {
       </div>
       <div className="pt-6 lg:pt-12 text-sm text-gray-400 text-center">
         <p>
-          Copyright &copy; {new Intl.DateTimeFormat('en-US', { year: 'numeric' }).format()}{' '}
+          Copyright &copy;{' '}
+          {new Intl.DateTimeFormat('en-US', { year: 'numeric' }).format()}{' '}
           <a href="https://ajared.ng" target="_blank" rel="noopener noreferrer">
             Ajared Research Inc.
           </a>{' '}
