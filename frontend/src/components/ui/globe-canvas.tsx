@@ -118,7 +118,7 @@ export function GlobeCanvas(props: GlobeCanvasProps) {
       state.phi = phi + r.get();
     };
 
-    const globeOptions: COBEOptions = {
+    const globeOptions = {
       devicePixelRatio: effectiveDevicePixelRatio,
       width,
       height,
@@ -133,7 +133,6 @@ export function GlobeCanvas(props: GlobeCanvasProps) {
       glowColor,
       offset,
       markers,
-      onRender: onRender || defaultOnRender,
       ...(mapBaseBrightness !== undefined && { mapBaseBrightness }),
       ...(opacity !== undefined && { opacity }),
       ...(scale !== undefined && { scale }),
@@ -142,7 +141,22 @@ export function GlobeCanvas(props: GlobeCanvasProps) {
 
     const globe = createGlobe(canvasRef.current, globeOptions);
 
+    const state: Record<string, unknown> = { phi: initialPhi };
+    let animationId: number;
+
+    function animate() {
+      if (onRender) {
+        onRender(state);
+      } else {
+        defaultOnRender(state);
+      }
+      globe.update({ phi: state.phi as number });
+      animationId = requestAnimationFrame(animate);
+    }
+    animate();
+
     return () => {
+      cancelAnimationFrame(animationId);
       globe.destroy();
     };
 

@@ -47,16 +47,21 @@ export function Cobe() {
       opacity: 1,
       scale: 2.5,
       offset: [0, width * 2 * 0.4 * 0.5],
-      onRender: (state) => {
-        state.width = width * 2;
-        state.height = width * 2 * 0.4;
-
-        if (!pointerInteracting.current) {
-          phi += 0.005;
-        }
-        state.phi = phi + r.get();
-      },
     });
+
+    let animationId: number;
+    function animate() {
+      if (!pointerInteracting.current) {
+        phi += 0.005;
+      }
+      globe.update({
+        phi: phi + r.get(),
+        width: width * 2,
+        height: width * 2 * 0.4,
+      });
+      animationId = requestAnimationFrame(animate);
+    }
+    animate();
 
     setTimeout(() => {
       if (canvasRef.current) {
@@ -65,6 +70,7 @@ export function Cobe() {
     });
 
     return () => {
+      cancelAnimationFrame(animationId);
       globe.destroy();
       window.removeEventListener('resize', onResize);
     };
