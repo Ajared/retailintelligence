@@ -4,6 +4,7 @@ import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import Loader from '~/components/loader';
 import { Outfit } from 'next/font/google';
+import { siteConfig } from '~/lib/site';
 import { Toaster } from '~/components/ui/sonner';
 import { Analytics } from '@vercel/analytics/next';
 
@@ -13,8 +14,20 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: 'Retailytics',
-  description: 'Retailytics aka Retail Intelligence',
+  metadataBase: new URL(siteConfig.url),
+  title: {
+    default: `${siteConfig.name} — ${siteConfig.tagline}`,
+    template: `%s · ${siteConfig.name}`,
+  },
+  description: siteConfig.description,
+  applicationName: siteConfig.name,
+  keywords: [...siteConfig.keywords],
+  authors: [{ name: siteConfig.legalName, url: siteConfig.social.parent }],
+  creator: siteConfig.legalName,
+  publisher: siteConfig.legalName,
+  alternates: {
+    canonical: '/',
+  },
 };
 
 export default function RootLayout({
