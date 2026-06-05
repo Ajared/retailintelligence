@@ -1,6 +1,5 @@
-import Link from 'next/link';
-import { Button } from '~/components/ui/button';
 import { ArrowRight, Sparkles } from 'lucide-react';
+import { TrackedCta } from '~/components/analytics/tracked-cta';
 
 export default function CTA() {
   return (
@@ -24,16 +23,19 @@ export default function CTA() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-            <Button
+            <TrackedCta
+              href="/register"
+              event="cta_click"
+              eventParams={{
+                cta_location: 'cta_section',
+                destination: '/register',
+              }}
               size="lg"
               className="text-base group shadow-lg shadow-primary/20"
-              asChild
             >
-              <Link href="/register">
-                Get Started Now
-                <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-              </Link>
-            </Button>
+              Get Started Now
+              <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+            </TrackedCta>
           </div>
 
           <p className="text-sm text-muted-foreground pt-4">

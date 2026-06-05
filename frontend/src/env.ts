@@ -10,15 +10,18 @@ export const env = createEnv({
     AUTH_SECRET: z.string(),
     UPLOADTHING_TOKEN: z.string(),
     UPLOADTHING_APP_ID: z.string(),
+    GOOGLE_SITE_VERIFICATION: z.string().optional(),
   },
   client: {
     NEXT_PUBLIC_MIXPANEL_TOKEN: z.string(),
     NEXT_PUBLIC_SITE_URL: z.url().default('https://retailytics.ajared.ng'),
+    NEXT_PUBLIC_GTM_ID: z.string().optional(),
   },
   emptyStringAsUndefined: true,
   experimental__runtimeEnv: {
     NEXT_PUBLIC_MIXPANEL_TOKEN: process.env.NEXT_PUBLIC_MIXPANEL_TOKEN,
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
+    NEXT_PUBLIC_GTM_ID: process.env.NEXT_PUBLIC_GTM_ID,
   },
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,
 });

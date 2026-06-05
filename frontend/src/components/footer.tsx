@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { Route } from 'next';
 import { siteConfig } from '~/lib/site';
+import { TrackedMailto } from '~/components/analytics/tracked-mailto';
 
 type FooterLink = {
   label: string;
@@ -47,12 +48,13 @@ export default function Footer() {
           <p className="max-w-xs text-sm text-muted-foreground">
             {siteConfig.tagline}.
           </p>
-          <a
-            href={`mailto:${siteConfig.contactEmail}`}
+          <TrackedMailto
+            email={siteConfig.contactEmail}
+            location="footer"
             className="inline-block text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
             {siteConfig.contactEmail}
-          </a>
+          </TrackedMailto>
         </div>
 
         {footerNav.map((group) => (
