@@ -13,10 +13,12 @@ export const env = createEnv({
   },
   client: {
     NEXT_PUBLIC_MIXPANEL_TOKEN: z.string(),
+    NEXT_PUBLIC_SITE_URL: z.url().default('https://retailytics.ajared.ng'),
   },
   emptyStringAsUndefined: true,
   experimental__runtimeEnv: {
     NEXT_PUBLIC_MIXPANEL_TOKEN: process.env.NEXT_PUBLIC_MIXPANEL_TOKEN,
+    NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
   },
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,
 });

@@ -1,9 +1,18 @@
 import { auth } from '../auth';
 import { decodeJwt } from 'jose';
+import type { Metadata } from 'next';
 import { RegisterForm } from './form';
 import { cache, Suspense } from 'react';
 import Loader from '~/components/loader';
 import { redirect } from 'next/navigation';
+
+export const metadata: Metadata = {
+  title: 'Create Account',
+  description:
+    'Create your Retailytics account to start collecting store data, validating field submissions, and turning local data into market intelligence.',
+  alternates: { canonical: '/register' },
+  robots: { index: false, follow: true },
+};
 
 const getSession = cache(() => auth());
 
