@@ -4,14 +4,15 @@ import type { Metadata } from 'next';
 import { cache, Suspense } from 'react';
 import Loader from '~/components/loader';
 import { redirect } from 'next/navigation';
+import { buildMetadata } from '~/lib/metadata';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildMetadata({
   title: 'Sign In',
   description:
     'Sign in to your Retailytics account to access store enumeration dashboards, field data, and market intelligence reports.',
-  alternates: { canonical: '/login' },
-  robots: { index: false, follow: true },
-};
+  path: '/login',
+  index: false,
+});
 
 const getSession = cache(() => auth());
 

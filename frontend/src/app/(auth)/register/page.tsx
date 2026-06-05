@@ -5,14 +5,15 @@ import { RegisterForm } from './form';
 import { cache, Suspense } from 'react';
 import Loader from '~/components/loader';
 import { redirect } from 'next/navigation';
+import { buildMetadata } from '~/lib/metadata';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildMetadata({
   title: 'Create Account',
   description:
     'Create your Retailytics account to start collecting store data, validating field submissions, and turning local data into market intelligence.',
-  alternates: { canonical: '/register' },
-  robots: { index: false, follow: true },
-};
+  path: '/register',
+  index: false,
+});
 
 const getSession = cache(() => auth());
 
