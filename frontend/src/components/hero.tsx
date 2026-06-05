@@ -1,6 +1,5 @@
-import Link from 'next/link';
 import { Cobe } from './cobe';
-import { Button } from './ui/button';
+import { TrackedCta } from '~/components/analytics/tracked-cta';
 
 export default function Hero() {
   return (
@@ -14,9 +13,14 @@ export default function Hero() {
           data across certain locations for making better and well informed
           decisions.
         </p>
-        <Button className="w-fit mx-auto text-sm sm:text-base" asChild>
-          <Link href="/register">Get Started</Link>
-        </Button>
+        <TrackedCta
+          href="/register"
+          event="cta_click"
+          eventParams={{ cta_location: 'hero', destination: '/register' }}
+          className="w-fit mx-auto text-sm sm:text-base"
+        >
+          Get Started
+        </TrackedCta>
         <div className="w-full max-w-5xl mx-auto h-full">
           <Cobe />
         </div>

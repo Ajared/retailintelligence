@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { siteConfig } from '~/lib/site';
 import SitePage from '~/components/site-page';
 import { buildMetadata } from '~/lib/metadata';
+import { TrackedMailto } from '~/components/analytics/tracked-mailto';
 
 export const metadata: Metadata = buildMetadata({
   title: 'Contact',
@@ -25,9 +26,9 @@ export default function ContactPage() {
 
       <h2>Email</h2>
       <p>
-        <a href={`mailto:${siteConfig.contactEmail}`}>
+        <TrackedMailto email={siteConfig.contactEmail} location="contact_page">
           {siteConfig.contactEmail}
-        </a>
+        </TrackedMailto>
       </p>
 
       <h2>Sales &amp; demos</h2>
