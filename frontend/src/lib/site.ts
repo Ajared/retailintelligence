@@ -32,6 +32,22 @@ export const siteConfig = {
 
 export type SiteConfig = typeof siteConfig;
 
+export const publicRoutes = [
+  { path: '/', priority: 1, changeFrequency: 'weekly' },
+  { path: '/contact', priority: 0.6, changeFrequency: 'monthly' },
+] as const satisfies ReadonlyArray<{
+  path: string;
+  priority: number;
+  changeFrequency:
+    | 'always'
+    | 'hourly'
+    | 'daily'
+    | 'weekly'
+    | 'monthly'
+    | 'yearly'
+    | 'never';
+}>;
+
 export function absoluteUrl(path = '/'): string {
   return `${siteConfig.url}${path.startsWith('/') ? path : `/${path}`}`;
 }
