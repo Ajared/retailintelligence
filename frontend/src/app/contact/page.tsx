@@ -15,6 +15,7 @@ export default function ContactPage() {
     <SitePage
       title="Contact us"
       description="Questions, demos, partnerships, or support — we'd love to hear from you."
+      breadcrumb={{ name: 'Contact', path: '/contact' }}
     >
       <p>
         Retailytics is built and operated by {siteConfig.legalName}. The fastest

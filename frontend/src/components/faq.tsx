@@ -4,6 +4,8 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '~/components/ui/accordion';
+import { JsonLd } from '~/components/json-ld';
+import { faqPageSchema } from '~/lib/structured-data';
 
 const faqs = [
   {
@@ -31,6 +33,7 @@ const faqs = [
 export default function FAQ() {
   return (
     <section id="faq" className="relative py-10">
+      <JsonLd data={faqPageSchema(faqs)} />
       <div className="absolute top-1/2 left-0 h-96 w-96 rounded-full bg-primary/10 blur-[128px] -translate-y-1/2" />
       <div className="absolute top-1/2 right-0 h-96 w-96 rounded-full bg-accent/10 blur-[128px] -translate-y-1/2" />
 

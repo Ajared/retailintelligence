@@ -3,11 +3,14 @@ import type { ReactNode } from 'react';
 import Footer from '~/components/footer';
 import { siteConfig } from '~/lib/site';
 import { Button } from '~/components/ui/button';
+import { JsonLd } from '~/components/json-ld';
+import { breadcrumbSchema } from '~/lib/structured-data';
 
 type SitePageProps = {
   title: string;
   description?: string;
   updated?: string;
+  breadcrumb?: { name: string; path: string };
   children: ReactNode;
 };
 
@@ -15,10 +18,12 @@ export default function SitePage({
   title,
   description,
   updated,
+  breadcrumb,
   children,
 }: SitePageProps) {
   return (
     <main className="flex min-h-screen flex-col">
+      {breadcrumb && <JsonLd data={breadcrumbSchema([breadcrumb])} />}
       <header className="container mx-auto flex items-center justify-between px-4 py-6 sm:px-6 lg:px-8">
         <Link href="/" className="text-lg font-semibold tracking-tight">
           {siteConfig.name}
