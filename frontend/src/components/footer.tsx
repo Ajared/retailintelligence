@@ -1,6 +1,92 @@
+import Link from 'next/link';
+import type { Route } from 'next';
+import { siteConfig } from '~/lib/site';
+
+type FooterLink = {
+  label: string;
+  href: string;
+  external?: boolean;
+};
+
+type FooterGroup = {
+  heading: string;
+  links: FooterLink[];
+};
+
+const footerNav: FooterGroup[] = [
+  {
+    heading: 'Product',
+    links: [
+      { label: 'How it works', href: '/#how-it-works' },
+      { label: 'FAQ', href: '/#faq' },
+      { label: 'Get started', href: '/register' },
+    ],
+  },
+  {
+    heading: 'Company',
+    links: [
+      { label: 'About', href: siteConfig.social.parent, external: true },
+      { label: 'Contact', href: '/contact' },
+    ],
+  },
+  {
+    heading: 'Legal',
+    links: [
+      { label: 'Privacy', href: '/privacy' },
+      { label: 'Terms', href: '/terms' },
+    ],
+  },
+];
+
 export default function Footer() {
   return (
     <footer className="w-full h-full mb-10 lg:mb-20 container mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="grid grid-cols-2 gap-8 py-10 sm:grid-cols-3 lg:grid-cols-4 lg:py-16">
+        <div className="col-span-2 space-y-3 sm:col-span-3 lg:col-span-1">
+          <p className="text-lg font-semibold">{siteConfig.name}</p>
+          <p className="max-w-xs text-sm text-muted-foreground">
+            {siteConfig.tagline}.
+          </p>
+          <a
+            href={`mailto:${siteConfig.contactEmail}`}
+            className="inline-block text-sm text-muted-foreground transition-colors hover:text-foreground"
+          >
+            {siteConfig.contactEmail}
+          </a>
+        </div>
+
+        {footerNav.map((group) => (
+          <div key={group.heading} className="space-y-3">
+            <p className="text-sm font-semibold text-foreground">
+              {group.heading}
+            </p>
+            <ul className="space-y-2">
+              {group.links.map((link) => (
+                <li key={link.label}>
+                  {link.external ? (
+                    <a
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                      {link.label}
+                    </a>
+                  ) : (
+                    <Link
+                      href={link.href as Route}
+                      className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                      {link.label}
+                    </Link>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+
       <div className="relative overflow-hidden border-b">
         <div className="w-full h-full">
           <svg
