@@ -12,7 +12,11 @@ export const metadata: Metadata = buildMetadata({
 
 export default function PrivacyPage() {
   return (
-    <SitePage title="Privacy Policy" updated="June 2026">
+    <SitePage
+      title="Privacy Policy"
+      updated="June 2026"
+      breadcrumb={{ name: 'Privacy Policy', path: '/privacy' }}
+    >
       <p>
         This Privacy Policy explains how {siteConfig.legalName}
         (&quot;we&quot;, &quot;us&quot;) handles information in connection with

@@ -12,7 +12,11 @@ export const metadata: Metadata = buildMetadata({
 
 export default function TermsPage() {
   return (
-    <SitePage title="Terms of Service" updated="June 2026">
+    <SitePage
+      title="Terms of Service"
+      updated="June 2026"
+      breadcrumb={{ name: 'Terms of Service', path: '/terms' }}
+    >
       <p>
         These Terms of Service (&quot;Terms&quot;) govern your access to and use
         of the Retailytics platform provided by {siteConfig.legalName}

@@ -5,7 +5,9 @@ import { Suspense } from 'react';
 import Loader from '~/components/loader';
 import { Outfit } from 'next/font/google';
 import { siteConfig } from '~/lib/site';
+import { JsonLd } from '~/components/json-ld';
 import { Toaster } from '~/components/ui/sonner';
+import { siteGraph } from '~/lib/structured-data';
 import { Analytics } from '@vercel/analytics/next';
 
 const outfit = Outfit({
@@ -58,6 +60,7 @@ export default function RootLayout({
           crossOrigin="anonymous"
           src="https://tweakcn.com/live-preview.min.js"
         />
+        <JsonLd data={siteGraph()} />
       </head>
       <body className={`${outfit.variable} antialiased`}>
         <Suspense fallback={<Loader />}>
