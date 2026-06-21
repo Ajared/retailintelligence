@@ -58,9 +58,11 @@ export function organizationSchema() {
         },
       },
     ],
+    parentOrganization: { '@id': 'https://ajared.ca/#organization' },
     sameAs: [
       siteConfig.social.parent,
       siteConfig.social.parentCa,
+      'https://familytree.ajared.ng',
       siteConfig.social.twitter,
       siteConfig.social.github,
     ],
